@@ -1,0 +1,26 @@
+{
+  "name": "@todolist/monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "db:generate": "turbo run db:generate",
+    "db:push": "turbo run db:push",
+    "db:studio": "bun run --filter @todolist/db studio",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "bun@1.1.0"
+}

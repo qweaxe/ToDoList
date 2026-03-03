@@ -1,0 +1,23 @@
+{
+  "name": "@todolist/utils",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint src/",
+    "clean": "rm -rf dist node_modules"
+  },
+  "dependencies": {
+    "date-fns": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.4.0"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./date": "./src/date/index.ts",
+    "./task-type": "./src/task-type.ts"
+  }
+}

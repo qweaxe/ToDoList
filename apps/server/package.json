@@ -1,0 +1,25 @@
+{
+  "name": "@todolist/server",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "build": "bun build src/index.ts --outdir ./dist",
+    "start": "bun run src/index.ts",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist node_modules"
+  },
+  "dependencies": {
+    "@todolist/api": "workspace:*",
+    "@todolist/db": "workspace:*",
+    "@todolist/utils": "workspace:*",
+    "@trpc/server": "^10.45.0",
+    "hono": "^4.0.0",
+    "@hono/trpc-server": "^0.2.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.4.0"
+  }
+}
