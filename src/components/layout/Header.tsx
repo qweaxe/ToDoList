@@ -1,0 +1,144 @@
+'use client';
+
+import { Calendar, ChevronLeft, ChevronRight, Home, Menu, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useViewStore, ViewType } from '@/hooks/use-view-store';
+import { formatDateDisplay, getTodayString } from '@/lib/date-utils';
+import { cn } from '@/lib/utils';
+
+const viewLabels: Record<ViewType, string> = {
+  day: '今日',
+  calendar: '日历',
+  week: '周视图',
+  quarter: '季度',
+  year: '年度',
+  settings: '设置',
+};
+
+export function Header() {
+  const {
+    currentView,
+    setCurrentView,
+    selectedDate,
+    calendarYear,
+    calendarMonth,
+    goToToday,
+    goToPreviousMonth,
+    goToNextMonth,
+    toggleSidebar,
+  } = useViewStore();
+
+  const isToday = selectedDate === getTodayString();
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-14 items-center px-4">
+        {/* 左侧：Logo 和菜单按钮 */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={toggleSidebar}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-6 w-6 text-primary" />
+            <span className="font-bold text-lg hidden sm:inline-block">To Do List</span>
+          </div>
+        </div>
+
+        {/* 中间：视图切换和日期导航 */}
+        <div className="flex-1 flex items-center justify-center gap-2">
+          {/* 视图切换标签 */}
+          <nav className="hidden md:flex items-center gap-1">
+            {(['day', 'calendar', 'week', 'quarter', 'year'] as ViewType[]).map((view) => (
+              <Button
+                key={view}
+                variant={currentView === view ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrentView(view)}
+                className={cn(
+                  'text-sm',
+                  currentView === view && 'shadow-sm'
+                )}
+              >
+                {viewLabels[view]}
+              </Button>
+            ))}
+          </nav>
+
+          {/* 日期导航（仅日历视图显示） */}
+          {currentView === 'calendar' && (
+            <div className="flex items-center gap-1 ml-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={goToPreviousMonth}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[120px] text-center font-medium">
+                {calendarYear}年{calendarMonth}月
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={goToNextMonth}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* 当前日期显示（当日视图） */}
+          {currentView === 'day' && (
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="font-medium">
+                {formatDateDisplay(selectedDate)}
+              </span>
+              {!isToday && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToToday}
+                  className="text-xs"
+                >
+                  <Home className="h-3 w-3 mr-1" />
+                  回到今天
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 右侧：设置按钮 */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant={currentView === 'settings' ? 'default' : 'ghost'}
+            size="icon"
+            onClick={() => setCurrentView('settings')}
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* 移动端视图切换 */}
+      <div className="md:hidden flex items-center justify-around border-t px-2 py-1">
+        {(['day', 'calendar', 'week', 'quarter', 'year'] as ViewType[]).map((view) => (
+          <Button
+            key={view}
+            variant={currentView === view ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setCurrentView(view)}
+            className="text-xs px-2"
+          >
+            {viewLabels[view]}
+          </Button>
+        ))}
+      </div>
+    </header>
+  );
+}

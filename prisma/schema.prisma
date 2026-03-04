@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// 任务分类
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  emoji       String?
+  color       String?  // 可选颜色标识 (Tailwind class 或 hex)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  todos       Todo[]
+
+  @@map("categories")
+}
+
+// 任务等级（0-10级）
+model Level {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  value       Int      @unique // 0-10 的数值
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  todos       Todo[]
+
+  @@map("levels")
+}
+
+// 任务主表
+model Todo {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      String   @default("pending") // pending, in_progress, completed
+
+  // 时间维度
+  startDate    String   // ISO格式: YYYY-MM-DD
+  dueDate      String   // ISO格式: YYYY-MM-DD
+  completedAt  String?  // 完成日期 ISO格式: YYYY-MM-DD（仅status=completed时有值）
+
+  // 多步骤任务 - 使用 JSON 存储
+  subTasks    String?  // JSON 字符串: [{id, text, isDone}]
+
+  // 周期任务
+  isCycleTask      Boolean  @default(false)
+  recurrenceRuleId String?
+  recurrenceRule   RecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: Cascade)
+  parentRuleId     String? // 如果是从周期规则生成的任务，记录原规则ID
+
+  // 关联
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  levelId    String?
+  level      Level? @relation(fields: [levelId], references: [id], onDelete: SetNull)
+
+  // 元数据
+  priority    Int      @default(0) // 排序优先级
+  isMilestone Boolean  @default(false) // 季度视图里程碑标记
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([startDate])
+  @@index([dueDate])
+  @@index([status])
+  @@index([categoryId])
+  @@index([levelId])
+  @@map("todos")
+}
+
+// 周期规则
+model RecurrenceRule {
+  id        String   @id @default(cuid())
+  frequency String   // DAILY, WEEKLY, MONTHLY, YEARLY, CUSTOM
+  interval  Int      @default(1) // 间隔
+  byDay     String?  // JSON 数组: [0,1,2,3,4,5,6] 表示周日到周六
+  cronExpr  String?  // 自定义 cron 表达式
+  startDate String   // 开始日期
+  endDate   String?  // 结束日期（可选）
+  isActive  Boolean  @default(true) // 是否激活
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  todos     Todo[]
+
+  @@map("recurrence_rules")
+}
+
+// 节假日缓存（用于存储从API获取的数据）
+model Holiday {
+  id        String   @id @default(cuid())
+  date      String   @unique // YYYY-MM-DD
+  name      String   // 节假日名称
+  isHoliday Boolean  // true=休息日, false=工作日（调休）
+  year      Int
+  createdAt DateTime @default(now())
+
+  @@index([year])
+  @@map("holidays")
+}
