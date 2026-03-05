@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
+import { useTranslations, useLocale } from 'next-intl';
 import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertTriangle, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,9 @@ import { getTodayString, formatDateDisplay, isDateBefore } from '@/lib/date-util
 import { cn } from '@/lib/utils';
 
 export function DayView() {
+  const t = useTranslations();
+  const locale = useLocale();
+  const dateLocale = locale === 'zh' ? zhCN : enUS;
   const { selectedDate, setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<{
@@ -153,7 +157,7 @@ export function DayView() {
             </h1>
             {!isToday && (
               <Button variant="outline" size="sm" onClick={handleGoToToday} className="text-xs sm:text-sm">
-                回到今天
+                {t('nav.backToToday')}
               </Button>
             )}
           </div>
@@ -169,14 +173,14 @@ export function DayView() {
               >
                 <CheckSquare className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
-                  {batchSelection.isSelectMode ? '取消选择' : '批量操作'}
+                  {batchSelection.isSelectMode ? t('batch.cancelSelection') : t('batch.batchActions')}
                 </span>
               </Button>
             )}
             {/* 新建任务按钮 - 移动端只显示图标 */}
             <Button onClick={() => setIsFormOpen(true)} size="sm" className="sm:size-default">
               <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">新建任务</span>
+              <span className="hidden sm:inline">{t('task.newTask')}</span>
             </Button>
           </div>
         </div>
@@ -191,8 +195,8 @@ export function DayView() {
             <PopoverTrigger asChild>
               <Button variant="outline" className="gap-2 min-w-[120px] sm:min-w-[140px]">
                 <CalendarIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">选择日期</span>
-                <span className="sm:hidden">{format(new Date(selectedDate), 'M月d日', { locale: zhCN })}</span>
+                <span className="hidden sm:inline">{t('task.selectDate')}</span>
+                <span className="sm:hidden">{format(new Date(selectedDate), 'M/d', { locale: dateLocale })}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
@@ -226,7 +230,7 @@ export function DayView() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive flex-shrink-0" />
-                    <span className="truncate">历史待办</span>
+                    <span className="truncate">{t('task.overdue')}</span>
                     <Badge variant="destructive" className="flex-shrink-0">{data.data.overdueCount}</Badge>
                   </CardTitle>
                   <Button
@@ -235,7 +239,7 @@ export function DayView() {
                     onClick={handleViewAllOverdue}
                     className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
                   >
-                    查看全部 →
+                    {t('task.viewAll')} →
                   </Button>
                 </div>
               </CardHeader>
@@ -247,7 +251,7 @@ export function DayView() {
                         <div className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 flex-wrap">
                           <span className="font-medium">{formatDateDisplay(date)}</span>
                           <span className="text-destructive">
-                            （过期 {Math.ceil((new Date(today).getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24))} 天）
+                            ({t('task.overdueDays', { days: Math.ceil((new Date(today).getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24)) })})
                           </span>
                         </div>
                         <div className="space-y-2">
@@ -278,7 +282,7 @@ export function DayView() {
               <CardContent className="pt-4 sm:pt-6 px-2 sm:px-6">
                 <div className="text-center">
                   <div className="text-2xl sm:text-3xl font-bold">{data?.data.today.total || 0}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">总任务</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{t('task.totalTasks')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -288,7 +292,7 @@ export function DayView() {
                   <div className="text-2xl sm:text-3xl font-bold text-yellow-500">
                     {data?.data.today.pending.length || 0}
                   </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">待完成</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{t('task.pendingTasks')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -298,7 +302,7 @@ export function DayView() {
                   <div className="text-2xl sm:text-3xl font-bold text-green-500">
                     {data?.data.today.completedCount || 0}
                   </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">已完成</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{t('task.completedTasks')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -306,11 +310,11 @@ export function DayView() {
 
           {/* 待完成任务 */}
           <div>
-            <h2 className="text-base sm:text-lg font-semibold mb-3">待完成</h2>
+            <h2 className="text-base sm:text-lg font-semibold mb-3">{t('task.pending')}</h2>
             {data?.data.today.pending.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="py-8 text-center text-muted-foreground">
-                  暂无待完成任务
+                  {t('task.noPendingTasks')}
                 </CardContent>
               </Card>
             ) : (
@@ -337,7 +341,7 @@ export function DayView() {
           {data?.data.today.completed.length > 0 && (
             <div>
               <h2 className="text-base sm:text-lg font-semibold mb-3 text-muted-foreground">
-                已完成
+                {t('task.completed')}
               </h2>
               <div className={cn('space-y-2', !batchSelection.isSelectMode && 'opacity-60')}>
                 {data?.data.today.completed.map((task) => (
@@ -364,11 +368,11 @@ export function DayView() {
               <CardContent className="py-12 text-center">
                 <div className="text-4xl mb-4">📋</div>
                 <p className="text-muted-foreground mb-4">
-                  今天还没有任务，点击上方按钮创建一个吧
+                  {t('task.noTasksToday')}
                 </p>
                 <Button onClick={() => setIsFormOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  创建任务
+                  {t('task.createTask')}
                 </Button>
               </CardContent>
             </Card>

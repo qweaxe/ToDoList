@@ -1,21 +1,15 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Calendar, ChevronLeft, ChevronRight, Home, Menu, Settings } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
 import { useViewStore, ViewType } from '@/hooks/use-view-store';
 import { formatDateDisplay, getTodayString } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
-const viewLabels: Record<ViewType, string> = {
-  day: '今日',
-  calendar: '日历',
-  week: '周视图',
-  quarter: '季度',
-  year: '年度',
-  settings: '设置',
-};
-
 export function Header() {
+  const t = useTranslations();
   const {
     currentView,
     setCurrentView,
@@ -27,6 +21,17 @@ export function Header() {
     goToNextMonth,
     toggleSidebar,
   } = useViewStore();
+
+  const viewLabels: Record<ViewType, string> = {
+    day: t('nav.today'),
+    calendar: t('nav.calendar'),
+    week: t('nav.week'),
+    quarter: t('nav.quarter'),
+    year: t('nav.year'),
+    settings: t('nav.settings'),
+    'task-list': t('nav.taskList'),
+    overdue: t('task.overdue'),
+  };
 
   const isToday = selectedDate === getTodayString();
 
@@ -106,15 +111,16 @@ export function Header() {
                   className="text-xs"
                 >
                   <Home className="h-3 w-3 mr-1" />
-                  回到今天
+                  {t('nav.backToToday')}
                 </Button>
               )}
             </div>
           )}
         </div>
 
-        {/* 右侧：设置按钮 */}
+        {/* 右侧：语言切换和设置按钮 */}
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <Button
             variant={currentView === 'settings' ? 'default' : 'ghost'}
             size="icon"

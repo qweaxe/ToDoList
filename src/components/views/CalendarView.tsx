@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +14,7 @@ import { useHolidays } from '@/hooks/use-holidays';
 import { useViewStore } from '@/hooks/use-view-store';
 
 export function CalendarView() {
+  const t = useTranslations();
   const {
     calendarYear,
     calendarMonth,
@@ -100,7 +102,7 @@ export function CalendarView() {
             {calendarYear}年{calendarMonth}月
           </h1>
           <Button variant="outline" size="sm" onClick={goToToday}>
-            回到今天
+            {t('nav.backToToday')}
           </Button>
         </div>
 
@@ -113,7 +115,7 @@ export function CalendarView() {
           </Button>
           <Button onClick={() => handleCreateTask()}>
             <Plus className="h-4 w-4 mr-2" />
-            新建任务
+            {t('task.newTask')}
           </Button>
         </div>
       </div>
@@ -142,27 +144,27 @@ export function CalendarView() {
 
           {/* 图例 */}
           <div className="bg-card rounded-lg border p-4">
-            <h4 className="font-semibold mb-3">任务等级</h4>
+            <h4 className="font-semibold mb-3">{t('view.priorityLegend')}</h4>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="text-sm">高优先级</span>
+                <span className="text-sm">{t('view.highPriority')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-yellow-500" />
-                <span className="text-sm">中优先级</span>
+                <span className="text-sm">{t('view.mediumPriority')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-gray-400" />
-                <span className="text-sm">低优先级</span>
+                <span className="text-sm">{t('view.lowPriority')}</span>
               </div>
             </div>
           </div>
 
           {/* 操作提示 */}
           <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
-            <p>💡 点击日期可跳转到当日视图</p>
-            <p className="mt-1">💡 点击任务可查看详情和编辑</p>
+            <p>{t('view.clickDateHint')}</p>
+            <p className="mt-1">{t('view.clickTaskHint')}</p>
           </div>
         </div>
       </div>

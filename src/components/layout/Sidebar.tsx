@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
   Calendar,
   Home,
@@ -18,41 +19,41 @@ import { getTodayString } from '@/lib/date-utils';
 
 interface NavItem {
   id: ViewType;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
-  description: string;
+  descKey: string;
 }
 
 const navItems: NavItem[] = [
   {
     id: 'day',
-    label: '今日',
+    labelKey: 'nav.today',
     icon: <List className="h-5 w-5" />,
-    description: '查看今日任务',
+    descKey: 'view.dayView',
   },
   {
     id: 'calendar',
-    label: '日历',
+    labelKey: 'nav.calendar',
     icon: <Calendar className="h-5 w-5" />,
-    description: '月度日历视图',
+    descKey: 'view.monthView',
   },
   {
     id: 'week',
-    label: '周视图',
+    labelKey: 'nav.week',
     icon: <LayoutGrid className="h-5 w-5" />,
-    description: '周看板视图',
+    descKey: 'view.weekView',
   },
   {
     id: 'quarter',
-    label: '季度',
+    labelKey: 'nav.quarter',
     icon: <Target className="h-5 w-5" />,
-    description: '季度里程碑',
+    descKey: 'view.quarterView',
   },
   {
     id: 'year',
-    label: '年度',
+    labelKey: 'nav.year',
     icon: <TrendingUp className="h-5 w-5" />,
-    description: '年度热力图',
+    descKey: 'view.yearView',
   },
 ];
 
@@ -61,6 +62,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className }: SidebarProps) {
+  const t = useTranslations();
   const { currentView, setCurrentView, sidebarOpen, setSidebarOpen, setSelectedDate } = useViewStore();
 
   const handleNavClick = (view: ViewType) => {
@@ -119,7 +121,7 @@ export function Sidebar({ className }: SidebarProps) {
               onClick={handleGoToToday}
             >
               <Home className="h-4 w-4" />
-              回到今天
+              {t('nav.backToToday')}
             </Button>
           </div>
 
@@ -139,7 +141,7 @@ export function Sidebar({ className }: SidebarProps) {
                 >
                   {item.icon}
                   <div className="flex flex-col items-start">
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium">{t(item.labelKey)}</span>
                     <span
                       className={cn(
                         'text-xs',
@@ -148,7 +150,7 @@ export function Sidebar({ className }: SidebarProps) {
                           : 'text-muted-foreground'
                       )}
                     >
-                      {item.description}
+                      {t(item.descKey)}
                     </span>
                   </div>
                 </button>
@@ -168,7 +170,7 @@ export function Sidebar({ className }: SidebarProps) {
               )}
             >
               <Settings className="h-5 w-5" />
-              <span className="font-medium">设置</span>
+              <span className="font-medium">{t('nav.settings')}</span>
             </button>
           </div>
         </div>

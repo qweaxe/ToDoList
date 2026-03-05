@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
+import { useTranslations, useLocale } from 'next-intl';
 import { ArrowLeft, AlertTriangle, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,9 @@ import { useViewStore } from '@/hooks/use-view-store';
 import { getTodayString, formatDateDisplay } from '@/lib/date-utils';
 
 export function OverdueView() {
+  const t = useTranslations();
+  const locale = useLocale();
+  const dateLocale = locale === 'zh' ? zhCN : enUS;
   const { setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
   const [editingTask, setEditingTask] = useState<{
     id: string;
@@ -111,7 +115,7 @@ export function OverdueView() {
           </Button>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
-            <h1 className="text-xl sm:text-2xl font-bold">历史待办</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">{t('overdue.title')}</h1>
             {data?.data.overdueCount && (
               <Badge variant="destructive">{data.data.overdueCount}</Badge>
             )}
@@ -123,7 +127,7 @@ export function OverdueView() {
       <Card className="mb-6 border-destructive/30 bg-destructive/5">
         <CardContent className="py-3 px-4">
           <p className="text-sm text-muted-foreground">
-            以下是所有未按时完成的待办任务，点击任务可跳转到对应日期进行管理
+            {t('overdue.description')}
           </p>
         </CardContent>
       </Card>
@@ -139,10 +143,10 @@ export function OverdueView() {
           <CardContent className="py-12 text-center">
             <div className="text-4xl mb-4">🎉</div>
             <p className="text-muted-foreground">
-              太棒了！没有历史待办任务
+              {t('overdue.noOverdue')}
             </p>
             <Button variant="outline" className="mt-4" onClick={handleGoBack}>
-              返回今日
+              {t('overdue.returnToday')}
             </Button>
           </CardContent>
         </Card>
@@ -166,11 +170,11 @@ export function OverdueView() {
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{formatDateDisplay(date)}</span>
                       <Badge variant="outline" className="text-destructive border-destructive/50">
-                        过期 {overdueDays} 天
+                        {t('task.overdueDays', { days: overdueDays })}
                       </Badge>
                     </div>
                     <span className="text-xs text-muted-foreground hover:text-primary">
-                      {tasks.length} 条任务 →
+                      {t('overdue.tasksCount', { count: tasks.length })}
                     </span>
                   </div>
 
