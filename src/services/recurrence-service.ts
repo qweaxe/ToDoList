@@ -89,24 +89,18 @@ export async function syncRecurringTasks(
         for (const occurrenceDate of occurrenceDates) {
           const dateStr = formatDate(occurrenceDate);
 
-          // 检查是否已存在该日期的任务实例
-          const existingTodo = await db.todo.findFirst({
-            where: {
-              parentRuleId: rule.id,
-              dueDate: dateStr,
-              title: templateTodo.title,
-            },
-          });
-
-          if (existingTodo) {
-            result.skipped++;
-            continue;
-          }
-
-          // 创建新的任务实例
+          // 使用 upsert 避免竞争条件，依赖数据库唯一约束
           try {
-            await db.todo.create({
-              data: {
+            await db.todo.upsert({
+              where: {
+                parentRuleId_dueDate_title: {
+                  parentRuleId: rule.id,
+                  dueDate: dateStr,
+                  title: templateTodo.title,
+                },
+              },
+              update: {}, // 已存在则不更新
+              create: {
                 title: templateTodo.title,
                 description: templateTodo.description,
                 status: 'pending',
@@ -123,6 +117,11 @@ export async function syncRecurringTasks(
             });
             result.created++;
           } catch (error) {
+            // 唯一约束冲突说明任务已存在，跳过
+            if (error instanceof Error && error.message.includes('Unique constraint')) {
+              result.skipped++;
+              continue;
+            }
             console.error(`Failed to create recurring task instance:`, error);
           }
         }
