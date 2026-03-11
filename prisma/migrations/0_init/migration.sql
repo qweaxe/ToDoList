@@ -1,0 +1,1 @@
+-- Baseline migration: existing schema managed outside of Prisma migrations
