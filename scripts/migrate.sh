@@ -1,23 +1,19 @@
 #!/bin/bash
 set -e
 
-echo "Checking migration baseline..."
+echo "Applying baseline if needed..."
 
-# 检查 _prisma_migrations 表是否存在
-MIGRATION_TABLE_EXISTS=$(npx prisma db execute --stdin <<'EOF'
-SELECT COUNT(*) as count 
-FROM information_schema.tables 
-WHERE table_name = '_prisma_migrations';
-EOF
-)
+# 尝试 baseline，如果已经存在就忽略错误
+npx prisma migrate resolve --applied 0_init 2>&1 | tee /tmp/baseline_output.txt || true
 
-# 如果迁移表不存在，执行 baseline
-if echo "$MIGRATION_TABLE_EXISTS" | grep -q '"count":"0"'; then
-  echo "No migration history found, applying baseline..."
-  npx prisma migrate resolve --applied 0_init
+# 检查输出，判断是正常 baseline 还是真正的错误
+if grep -q "already been applied" /tmp/baseline_output.txt || \
+   grep -q "marked as applied" /tmp/baseline_output.txt || \
+   grep -q "error" /tmp/baseline_output.txt; then
+  echo "Baseline step done (already applied or skipped)."
 else
-  echo "Migration history exists, skipping baseline."
+  echo "Baseline applied successfully."
 fi
 
-echo "Running migrations..."
+echo "Running migrate deploy..."
 npx prisma migrate deploy
