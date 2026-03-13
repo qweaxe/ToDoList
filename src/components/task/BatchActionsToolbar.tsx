@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { useTranslations } from 'next-intl';
 import {
   X,
   Trash2,
@@ -66,6 +67,7 @@ export function BatchActionsToolbar({
   onExit,
   onComplete,
 }: BatchActionsToolbarProps) {
+  const t = useTranslations();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [categoryValue, setCategoryValue] = useState<string>('');
   const [levelValue, setLevelValue] = useState<string>('');
@@ -177,10 +179,10 @@ export function BatchActionsToolbar({
                 className="text-muted-foreground"
               >
                 <X className="h-4 w-4 mr-1" />
-                取消
+                {t('common.cancel')}
               </Button>
               <Badge variant="secondary" className="px-3 py-1">
-                已选择 {selectedCount} 项
+                {t('common.selected')} {selectedCount} {t('common.items')}
               </Badge>
               <Button
                 variant="ghost"
@@ -188,7 +190,7 @@ export function BatchActionsToolbar({
                 onClick={isAllSelected ? onDeselectAll : onSelectAll}
                 className="text-xs"
               >
-                {isAllSelected ? '取消全选' : '全选'}
+                {isAllSelected ? t('common.deselectAll') : t('common.selectAll')}
               </Button>
             </div>
 
@@ -202,7 +204,7 @@ export function BatchActionsToolbar({
                 disabled={isProcessing || selectedCount === 0}
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                完成选中
+                {t('batch.completeSelected')}
               </Button>
 
               {/* 修改分类 */}
@@ -216,10 +218,10 @@ export function BatchActionsToolbar({
               >
                 <SelectTrigger className="w-[120px] h-8">
                   <FolderInput className="h-3.5 w-3.5 mr-1" />
-                  <SelectValue placeholder="分类" />
+                  <SelectValue placeholder={t('task.category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">无分类</SelectItem>
+                  <SelectItem value="none">{t('task.noCategory')}</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.emoji} {cat.name}
@@ -239,10 +241,10 @@ export function BatchActionsToolbar({
               >
                 <SelectTrigger className="w-[120px] h-8">
                   <Flag className="h-3.5 w-3.5 mr-1" />
-                  <SelectValue placeholder="等级" />
+                  <SelectValue placeholder={t('task.priority')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">无等级</SelectItem>
+                  <SelectItem value="none">{t('task.noLevel')}</SelectItem>
                   {levels.map((level) => (
                     <SelectItem key={level.id} value={level.id}>
                       {level.name}
@@ -260,7 +262,7 @@ export function BatchActionsToolbar({
                     disabled={isProcessing || selectedCount === 0}
                   >
                     <Calendar className="h-4 w-4 mr-1" />
-                    移动到
+                    {t('batch.moveTo')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="end">
@@ -281,7 +283,7 @@ export function BatchActionsToolbar({
                 disabled={isProcessing || selectedCount === 0}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
-                删除
+                {t('common.delete')}
               </Button>
             </div>
           </div>
@@ -292,19 +294,19 @@ export function BatchActionsToolbar({
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogTitle>{t('batch.confirmDeleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除选中的 {selectedCount} 个任务吗？此操作无法撤销。
+              {t('batch.confirmDeleteDesc', { count: selectedCount })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isProcessing}>取消</AlertDialogCancel>
+            <AlertDialogCancel disabled={isProcessing}>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBatchDelete}
               disabled={isProcessing}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isProcessing ? '删除中...' : '确认删除'}
+              {isProcessing ? t('batch.deleting') : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

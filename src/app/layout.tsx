@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { Providers } from "@/components/providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "To Do List - 智能待办事项管理",
-  description: "极简、直观且具有高度交互性的待办事项管理应用，支持按天管理任务，并提供月度日历视图进行宏观规划和数据统计。",
-  keywords: ["待办事项", "任务管理", "日历", "Todo", "To Do List", "Next.js"],
+  title: "To Do List - Smart Task Management",
+  description: "A minimalist, intuitive and highly interactive task management app with daily task management and monthly calendar view for macro planning and statistics.",
+  keywords: ["todo", "task management", "calendar", "To Do List", "Next.js"],
   authors: [{ name: "To Do List Team" }],
 };
 
@@ -27,14 +25,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <Providers>
-          {children}
-          <Toaster />
-        </Providers>
+        {children}
       </body>
     </html>
   );

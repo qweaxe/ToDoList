@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   DndContext,
   DragOverlay,
@@ -13,7 +14,6 @@ import {
   useSensors,
   DragStartEvent,
   DragEndEvent,
-  DragOverEvent,
   useDroppable,
 } from '@dnd-kit/core';
 import {
@@ -35,9 +35,6 @@ import { useViewStore } from '@/hooks/use-view-store';
 import { getTodayString, addWeeksToDate, formatDate } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
-const DAY_NAMES = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-
-// 可拖拽任务卡片组件
 interface TaskItem {
   id: string;
   title: string;
@@ -59,10 +56,9 @@ interface TaskItem {
 interface DraggableTaskCardProps {
   task: TaskItem;
   onEdit: (task: TaskItem) => void;
-  isDragging?: boolean;
 }
 
-function DraggableTaskCard({ task, onEdit, isDragging }: DraggableTaskCardProps) {
+function DraggableTaskCard({ task, onEdit }: DraggableTaskCardProps) {
   const {
     attributes,
     listeners,
@@ -93,7 +89,6 @@ function DraggableTaskCard({ task, onEdit, isDragging }: DraggableTaskCardProps)
       onClick={() => !isSortableDragging && onEdit(task)}
     >
       <div className="flex items-center gap-1">
-        {/* 拖拽手柄 */}
         <div
           {...attributes}
           {...listeners}
@@ -105,11 +100,7 @@ function DraggableTaskCard({ task, onEdit, isDragging }: DraggableTaskCardProps)
           <span
             className={cn(
               'w-2 h-2 rounded-full flex-shrink-0',
-              task.level.value === 3
-                ? 'bg-red-500'
-                : task.level.value === 2
-                ? 'bg-yellow-500'
-                : 'bg-gray-400'
+              task.level.value === 3 ? 'bg-red-500' : task.level.value === 2 ? 'bg-yellow-500' : 'bg-gray-400'
             )}
           />
         )}
@@ -119,7 +110,6 @@ function DraggableTaskCard({ task, onEdit, isDragging }: DraggableTaskCardProps)
   );
 }
 
-// 日期列组件（可放置区域）
 interface DateColumnProps {
   dateInfo: {
     date: string;
@@ -133,91 +123,54 @@ interface DateColumnProps {
   onDateClick: (date: string) => void;
   onCreateTask: (date: string) => void;
   onEditTask: (task: TaskItem) => void;
-  today: string;
+  t: (key: string) => string;
 }
 
-function DateColumn({
-  dateInfo,
-  tasks,
-  isToday,
-  onDateClick,
-  onCreateTask,
-  onEditTask,
-  today,
-}: DateColumnProps) {
+function DateColumn({ dateInfo, tasks, isToday, onDateClick, onCreateTask, onEditTask, t }: DateColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: dateInfo.date,
     data: { date: dateInfo.date },
   });
 
-  const isWeekendDay = dateInfo.isWeekend;
-
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        'min-h-[200px] sm:min-h-[300px] border rounded-lg overflow-hidden transition-colors',
-        'bg-card',
+        'min-h-[200px] sm:min-h-[300px] border rounded-lg overflow-hidden transition-colors bg-card',
         isToday && 'ring-2 ring-primary',
-        isWeekendDay && 'bg-red-50/30 dark:bg-red-950/10',
+        dateInfo.isWeekend && 'bg-red-50/30 dark:bg-red-950/10',
         isOver && 'bg-primary/10 ring-2 ring-primary/50'
       )}
     >
-      {/* 日期头部 */}
       <div
-        className={cn(
-          'p-2 border-b cursor-pointer hover:bg-muted/50 flex items-center justify-between',
-          isToday && 'bg-primary/10'
-        )}
+        className={cn('p-2 border-b cursor-pointer hover:bg-muted/50 flex items-center justify-between', isToday && 'bg-primary/10')}
         onClick={() => onDateClick(dateInfo.date)}
       >
         <div className="flex items-center gap-1">
-          <span
-            className={cn(
-              'text-sm sm:text-base font-semibold',
-              isWeekendDay && 'text-red-500'
-            )}
-          >
+          <span className={cn('text-sm sm:text-base font-semibold', dateInfo.isWeekend && 'text-red-500')}>
             {dateInfo.dayNumber}
           </span>
           <span className="text-xs text-muted-foreground">{dateInfo.dayName}</span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 opacity-0 group-hover:opacity-100"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCreateTask(dateInfo.date);
-          }}
-        >
-          <Plus className="h-3 w-3" />
-        </Button>
       </div>
-
-      {/* 任务列表 */}
       <div className="p-1 sm:p-2 space-y-1 max-h-[180px] sm:max-h-[260px] overflow-y-auto">
         {tasks.length === 0 ? (
           <div
             className="text-xs text-center text-muted-foreground py-4 cursor-pointer hover:text-foreground"
             onClick={() => onCreateTask(dateInfo.date)}
           >
-            + 添加任务
+            {t('view.addTask')}
           </div>
         ) : (
           <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
             {tasks.map((task) => (
-              <DraggableTaskCard
-                key={task.id}
-                task={task}
-                onEdit={onEditTask}
-              />
+              <DraggableTaskCard key={task.id} task={task} onEdit={onEditTask} />
             ))}
           </SortableContext>
         )}
         {isOver && tasks.length > 0 && (
           <div className="border-2 border-dashed border-primary/50 rounded p-2 text-center text-xs text-primary">
-            放置到此处
+            {t('view.dropHere')}
           </div>
         )}
       </div>
@@ -225,30 +178,16 @@ function DateColumn({
   );
 }
 
-// 拖拽覆盖层中的任务卡片
 function OverlayTaskCard({ task }: { task: TaskItem }) {
   return (
-    <div
-      className={cn(
-        'text-xs p-1.5 rounded cursor-grabbing shadow-lg',
-        'bg-background border-2 border-primary',
-        task.status === 'completed'
-          ? 'bg-muted/30 text-muted-foreground line-through'
-          : 'bg-muted/50'
-      )}
-    >
+    <div className={cn('text-xs p-1.5 rounded cursor-grabbing shadow-lg bg-background border-2 border-primary',
+      task.status === 'completed' ? 'bg-muted/30 text-muted-foreground line-through' : 'bg-muted/50'
+    )}>
       <div className="flex items-center gap-1">
         {task.level && (
-          <span
-            className={cn(
-              'w-2 h-2 rounded-full flex-shrink-0',
-              task.level.value === 3
-                ? 'bg-red-500'
-                : task.level.value === 2
-                ? 'bg-yellow-500'
-                : 'bg-gray-400'
-            )}
-          />
+          <span className={cn('w-2 h-2 rounded-full flex-shrink-0',
+            task.level.value === 3 ? 'bg-red-500' : task.level.value === 2 ? 'bg-yellow-500' : 'bg-gray-400'
+          )} />
         )}
         <span className="truncate">{task.title}</span>
       </div>
@@ -257,13 +196,14 @@ function OverlayTaskCard({ task }: { task: TaskItem }) {
 }
 
 export function WeekView() {
+  const t = useTranslations();
+  const locale = useLocale();
   const { selectedDate, setSelectedDate, setCurrentView } = useViewStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedDateForForm, setSelectedDateForForm] = useState<string | null>(null);
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
 
-  // 计算当前周的起始日期
   const weekStart = (() => {
     const d = new Date(selectedDate);
     const day = d.getDay();
@@ -272,97 +212,43 @@ export function WeekView() {
   })();
 
   const { data, isLoading } = useWeeklyTodos(formatDate(weekStart));
-  const toggleMutation = useToggleTodo();
-  const deleteMutation = useDeleteTodo();
   const updateMutation = useUpdateTodo();
-  const updateCompletedAtMutation = useUpdateCompletedAt();
 
   const today = getTodayString();
 
-  // 配置拖拽传感器
+  const DAY_NAMES = locale === 'zh' 
+    ? ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // 需要移动 8px 才开始拖拽
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // 切换到上一周
-  const goToPreviousWeek = () => {
-    const newDate = addWeeksToDate(selectedDate, -1);
-    setSelectedDate(formatDate(newDate));
-  };
+  const goToPreviousWeek = () => setSelectedDate(formatDate(addWeeksToDate(selectedDate, -1)));
+  const goToNextWeek = () => setSelectedDate(formatDate(addWeeksToDate(selectedDate, 1)));
+  const goToThisWeek = () => setSelectedDate(today);
+  const handleDateClick = (date: string) => { setSelectedDate(date); setCurrentView('day'); };
+  const handleEdit = (task: TaskItem) => { setEditingTask(task); setIsFormOpen(true); };
+  const handleCreateTask = (date?: string) => { setSelectedDateForForm(date || null); setIsFormOpen(true); };
 
-  // 切换到下一周
-  const goToNextWeek = () => {
-    const newDate = addWeeksToDate(selectedDate, 1);
-    setSelectedDate(formatDate(newDate));
-  };
-
-  // 回到本周
-  const goToThisWeek = () => {
-    setSelectedDate(today);
-  };
-
-  // 点击日期 - 跳转到当日视图
-  const handleDateClick = (date: string) => {
-    setSelectedDate(date);
-    setCurrentView('day');
-  };
-
-  // 编辑任务
-  const handleEdit = (task: TaskItem) => {
-    setEditingTask(task);
-    setIsFormOpen(true);
-  };
-
-  // 新建任务
-  const handleCreateTask = (date?: string) => {
-    setSelectedDateForForm(date || null);
-    setIsFormOpen(true);
-  };
-
-  // 拖拽开始
   const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    
-    // 查找被拖拽的任务
     const allTasks = Object.values(data?.data.tasksByDate || {}).flat();
-    const task = allTasks.find((t: TaskItem) => t.id === active.id);
-    
-    if (task) {
-      setActiveTask(task);
-    }
+    const task = allTasks.find((t: TaskItem) => t.id === event.active.id);
+    if (task) setActiveTask(task);
   };
 
-  // 拖拽结束
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveTask(null);
-
     if (over && active.id !== over.id) {
-      const taskId = active.id as string;
-      const newDate = over.id as string;
-
-      // 更新任务的 dueDate 和 startDate
-      // 如果是单天任务，同时更新 startDate 和 dueDate
-      // 如果是跨天任务，只更新 dueDate
       const allTasks = Object.values(data?.data.tasksByDate || {}).flat();
-      const task = allTasks.find((t: TaskItem) => t.id === taskId);
-      
+      const task = allTasks.find((t: TaskItem) => t.id === active.id);
       if (task) {
         const isSameDay = task.startDate === task.dueDate;
         updateMutation.mutate({
-          id: taskId,
-          data: {
-            dueDate: newDate,
-            // 如果是单天任务，同时更新 startDate
-            ...(isSameDay && { startDate: newDate }),
-          },
+          id: active.id as string,
+          data: { dueDate: over.id as string, ...(isSameDay && { startDate: over.id as string }) },
         });
       }
     }
@@ -376,9 +262,7 @@ export function WeekView() {
           <Skeleton className="h-8 w-24" />
         </div>
         <div className="grid grid-cols-7 gap-4">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="h-64" />
-          ))}
+          {Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-64" />)}
         </div>
       </div>
     );
@@ -389,153 +273,68 @@ export function WeekView() {
 
   return (
     <div className="container mx-auto py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
-      {/* 标题和控制区 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl sm:text-2xl font-bold">
-            第 {data?.data.weekNumber} 周
-          </h1>
-          <span className="text-sm text-muted-foreground">
-            {data?.data.startDate} - {data?.data.endDate}
-          </span>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('view.weekNumber', { week: data?.data.weekNumber })}</h1>
+          <span className="text-sm text-muted-foreground">{data?.data.startDate} - {data?.data.endDate}</span>
         </div>
-
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={goToThisWeek}>
-            本周
-          </Button>
-          <Button variant="outline" size="icon" onClick={goToPreviousWeek}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={goToNextWeek}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button onClick={() => handleCreateTask()}>
-            <Plus className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">新建任务</span>
-          </Button>
+          <Button variant="outline" size="sm" onClick={goToThisWeek}>{t('view.thisWeek')}</Button>
+          <Button variant="outline" size="icon" onClick={goToPreviousWeek}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" onClick={goToNextWeek}><ChevronRight className="h-4 w-4" /></Button>
+          <Button onClick={() => handleCreateTask()}><Plus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">{t('task.newTask')}</span></Button>
         </div>
       </div>
 
-      {/* 周总结 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs sm:text-sm text-muted-foreground">总任务</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">已完成</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1 text-green-500">{stats.completed}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
-            <div className="text-xs sm:text-sm text-muted-foreground">待完成</div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1 text-yellow-500">{stats.pending}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
-            <div className="text-xs sm:text-sm text-muted-foreground">完成率</div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.completionRate}%</div>
-            <Progress value={stats.completionRate} className="mt-2 h-2" />
-          </CardContent>
-        </Card>
+        <Card><CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <div className="flex items-center gap-2"><Target className="h-4 w-4 text-muted-foreground" /><span className="text-xs sm:text-sm text-muted-foreground">{t('task.totalTasks')}</span></div>
+          <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.total}</div>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-green-500" /><span className="text-xs sm:text-sm text-muted-foreground">{t('task.completedTasks')}</span></div>
+          <div className="text-2xl sm:text-3xl font-bold mt-1 text-green-500">{stats.completed}</div>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <div className="text-xs sm:text-sm text-muted-foreground">{t('task.pendingTasks')}</div>
+          <div className="text-2xl sm:text-3xl font-bold mt-1 text-yellow-500">{stats.pending}</div>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <div className="text-xs sm:text-sm text-muted-foreground">{t('stats.completionRate')}</div>
+          <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.completionRate}%</div>
+          <Progress value={stats.completionRate} className="mt-2 h-2" />
+        </CardContent></Card>
       </div>
 
-      {/* 重点任务 */}
       {importantTasks.length > 0 && (
         <Card className="mb-6 border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              🔥 本周重点任务
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {importantTasks.map((task) => (
-                <Badge
-                  key={task.id}
-                  variant="outline"
-                  className="cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900"
-                  onClick={() => handleEdit(task)}
-                >
-                  {task.title}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">🔥 {t('view.importantTasks')}</CardTitle></CardHeader>
+          <CardContent><div className="flex flex-wrap gap-2">
+            {importantTasks.map((task) => (
+              <Badge key={task.id} variant="outline" className="cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900" onClick={() => handleEdit(task)}>{task.title}</Badge>
+            ))}
+          </div></CardContent>
         </Card>
       )}
 
-      {/* 拖拽上下文 */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        {/* 周视图网格 */}
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {/* 星期头部 */}
           {DAY_NAMES.map((day, index) => (
-            <div
-              key={day}
-              className={cn(
-                'text-center text-xs sm:text-sm font-medium py-2',
-                index >= 5 ? 'text-red-500' : 'text-muted-foreground'
-              )}
-            >
-              {day}
-            </div>
+            <div key={day} className={cn('text-center text-xs sm:text-sm font-medium py-2', index >= 5 ? 'text-red-500' : 'text-muted-foreground')}>{day}</div>
           ))}
-
-          {/* 日期列 */}
           {data?.data.dates.map((dateInfo) => {
             const dayTasks = (data.data.tasksByDate[dateInfo.date] || []) as TaskItem[];
-            const isToday = dateInfo.date === today;
-
             return (
-              <DateColumn
-                key={dateInfo.date}
-                dateInfo={dateInfo}
-                tasks={dayTasks}
-                isToday={isToday}
-                onDateClick={handleDateClick}
-                onCreateTask={handleCreateTask}
-                onEditTask={handleEdit}
-                today={today}
-              />
+              <DateColumn key={dateInfo.date} dateInfo={dateInfo} tasks={dayTasks} isToday={dateInfo.date === today}
+                onDateClick={handleDateClick} onCreateTask={handleCreateTask} onEditTask={handleEdit} t={t} />
             );
           })}
         </div>
-
-        {/* 拖拽覆盖层 */}
-        <DragOverlay>
-          {activeTask ? <OverlayTaskCard task={activeTask} /> : null}
-        </DragOverlay>
+        <DragOverlay>{activeTask ? <OverlayTaskCard task={activeTask} /> : null}</DragOverlay>
       </DndContext>
 
-      {/* 任务表单 */}
-      <TaskForm
-        open={isFormOpen}
-        onClose={() => {
-          setIsFormOpen(false);
-          setEditingTask(null);
-          setSelectedDateForForm(null);
-        }}
-        initialData={editingTask || undefined}
-        defaultDate={selectedDateForForm || selectedDate}
-      />
+      <TaskForm open={isFormOpen} onClose={() => { setIsFormOpen(false); setEditingTask(null); setSelectedDateForForm(null); }}
+        initialData={editingTask || undefined} defaultDate={selectedDateForForm || selectedDate} />
     </div>
   );
 }

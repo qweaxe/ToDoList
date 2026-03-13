@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,7 @@ interface CategoryFormData {
 }
 
 export function CategoryManager() {
+  const t = useTranslations();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -148,7 +150,7 @@ export function CategoryManager() {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          加载中...
+          {t('common.loading')}
         </CardContent>
       </Card>
     );
@@ -159,18 +161,18 @@ export function CategoryManager() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>任务分类</CardTitle>
-            <CardDescription>管理任务的分类标签</CardDescription>
+            <CardTitle>{t('settings.categories')}</CardTitle>
+            <CardDescription>{t('settings.categoriesDesc')}</CardDescription>
           </div>
           <Button onClick={handleCreate}>
             <Plus className="h-4 w-4 mr-2" />
-            新建分类
+            {t('settings.newCategory')}
           </Button>
         </CardHeader>
         <CardContent>
           {categories.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              暂无分类，点击上方按钮创建
+              {t('settings.noCategories')}
             </div>
           ) : (
             <ScrollArea className="h-[400px]">
@@ -207,7 +209,7 @@ export function CategoryManager() {
                         className="cursor-pointer hover:bg-secondary/80 transition-colors"
                         onClick={() => handleTodoCountClick(category)}
                       >
-                        {category.todoCount} 个任务
+                        {t('settings.taskCount', { count: category.todoCount })}
                       </Badge>
                       <Button
                         variant="ghost"
@@ -237,44 +239,44 @@ export function CategoryManager() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>新建分类</DialogTitle>
+            <DialogTitle>{t('settings.newCategory')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>名称 *</Label>
+              <Label>{t('settings.categoryName')} *</Label>
               <Input
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="输入分类名称"
+                placeholder={t('settings.categoryNamePlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label>图标</Label>
+              <Label>{t('settings.categoryIcon')}</Label>
               <EmojiPicker
                 value={formData.emoji}
                 onChange={(emoji) => setFormData({ ...formData, emoji })}
               />
             </div>
             <div className="space-y-2">
-              <Label>描述</Label>
+              <Label>{t('settings.categoryDesc')}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="输入分类描述"
+                placeholder={t('settings.categoryDescPlaceholder')}
                 rows={2}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={!formData.name.trim()}>
-              创建
+              {t('common.create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -284,44 +286,44 @@ export function CategoryManager() {
       <Dialog open={!!editingId} onOpenChange={() => setEditingId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>编辑分类</DialogTitle>
+            <DialogTitle>{t('settings.editCategory')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>名称 *</Label>
+              <Label>{t('settings.categoryName')} *</Label>
               <Input
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="输入分类名称"
+                placeholder={t('settings.categoryNamePlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label>图标</Label>
+              <Label>{t('settings.categoryIcon')}</Label>
               <EmojiPicker
                 value={formData.emoji}
                 onChange={(emoji) => setFormData({ ...formData, emoji })}
               />
             </div>
             <div className="space-y-2">
-              <Label>描述</Label>
+              <Label>{t('settings.categoryDesc')}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="输入分类描述"
+                placeholder={t('settings.categoryDescPlaceholder')}
                 rows={2}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingId(null)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={!formData.name.trim()}>
-              保存
+              {t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -331,14 +333,14 @@ export function CategoryManager() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogTitle>{t('confirm.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除此分类吗？此操作无法撤销。
+              {t('confirm.deleteDesc', { item: t('settings.categories').toLowerCase().slice(0, -1) })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>删除</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

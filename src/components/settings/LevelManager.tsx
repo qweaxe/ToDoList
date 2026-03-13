@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { ChevronUp, Minus, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,22 +17,47 @@ import {
 import { useViewStore } from '@/hooks/use-view-store';
 import { cn } from '@/lib/utils';
 
-// 固定的三个等级配置
-const FIXED_LEVELS = [
-  { name: '高', value: 3, icon: <ChevronUp className="h-4 w-4" />, color: 'bg-red-500 text-white', description: '需要优先处理' },
-  { name: '中', value: 2, icon: <Minus className="h-4 w-4" />, color: 'bg-yellow-500 text-white', description: '正常处理' },
-  { name: '低', value: 1, icon: <ChevronDown className="h-4 w-4" />, color: 'bg-gray-400 text-white', description: '有空时处理' },
-];
-
 export function LevelManager() {
+  const t = useTranslations();
   const { data, isLoading } = useLevels();
   const { setCurrentView, setTaskListFilter } = useViewStore();
 
   const levels = data?.data || [];
 
+  // 固定的三个等级配置
+  const fixedLevels = [
+    { 
+      nameKey: 'view.highPriority',
+      name: t('view.highPriority'),
+      value: 3, 
+      icon: <ChevronUp className="h-4 w-4" />, 
+      color: 'bg-red-500 text-white', 
+      descriptionKey: 'settings.highPriorityDesc',
+      description: t('settings.highPriorityDesc')
+    },
+    { 
+      nameKey: 'view.mediumPriority',
+      name: t('view.mediumPriority'),
+      value: 2, 
+      icon: <Minus className="h-4 w-4" />, 
+      color: 'bg-yellow-500 text-white', 
+      descriptionKey: 'settings.mediumPriorityDesc',
+      description: t('settings.mediumPriorityDesc')
+    },
+    { 
+      nameKey: 'view.lowPriority',
+      name: t('view.lowPriority'),
+      value: 1, 
+      icon: <ChevronDown className="h-4 w-4" />, 
+      color: 'bg-gray-400 text-white', 
+      descriptionKey: 'settings.lowPriorityDesc',
+      description: t('settings.lowPriorityDesc')
+    },
+  ];
+
   // 合并固定等级和数据库中的使用统计
-  const displayLevels = FIXED_LEVELS.map(fixed => {
-    const dbLevel = levels.find(l => l.name === fixed.name);
+  const displayLevels = fixedLevels.map(fixed => {
+    const dbLevel = levels.find(l => l.value === fixed.value);
     return {
       ...fixed,
       id: dbLevel?.id || '',
@@ -44,7 +70,7 @@ export function LevelManager() {
     setTaskListFilter({
       type: 'level',
       id: level.id,
-      name: `${level.name}优先级`,
+      name: `${level.name}`,
       year: new Date().getFullYear(),
     });
     setCurrentView('task-list');
@@ -54,7 +80,7 @@ export function LevelManager() {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          加载中...
+          {t('common.loading')}
         </CardContent>
       </Card>
     );
@@ -63,16 +89,16 @@ export function LevelManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>任务等级</CardTitle>
+        <CardTitle>{t('settings.levels')}</CardTitle>
         <CardDescription>
-          任务优先级分为高、中、低三个等级，数值越大优先级越高
+          {t('settings.levelsDesc')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
           {displayLevels.map((level) => (
             <div
-              key={level.name}
+              key={level.nameKey}
               className="flex items-center justify-between p-4 rounded-lg border bg-card"
             >
               <div className="flex items-center gap-4">
@@ -85,7 +111,7 @@ export function LevelManager() {
                   {level.icon}
                 </div>
                 <div>
-                  <div className="font-medium text-lg">{level.name}优先级</div>
+                  <div className="font-medium text-lg">{level.name}</div>
                   <div className="text-sm text-muted-foreground">
                     {level.description}
                   </div>
@@ -97,10 +123,10 @@ export function LevelManager() {
                   className="text-sm cursor-pointer hover:bg-secondary/80 transition-colors"
                   onClick={() => handleTodoCountClick(level)}
                 >
-                  {level.todoCount} 个任务
+                  {t('settings.taskCount', { count: level.todoCount })}
                 </Badge>
                 <div className="text-sm text-muted-foreground">
-                  值: {level.value}
+                  {t('settings.levelValue')}: {level.value}
                 </div>
               </div>
             </div>
@@ -108,11 +134,11 @@ export function LevelManager() {
         </div>
 
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <h4 className="font-medium mb-2">等级说明</h4>
+          <h4 className="font-medium mb-2">{t('settings.levelExplanation')}</h4>
           <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• <span className="text-red-500 font-medium">高</span>：紧急重要的事项，需要优先处理</li>
-            <li>• <span className="text-yellow-500 font-medium">中</span>：常规事项，按正常节奏处理</li>
-            <li>• <span className="text-gray-400 font-medium">低</span>：不紧急的事项，有时间再处理</li>
+            <li>• <span className="text-red-500 font-medium">{t('view.highPriority')}</span>: {t('settings.highPriorityDesc')}</li>
+            <li>• <span className="text-yellow-500 font-medium">{t('view.mediumPriority')}</span>: {t('settings.mediumPriorityDesc')}</li>
+            <li>• <span className="text-gray-400 font-medium">{t('view.lowPriority')}</span>: {t('settings.lowPriorityDesc')}</li>
           </ul>
         </div>
       </CardContent>

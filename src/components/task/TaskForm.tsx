@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
+import { useTranslations, useLocale } from 'next-intl';
 import { CalendarIcon, Plus, Trash2, Repeat, Flag, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +39,6 @@ import { useCategories } from '@/hooks/use-categories';
 import { useLevels } from '@/hooks/use-levels';
 import { useCreateTodo, useUpdateTodo } from '@/hooks/use-todos';
 import { getTodayString } from '@/lib/date-utils';
-import { QUICK_PRESETS } from '@/lib/cron-utils';
 
 interface SubTask {
   id: string;
@@ -68,6 +68,9 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormProps) {
+  const t = useTranslations();
+  const locale = useLocale();
+  const dateLocale = locale === 'zh' ? zhCN : enUS;
   const [subTasks, setSubTasks] = useState<SubTask[]>([]);
   const [newSubTask, setNewSubTask] = useState('');
   const [isCycleTask, setIsCycleTask] = useState(false);
@@ -186,14 +189,6 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     const categoryId = data.categoryId && data.categoryId !== '' && data.categoryId !== '__none__' ? data.categoryId : null;
     const levelId = data.levelId && data.levelId !== '' && data.levelId !== '__none__' ? data.levelId : null;
     
-    // 调试：打印原始表单数据和处理后的值
-    console.log('=== TaskForm onSubmit DEBUG ===');
-    console.log('原始表单 data:', JSON.stringify(data, null, 2));
-    console.log('watch categoryId:', watch('categoryId'));
-    console.log('watch levelId:', watch('levelId'));
-    console.log('处理后 categoryId:', categoryId);
-    console.log('处理后 levelId:', levelId);
-    
     const submitData = {
       ...data,
       categoryId,
@@ -210,13 +205,9 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     };
 
     // 只有已完成的任务才发送完成日期字段
-    // 未完成的任务不发送 completedAt 字段（而不是发送 null）
     if (isCompleted) {
       submitData.completedAt = completedAt;
     }
-
-    console.log('最终提交数据 submitData:', JSON.stringify(submitData, null, 2));
-    console.log('initialData?.id:', initialData?.id);
 
     if (initialData) {
       await updateMutation.mutateAsync({
@@ -230,22 +221,30 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     onClose();
   };
 
+  // 频率选项
+  const frequencyOptions = [
+    { value: 'DAILY', label: t('frequency.daily') },
+    { value: 'WEEKLY', label: t('frequency.weekly') },
+    { value: 'MONTHLY', label: t('frequency.monthly') },
+    { value: 'YEARLY', label: t('frequency.yearly') },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {initialData ? '编辑任务' : '创建新任务'}
+            {initialData ? t('task.editTask') : t('task.createTask')}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* 标题 */}
           <div className="space-y-2">
-            <Label htmlFor="title">任务标题 *</Label>
+            <Label htmlFor="title">{t('task.titleRequired')}</Label>
             <Input
               id="title"
-              placeholder="输入任务标题..."
+              placeholder={t('task.titlePlaceholder')}
               {...register('title')}
               className={errors.title ? 'border-destructive' : ''}
             />
@@ -256,10 +255,10 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
 
           {/* 描述 */}
           <div className="space-y-2">
-            <Label htmlFor="description">描述</Label>
+            <Label htmlFor="description">{t('task.description')}</Label>
             <Textarea
               id="description"
-              placeholder="添加任务描述..."
+              placeholder={t('task.descriptionPlaceholder')}
               rows={3}
               {...register('description')}
             />
@@ -268,7 +267,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           {/* 日期选择 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>开始日期</Label>
+              <Label>{t('task.startDate')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -279,7 +278,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : '选择日期'}
+                    {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : t('task.selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -298,7 +297,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             </div>
 
             <div className="space-y-2">
-              <Label>截止日期</Label>
+              <Label>{t('task.dueDate')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -309,7 +308,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : '选择日期'}
+                    {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : t('task.selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -331,16 +330,16 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           {/* 分类和等级 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>分类</Label>
+              <Label>{t('task.category')}</Label>
               <Select
                 value={watch('categoryId') || '__none__'}
                 onValueChange={(value) => setValue('categoryId', value === '__none__' ? '' : value, { shouldValidate: true, shouldDirty: true })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="选择分类" />
+                  <SelectValue placeholder={t('task.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">无分类</SelectItem>
+                  <SelectItem value="__none__">{t('task.noCategory')}</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.emoji} {cat.name}
@@ -351,16 +350,16 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             </div>
 
             <div className="space-y-2">
-              <Label>优先级</Label>
+              <Label>{t('task.priority')}</Label>
               <Select
                 value={watch('levelId') || '__none__'}
                 onValueChange={(value) => setValue('levelId', value === '__none__' ? '' : value, { shouldValidate: true, shouldDirty: true })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="选择优先级" />
+                  <SelectValue placeholder={t('task.selectPriority')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">无优先级</SelectItem>
+                  <SelectItem value="__none__">{t('task.noPriority')}</SelectItem>
                   {levels.map((level) => (
                     <SelectItem key={level.id} value={level.id}>
                       <div className="flex items-center gap-2">
@@ -381,7 +380,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             <div className="space-y-2 p-4 border rounded-lg bg-green-50/50 border-green-200">
               <Label className="flex items-center gap-2 text-green-700">
                 <CalendarCheck className="h-4 w-4" />
-                完成日期
+                {t('task.completionDate')}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -393,7 +392,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {completedAt ? format(new Date(completedAt), 'yyyy年M月d日', { locale: zhCN }) : '选择完成日期'}
+                    {completedAt ? format(new Date(completedAt), 'PPP', { locale: dateLocale }) : t('task.selectCompletionDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -410,17 +409,17 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                 </PopoverContent>
               </Popover>
               <p className="text-xs text-muted-foreground">
-                此任务已完成，可修改完成日期
+                {t('task.completedTaskHint')}
               </p>
             </div>
           )}
 
           {/* 子任务 */}
           <div className="space-y-2">
-            <Label>子任务</Label>
+            <Label>{t('task.subtasks')}</Label>
             <div className="flex gap-2">
               <Input
-                placeholder="添加子任务..."
+                placeholder={t('task.subtaskPlaceholder')}
                 value={newSubTask}
                 onChange={(e) => setNewSubTask(e.target.value)}
                 onKeyDown={(e) => {
@@ -472,7 +471,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Repeat className="h-4 w-4" />
-                <Label>周期任务</Label>
+                <Label>{t('task.recurring')}</Label>
               </div>
               <Switch
                 checked={isCycleTask}
@@ -483,7 +482,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             {isCycleTask && (
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="space-y-2">
-                  <Label>重复频率</Label>
+                  <Label>{t('task.frequency')}</Label>
                   <Select
                     value={cycleFrequency}
                     onValueChange={(v) => setCycleFrequency(v as typeof cycleFrequency)}
@@ -492,21 +491,17 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {QUICK_PRESETS.slice(0, 4).map((preset) => (
-                        <SelectItem
-                          key={preset.frequency}
-                          value={preset.frequency}
-                        >
-                          {preset.label}
+                      {frequencyOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
                         </SelectItem>
                       ))}
-                      <SelectItem value="YEARLY">每年</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>间隔</Label>
+                  <Label>{t('task.interval')}</Label>
                   <Input
                     type="number"
                     min={1}
@@ -521,7 +516,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           {/* 里程碑 */}
           <div className="flex items-center gap-2">
             <Flag className="h-4 w-4" />
-            <Label className="flex-1">标记为里程碑</Label>
+            <Label className="flex-1">{t('task.markAsMilestone')}</Label>
             <Switch
               checked={watch('isMilestone')}
               onCheckedChange={(checked) => setValue('isMilestone', checked)}
@@ -530,13 +525,13 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
             >
-              {initialData ? '保存' : '创建'}
+              {initialData ? t('common.save') : t('common.create')}
             </Button>
           </DialogFooter>
         </form>

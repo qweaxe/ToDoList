@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Check,
   ChevronDown,
@@ -90,6 +91,9 @@ export function TaskCard({
   isSelected = false,
   onSelect,
 }: TaskCardProps) {
+  const t = useTranslations();
+  const locale = useLocale();
+  const dateLocale = locale === 'zh' ? zhCN : enUS;
   const [expanded, setExpanded] = useState(false);
 
   // 解析子任务
@@ -256,7 +260,7 @@ export function TaskCard({
         {task.isMilestone && (
           <Badge variant="default" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 h-5 sm:h-6">
             <Flag className="h-3 w-3 sm:mr-1" />
-            <span className="hidden sm:inline">里程碑</span>
+            <span className="hidden sm:inline">{t('task.milestone')}</span>
           </Badge>
         )}
 
@@ -264,7 +268,7 @@ export function TaskCard({
         {task.isCycleTask && (
           <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 h-5 sm:h-6">
             <Repeat className="h-3 w-3 sm:mr-1" />
-            <span className="hidden sm:inline">周期</span>
+            <span className="hidden sm:inline">{t('task.recurringTask')}</span>
           </Badge>
         )}
 
@@ -272,7 +276,7 @@ export function TaskCard({
         {isCrossDay && (
           <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 h-5 sm:h-6">
             <Clock className="h-3 w-3 sm:mr-1" />
-            <span className="hidden sm:inline">跨天</span>
+            <span className="hidden sm:inline">{t('task.crossDay')}</span>
           </Badge>
         )}
       </div>
@@ -309,12 +313,12 @@ export function TaskCard({
                 <PopoverTrigger asChild>
                   <button className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs text-green-600 hover:text-green-700 hover:bg-green-50 px-1 sm:px-1.5 py-0.5 rounded transition-colors">
                     <CalendarCheck className="h-3 w-3" />
-                    <span>{format(new Date(task.completedAt), 'M月d日', { locale: zhCN })}完成</span>
+                    <span>{format(new Date(task.completedAt), 'M/d', { locale: dateLocale })} {t('task.completed')}</span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <div className="p-2 border-b">
-                    <p className="text-xs text-muted-foreground">修改完成日期</p>
+                    <p className="text-xs text-muted-foreground">{t('task.selectCompletionDate')}</p>
                   </div>
                   <Calendar
                     mode="single"
@@ -357,7 +361,7 @@ export function TaskCard({
             <div className="mt-1.5 sm:mt-2">
               <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground mb-1">
                 <span>
-                  子任务 {completedSubTasks}/{subTasks.length}
+                  {t('task.subtasks')} {completedSubTasks}/{subTasks.length}
                 </span>
                 <span>{subTaskProgress}%</span>
               </div>
@@ -424,7 +428,7 @@ export function TaskCard({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onEdit(task)}>
                 <Edit2 className="h-4 w-4 mr-2" />
-                编辑
+                {t('common.edit')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -432,7 +436,7 @@ export function TaskCard({
                 className="text-destructive"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                删除
+                {t('common.delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
