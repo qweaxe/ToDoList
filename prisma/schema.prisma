@@ -71,6 +71,7 @@ model Todo {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@unique([parentRuleId, dueDate, title])
   @@index([startDate])
   @@index([dueDate])
   @@index([status])
