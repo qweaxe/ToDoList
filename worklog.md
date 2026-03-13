@@ -2,7 +2,7 @@
 
 ## 项目完成状态检查报告
 
-**检查日期**: 2025-01-XX
+**检查日期**: 2026-03-13
 
 ---
 
@@ -365,4 +365,46 @@ Stage Summary:
 - ✅ 修复前端表单提交逻辑，未完成任务不发送 completedAt 字段
 - ✅ 修复后端 API 验证逻辑，区分 null 和有效日期字符串
 - ✅ 任务编辑功能恢复正常，分类和优先级修改可正确保存
+
+---
+Task ID: 9
+Agent: Main Agent
+Task: 多分支合并整合（dev/vercel_security 和 dev/vercel_en）
+
+Work Log:
+1. 分支检查与分析
+   - 检查项目所有分支状态（main, dev/vercel, dev/vercel_en, dev/vercel_security）
+   - 分析各分支的提交历史和文件变更差异
+   - dev/vercel_security: 2个提交，修改4个文件（安全增强）
+   - dev/vercel_en: 5个提交，修改25个文件（国际化功能）
+   - main: 2个独有提交（TurboRepo 重构，不合并）
+
+2. 分支合并执行
+   - 先合并 dev/vercel_security 到 dev/vercel（无冲突）
+     - 新增 src/lib/api-utils.ts（API 安全工具函数）
+     - 更新 prisma/schema.prisma 数据库模型
+     - 优化 src/services/recurrence-service.ts
+     - 增强 src/app/api/todos/toggle/route.ts 安全性
+   - 再合并 dev/vercel_en 到 dev/vercel（无冲突）
+     - 新增国际化翻译文件（messages/en.json, messages/zh.json）
+     - 新增 LanguageSwitcher 语言切换组件
+     - 新增 i18n 配置（src/i18n/request.ts, routing.ts）
+     - 新增路由中间件（src/middleware.ts）
+     - 重构路由为国际化结构（src/app/[locale]/）
+     - 更新所有组件支持多语言（Header, Sidebar, TaskForm 等）
+
+3. 依赖和配置更新
+   - 执行 bun install 安装新依赖（next-intl 等国际化包）
+   - 自动生成 Prisma Client（v6.19.2）
+   - 更新 eslint.config.mjs，添加 apps/** 目录到忽略列表
+   - 合并后总共领先远程 9 个提交
+
+Stage Summary:
+- ✅ 成功合并 dev/vercel_security 分支（安全增强功能）
+- ✅ 成功合并 dev/vercel_en 分支（国际化功能）
+- ✅ 所有合并均无冲突，自动完成
+- ✅ 项目新增国际化支持（中英文切换）
+- ✅ 项目新增 API 安全工具函数
+- ✅ 依赖和配置更新完成
+- ⚠️ 需要配置 DIRECT_URL 环境变量才能运行构建
 

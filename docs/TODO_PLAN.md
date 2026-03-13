@@ -184,6 +184,7 @@
 | 阶段四：高级视图开发 | ✅ 已完成 | 2026-03-14 |
 | 阶段五：高级功能开发 | ✅ 已完成 | 2026-03-14 |
 | 阶段六：优化与完善 | ✅ 已完成 | 2026-03-03 |
+| 阶段七：代码审查与安全加固 | 🚧 进行中 | - |
 
 ---
 
@@ -268,8 +269,10 @@
 | 阶段四：高级视图 | 100% |
 | 阶段五：高级功能 | 100% |
 | 阶段六：优化完善 | 100% |
+| 阶段七：安全加固 | 0% (15项待完成) |
 
-**总体完成度: 100%**
+**总体功能完成度: 100%**
+**安全加固进度: 0%**
 
 ---
 
@@ -300,6 +303,9 @@
 | 2026-06-01 | 实现批量操作 UI（多选模式、工具栏、全选/反选） |
 | 2026-06-01 | 确认自定义图标上传功能已完成 |
 | 2026-06-01 | 项目总体完成度达到 100% |
+| 2026-03-13 | 启动阶段七：代码审查与安全加固 |
+| 2026-03-13 | 完成全面代码安全审查，发现 15 项优化点 |
+| 2026-03-13 | 识别出 4 个严重安全问题（P0）和 3 个中危问题（P1） |
 
 ---
 
@@ -412,3 +418,296 @@ src/components/task/
    - 支持跨列拖拽
    - 移动端触摸支持
    - 视觉反馈（拖拽时的样式变化）
+
+---
+
+## 阶段七：代码审查与安全加固 🚧
+
+**目标**：提升代码质量、修复安全隐患、优化性能
+
+**审查日期**：2026-03-13
+
+### 安全隐患发现
+
+#### 严重 (P0)
+
+| 问题 | 位置 | 风险等级 | 状态 |
+|------|------|---------|------|
+| 缺少身份验证和授权 | 所有 API 路由 | 🔴 严重 | ❌ 待修复 |
+| TypeScript 构建错误被忽略 | `next.config.ts:11` | 🔴 严重 | ❌ 待修复 |
+| React Strict Mode 被禁用 | `next.config.ts:14` | 🔴 严重 | ❌ 待修复 |
+| 图片域名白名单过于宽松 | `next.config.ts:18-23` | 🟠 高危 | ❌ 待修复 |
+
+**问题详情**：
+
+1. **身份验证缺失**
+   - 所有 API 端点未实现身份验证
+   - 任何人都可以访问和操作所有数据
+   - 没有用户隔离机制
+   - 建议：集成 NextAuth.js 或 Supabase Auth
+
+2. **TypeScript 配置问题**
+   ```typescript
+   // next.config.ts
+   typescript: {
+     ignoreBuildErrors: true, // ⚠️ 危险配置
+   }
+   ```
+   - 类型安全失效
+   - 可能隐藏严重 bug
+   - 建议：移除此配置，修复所有 TypeScript 错误
+
+3. **图片域名白名单**
+   ```typescript
+   remotePatterns: [{
+     protocol: 'https',
+     hostname: '**', // ⚠️ 允许任何域名
+   }]
+   ```
+   - 可能导致 SSRF 攻击
+   - 建议：限制为特定 CDN 域名
+
+#### 中危 (P1)
+
+| 问题 | 位置 | 风险等级 | 状态 |
+|------|------|---------|------|
+| 控制台日志泄露信息 | `src/app/api/todos/[id]/route.ts:52-57` | 🟡 中危 | ❌ 待修复 |
+| 缺少请求速率限制 | 所有 API 路由 | 🟡 中危 | ❌ 待修复 |
+| CORS 配置缺失 | API 路由 | 🟡 中危 | ❌ 待修复 |
+
+**问题详情**：
+
+1. **调试日志未清理**
+   ```typescript
+   console.log('Request body:', JSON.stringify(body, null, 2));
+   console.log('Validated data:', JSON.stringify(validated, null, 2));
+   ```
+   - 生产环境可能泄露用户数据
+   - 建议：仅在开发环境启用
+
+2. **速率限制缺失**
+   - 容易受到 DDoS 攻击
+   - 建议：添加速率限制中间件
+
+### 已做好的安全措施 ✅
+
+| 措施 | 说明 |
+|------|------|
+| 输入验证 | 使用 Zod schema 进行严格验证 |
+| SQL 注入防护 | 使用 Prisma ORM，自动防止注入 |
+| XSS 防护 | React 自动转义，无滥用 `dangerouslySetInnerHTML` |
+| 环境变量保护 | `.env.local` 已在 `.gitignore` 中 |
+| 数据库连接池 | Prisma Client 使用单例模式 |
+| 数据完整性 | 使用唯一约束和外键约束 |
+
+### 性能优化建议
+
+#### 数据库优化
+
+| 优化项 | 当前状态 | 建议 | 优先级 |
+|--------|---------|------|--------|
+| 数据库索引 | ✅ 已有基础索引 | 添加复合索引 `[startDate, dueDate]` | P1 |
+| N+1 查询 | ✅ 已使用 `include` 预加载 | 保持现状 | - |
+| 分页功能 | ❌ 缺失 | 添加分页（page/limit 参数） | P1 |
+| 过期任务限制 | ✅ 已限制 100 条 | 保持现状 | - |
+
+**建议添加的 Prisma 索引**：
+```prisma
+model Todo {
+  // ...
+  @@index([startDate, dueDate])
+  @@index([status, dueDate])
+}
+```
+
+#### 缓存策略
+
+| 缓存类型 | 目标数据 | 实现方案 | 优先级 |
+|---------|---------|---------|--------|
+| 静态数据缓存 | 分类、等级 | Next.js `revalidate` | P2 |
+| API 响应缓存 | 日历数据 | Redis / Next.js Cache | P2 |
+| 前端查询缓存 | TanStack Query | 配置 `staleTime`, `cacheTime` | P3 |
+
+**建议实现**：
+```typescript
+// API 路由中添加
+export const revalidate = 60; // 60秒缓存
+
+// TanStack Query 配置
+const { data } = useQuery({
+  queryKey: ['categories'],
+  queryFn: fetchCategories,
+  staleTime: 5 * 60 * 1000, // 5分钟
+  cacheTime: 10 * 60 * 1000, // 10分钟
+});
+```
+
+#### API 分页实现
+
+**问题位置**：`src/app/api/todos/route.ts`
+
+**建议实现**：
+```typescript
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '20');
+
+  const [todos, total] = await Promise.all([
+    db.todo.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: [/* ... */],
+      include: {/* ... */},
+    }),
+    db.todo.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    success: true,
+    data: todos,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+}
+```
+
+### 代码质量改进
+
+#### 类型安全增强
+
+**问题**：使用了宽泛的类型定义
+```typescript
+// 当前实现
+const updateData: Record<string, unknown> = {};
+
+// 建议改为
+import { Prisma } from '@prisma/client';
+const updateData: Prisma.TodoUpdateInput = {};
+```
+
+#### 统一错误处理
+
+**建议创建**：`src/lib/api-error.ts`
+```typescript
+export class ApiError extends Error {
+  constructor(
+    public statusCode: number,
+    message: string
+  ) {
+    super(message);
+  }
+}
+
+export function handleApiError(error: unknown) {
+  if (error instanceof ApiError) {
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: error.statusCode }
+    );
+  }
+
+  console.error('Unexpected error:', error);
+  return NextResponse.json(
+    { success: false, error: 'Internal server error' },
+    { status: 500 }
+  );
+}
+```
+
+#### 环境变量验证
+
+**建议创建**：`src/lib/env.ts`
+```typescript
+import { z } from 'zod';
+
+const envSchema = z.object({
+  DATABASE_URL: z.string().url(),
+  DIRECT_URL: z.string().url().optional(),
+  NODE_ENV: z.enum(['development', 'production', 'test']),
+  NEXTAUTH_SECRET: z.string().min(32).optional(),
+  NEXTAUTH_URL: z.string().url().optional(),
+});
+
+export const env = envSchema.parse(process.env);
+```
+
+#### Transaction 保证数据一致性
+
+**问题位置**：`src/app/api/todos/route.ts:106-142`
+
+**当前实现**：
+```typescript
+// 两步操作，可能不一致
+const rule = await db.recurrenceRule.create({ /* ... */ });
+const todo = await db.todo.create({ /* ... */ });
+```
+
+**建议改为**：
+```typescript
+const result = await db.$transaction(async (tx) => {
+  const rule = await tx.recurrenceRule.create({
+    data: { /* ... */ },
+  });
+
+  const todo = await tx.todo.create({
+    data: {
+      /* ... */
+      recurrenceRuleId: rule.id,
+    },
+    include: { category: true, level: true, recurrenceRule: true },
+  });
+
+  return todo;
+});
+```
+
+### 任务清单
+
+#### 立即修复 (P0)
+
+| ID | 任务 | 预计工作量 | 状态 |
+|----|------|-----------|------|
+| 7.1 | 添加身份验证和授权机制 | 2-3天 | ❌ 待开始 |
+| 7.2 | 移除 `ignoreBuildErrors: true` | 1-2天 | ❌ 待开始 |
+| 7.3 | 限制图片域名白名单 | 30分钟 | ❌ 待开始 |
+| 7.4 | 启用 React Strict Mode | 1天 | ❌ 待开始 |
+
+#### 高优先级 (P1)
+
+| ID | 任务 | 预计工作量 | 状态 |
+|----|------|-----------|------|
+| 7.5 | 移除生产环境调试日志 | 1小时 | ❌ 待开始 |
+| 7.6 | 添加 API 速率限制 | 4小时 | ❌ 待开始 |
+| 7.7 | 为列表 API 添加分页 | 4小时 | ❌ 待开始 |
+| 7.8 | 添加数据库复合索引 | 1小时 | ❌ 待开始 |
+
+#### 中优先级 (P2)
+
+| ID | 任务 | 预计工作量 | 状态 |
+|----|------|-----------|------|
+| 7.9 | 实现缓存策略 | 1天 | ❌ 待开始 |
+| 7.10 | 统一错误处理 | 4小时 | ❌ 待开始 |
+| 7.11 | 环境变量验证 | 2小时 | ❌ 待开始 |
+| 7.12 | 使用 Transaction 保证一致性 | 3小时 | ❌ 待开始 |
+
+#### 低优先级 (P3)
+
+| ID | 任务 | 预计工作量 | 状态 |
+|----|------|-----------|------|
+| 7.13 | 提取重复代码 | 1天 | ❌ 待开始 |
+| 7.14 | 增强类型安全 | 1天 | ❌ 待开始 |
+| 7.15 | 添加 CORS 配置 | 1小时 | ❌ 待开始 |
+
+### 修改记录
+
+| 日期 | 变更内容 |
+|------|----------|
+| 2026-03-13 | 完成代码安全审查 |
+| 2026-03-13 | 发现 4 个严重安全问题、3 个中危问题 |
+| 2026-03-13 | 提出 15 项优化建议 |
