@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { createCategorySchema } from '@/types/api';
+import { getAuthSession } from '@/lib/auth';
 
 // GET /api/categories - 获取所有分类
 export async function GET() {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
+
     const categories = await db.category.findMany({
+      where: { userId },
       orderBy: { createdAt: 'asc' },
       include: {
         _count: {
@@ -34,12 +47,22 @@ export async function GET() {
 // POST /api/categories - 创建分类
 export async function POST(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const body = await request.json();
     const validated = createCategorySchema.parse(body);
 
-    // 检查名称是否已存在
-    const existing = await db.category.findUnique({
-      where: { name: validated.name },
+    // 检查名称是否已存在（用户级别）
+    const existing = await db.category.findFirst({
+      where: { name: validated.name, userId },
     });
 
     if (existing) {
@@ -50,7 +73,10 @@ export async function POST(request: NextRequest) {
     }
 
     const category = await db.category.create({
-      data: validated,
+      data: {
+        ...validated,
+        userId,
+      },
     });
 
     return NextResponse.json({

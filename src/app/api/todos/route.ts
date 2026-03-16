@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { createTodoSchema } from '@/types/api';
-import { getTodayString } from '@/lib/date-utils';
-
-// Force recompile
-const RECOMPILE_TRIGGER = Date.now();
+import { getAuthSession } from '@/lib/auth';
 
 // GET /api/todos - 获取任务列表
 export async function GET(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const categoryId = searchParams.get('categoryId');
@@ -17,7 +24,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
     const isMilestone = searchParams.get('isMilestone');
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { userId };
 
     if (status) {
       where.status = status;
@@ -91,6 +98,16 @@ export async function GET(request: NextRequest) {
 // POST /api/todos - 创建任务
 export async function POST(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const body = await request.json();
     const validated = createTodoSchema.parse(body);
 
@@ -113,6 +130,7 @@ export async function POST(request: NextRequest) {
           cronExpr: validated.recurrenceRule.cronExpr,
           startDate: validated.recurrenceRule.startDate,
           endDate: validated.recurrenceRule.endDate,
+          userId,
         },
       });
       recurrenceRuleId = rule.id;
@@ -132,6 +150,7 @@ export async function POST(request: NextRequest) {
         recurrenceRuleId,
         isMilestone: validated.isMilestone ?? false,
         priority: validated.priority ?? 0,
+        userId,
       },
       include: {
         category: true,

@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
 import { getYearStart, getYearEnd, formatDate } from '@/lib/date-utils';
 import { format, eachDayOfInterval, getDay, getMonth } from 'date-fns';
 
 // GET /api/todos/yearly?year=YYYY - 获取年度统计数据
 export async function GET(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { searchParams } = new URL(request.url);
     const yearParam = searchParams.get('year');
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
@@ -19,6 +30,7 @@ export async function GET(request: NextRequest) {
     // 获取年度内已完成的任务（用于热力图）
     const completedTasks = await db.todo.findMany({
       where: {
+        userId,
         status: 'completed',
         completedAt: {
           gte: yearStartStr,
@@ -66,11 +78,11 @@ export async function GET(request: NextRequest) {
     const monthlyStats = Array.from({ length: 12 }, (_, i) => {
       const monthStart = formatDate(new Date(year, i, 1));
       const monthEnd = formatDate(new Date(year, i + 1, 0));
-      
+
       const monthTasks = completedTasks.filter(
         (t) => t.completedAt && t.completedAt >= monthStart && t.completedAt <= monthEnd
       );
-      
+
       return {
         month: i + 1,
         monthName: format(new Date(year, i, 1), 'M月'),
@@ -116,7 +128,7 @@ export async function GET(request: NextRequest) {
     // 最长连续天数
     let longestStreak = 0;
     let currentStreak = 0;
-    allDays.forEach((date, index) => {
+    allDays.forEach((date) => {
       const dateStr = formatDate(date);
       if (heatmap[dateStr] > 0) {
         currentStreak++;

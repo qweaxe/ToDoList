@@ -119,11 +119,11 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
   // 初始化编辑数据 - 只在任务 ID 改变时重置
   useEffect(() => {
     const currentTaskId = initialData?.id || null;
-    
+
     // 只有当任务 ID 改变时才重置表单
     if (currentTaskId !== initializedTaskId.current) {
       initializedTaskId.current = currentTaskId;
-      
+
       if (initialData) {
         reset({
           title: initialData.title,
@@ -188,7 +188,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     // 获取表单中的值，处理空字符串为 null
     const categoryId = data.categoryId && data.categoryId !== '' && data.categoryId !== '__none__' ? data.categoryId : null;
     const levelId = data.levelId && data.levelId !== '' && data.levelId !== '__none__' ? data.levelId : null;
-    
+
     const submitData = {
       ...data,
       categoryId,
@@ -205,6 +205,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     };
 
     // 只有已完成的任务才发送完成日期字段
+    // 未完成的任务不发送 completedAt 字段（而不是发送 null）
     if (isCompleted) {
       submitData.completedAt = completedAt;
     }

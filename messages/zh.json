@@ -203,5 +203,33 @@
     "switch": "切换语言",
     "en": "English",
     "zh": "中文"
+  },
+  "auth": {
+    "tagline": "极简待办事项管理",
+    "login": "登录",
+    "register": "注册",
+    "username": "用户名",
+    "password": "密码",
+    "nickname": "昵称",
+    "confirmPassword": "确认密码",
+    "usernamePlaceholder": "请输入用户名",
+    "passwordPlaceholder": "请输入密码",
+    "nicknamePlaceholder": "可选",
+    "usernameRequiredHint": "3-20个字符",
+    "passwordRequiredHint": "至少6个字符",
+    "confirmPasswordPlaceholder": "再次输入密码",
+    "rememberMe": "记住我",
+    "loginButton": "登录",
+    "registerButton": "注册",
+    "enterUsernameAndPassword": "请输入用户名和密码",
+    "passwordTooShort": "密码至少6个字符",
+    "passwordMismatch": "两次输入的密码不一致",
+    "loginSuccess": "登录成功",
+    "loginFailed": "登录失败，请稍后重试",
+    "registerSuccess": "注册成功，请登录",
+    "registerFailed": "注册失败，请稍后重试",
+    "testAccount": "测试账号: test / 123456",
+    "signOut": "退出登录",
+    "copyright": "© 2026 To Do List. All rights reserved."
   }
 }

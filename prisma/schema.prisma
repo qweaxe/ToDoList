@@ -11,25 +11,48 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// 用户表
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // bcrypt 加密存储
+  name      String?  // 显示名称
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联数据
+  categories      Category[]
+  todos           Todo[]
+  recurrenceRules RecurrenceRule[]
+
+  @@map("users")
+}
+
 // 任务分类
 model Category {
   id          String   @id @default(cuid())
-  name        String   @unique
+  name        String   // 不再全局唯一，改为用户级别唯一
   description String?
   emoji       String?
   color       String?  // 可选颜色标识 (Tailwind class 或 hex)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  todos       Todo[]
 
+  // 用户关联
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  todos Todo[]
+
+  @@unique([userId, name]) // 用户级别唯一
   @@map("categories")
 }
 
-// 任务等级（0-10级）
+// 任务等级（系统级，所有用户共享）
 model Level {
   id          String   @id @default(cuid())
   name        String   @unique
-  value       Int      @unique // 0-10 的数值
+  value       Int      @unique // 1-3 的数值（高=3，中=2，低=1）
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -59,7 +82,11 @@ model Todo {
   recurrenceRule   RecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: Cascade)
   parentRuleId     String? // 如果是从周期规则生成的任务，记录原规则ID
 
-  // 关联
+  // 用户关联
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 分类和等级关联
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   levelId    String?
@@ -71,7 +98,7 @@ model Todo {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([parentRuleId, dueDate, title])
+  @@index([userId])
   @@index([startDate])
   @@index([dueDate])
   @@index([status])
@@ -92,12 +119,18 @@ model RecurrenceRule {
   isActive  Boolean  @default(true) // 是否激活
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  todos     Todo[]
 
+  // 用户关联
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  todos Todo[]
+
+  @@index([userId])
   @@map("recurrence_rules")
 }
 
-// 节假日缓存（用于存储从API获取的数据）
+// 节假日缓存（系统级，所有用户共享）
 model Holiday {
   id        String   @id @default(cuid())
   date      String   @unique // YYYY-MM-DD

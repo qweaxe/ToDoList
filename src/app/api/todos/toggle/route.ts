@@ -1,11 +1,21 @@
-import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getTodayString } from '@/lib/date-utils';
+import { getAuthSession } from '@/lib/auth';
 
 // POST /api/todos/toggle - 切换任务状态
 export async function POST(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const body = await request.json();
     const { id } = body;
 
@@ -16,8 +26,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existing = await db.todo.findUnique({
-      where: { id },
+    const existing = await db.todo.findFirst({
+      where: { id, userId },
     });
 
     if (!existing) {

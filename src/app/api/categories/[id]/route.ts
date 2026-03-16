@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { updateCategorySchema } from '@/types/api';
+import { getAuthSession } from '@/lib/auth';
 
 // GET /api/categories/[id] - 获取单个分类
 export async function GET(
@@ -8,10 +9,20 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { id } = await params;
 
-    const category = await db.category.findUnique({
-      where: { id },
+    const category = await db.category.findFirst({
+      where: { id, userId },
       include: {
         _count: {
           select: { todos: true },
@@ -49,13 +60,23 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { id } = await params;
     const body = await request.json();
     const validated = updateCategorySchema.parse(body);
 
-    // 检查分类是否存在
-    const existing = await db.category.findUnique({
-      where: { id },
+    // 检查分类是否存在且属于当前用户
+    const existing = await db.category.findFirst({
+      where: { id, userId },
     });
 
     if (!existing) {
@@ -65,10 +86,10 @@ export async function PUT(
       );
     }
 
-    // 如果要更新名称，检查是否与其他分类重名
+    // 如果要更新名称，检查是否与其他分类重名（用户级别）
     if (validated.name && validated.name !== existing.name) {
-      const duplicate = await db.category.findUnique({
-        where: { name: validated.name },
+      const duplicate = await db.category.findFirst({
+        where: { name: validated.name, userId },
       });
 
       if (duplicate) {
@@ -103,11 +124,21 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { id } = await params;
 
-    // 检查分类是否存在
-    const existing = await db.category.findUnique({
-      where: { id },
+    // 检查分类是否存在且属于当前用户
+    const existing = await db.category.findFirst({
+      where: { id, userId },
       include: {
         _count: {
           select: { todos: true },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { getAuthSession } from '@/lib/auth';
 
 const batchDeleteSchema = z.object({
   ids: z.array(z.string()).min(1, '至少选择一个任务'),
@@ -18,15 +19,25 @@ const batchUpdateSchema = z.object({
 // POST /api/todos/batch - 批量操作
 export async function POST(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const body = await request.json();
     const { action, ...rest } = body;
 
     if (action === 'delete') {
       const validated = batchDeleteSchema.parse(rest);
 
-      // 检查任务是否存在
+      // 检查任务是否存在且属于当前用户
       const existing = await db.todo.findMany({
-        where: { id: { in: validated.ids } },
+        where: { id: { in: validated.ids }, userId },
         select: { id: true },
       });
 
@@ -38,7 +49,7 @@ export async function POST(request: NextRequest) {
       }
 
       await db.todo.deleteMany({
-        where: { id: { in: validated.ids } },
+        where: { id: { in: validated.ids }, userId },
       });
 
       return NextResponse.json({
@@ -51,7 +62,7 @@ export async function POST(request: NextRequest) {
       const validated = batchUpdateSchema.parse(rest);
 
       await db.todo.updateMany({
-        where: { id: { in: validated.ids } },
+        where: { id: { in: validated.ids }, userId },
         data: validated.data,
       });
 

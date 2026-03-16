@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
 
 // GET /api/todos/monthly - 获取整月任务（包含日历网格中的非当前月日期）
 export async function GET(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
     const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString());
@@ -39,6 +50,7 @@ export async function GET(request: NextRequest) {
     // 获取日历范围内所有任务
     const tasks = await db.todo.findMany({
       where: {
+        userId,
         OR: [
           // 任务开始日期在日历范围内
           {
@@ -96,6 +108,7 @@ export async function GET(request: NextRequest) {
     // 计算当月统计信息（只统计当月的任务）
     const monthTasks = await db.todo.findMany({
       where: {
+        userId,
         OR: [
           { startDate: { gte: monthStartStr, lte: monthEndStr } },
           { dueDate: { gte: monthStartStr, lte: monthEndStr } },

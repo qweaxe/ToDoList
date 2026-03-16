@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getWeekStart, getWeekEnd, formatDate, getWeekDates, extractWeekNumber, parseDateString } from '@/lib/date-utils';
+import { getWeekStart, getWeekEnd, formatDate, getWeekDates, extractWeekNumber } from '@/lib/date-utils';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { syncRecurringTasks } from '@/services/recurrence-service';
+import { getAuthSession } from '@/lib/auth';
 
 // GET /api/todos/weekly?date=YYYY-MM-DD - 获取一周的任务数据
 export async function GET(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
 
@@ -21,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     // 同步周期任务（静默执行，不阻塞请求）
     try {
-      await syncRecurringTasks(weekStart, weekEnd);
+      await syncRecurringTasks(weekStart, weekEnd, userId);
     } catch (syncError) {
       console.error('Failed to sync recurring tasks:', syncError);
       // 继续执行，不阻塞请求
@@ -30,6 +41,7 @@ export async function GET(request: NextRequest) {
     // 获取这一周的所有任务
     const todos = await db.todo.findMany({
       where: {
+        userId,
         OR: [
           // 任务开始日期在这一周内
           {

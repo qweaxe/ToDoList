@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'category' or 'level'
     const id = searchParams.get('id');
@@ -24,6 +35,7 @@ export async function GET(request: NextRequest) {
     if (type === 'category') {
       todos = await db.todo.findMany({
         where: {
+          userId,
           categoryId: id,
           OR: [
             { startDate: { gte: yearStart, lte: yearEnd } },
@@ -42,6 +54,7 @@ export async function GET(request: NextRequest) {
     } else if (type === 'level') {
       todos = await db.todo.findMany({
         where: {
+          userId,
           levelId: id,
           OR: [
             { startDate: { gte: yearStart, lte: yearEnd } },

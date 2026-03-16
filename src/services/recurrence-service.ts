@@ -35,21 +35,24 @@ interface RecurrenceRuleWithTodo {
 /**
  * 同步周期任务
  * 检查所有激活的周期规则，为缺失的日期生成任务实例
- * 
+ *
  * @param windowStart 时间窗口开始日期
  * @param windowEnd 时间窗口结束日期
+ * @param userId 用户ID，仅同步该用户的规则
  */
 export async function syncRecurringTasks(
   windowStart: Date,
-  windowEnd: Date
+  windowEnd: Date,
+  userId: string
 ): Promise<{ created: number; skipped: number }> {
   const result = { created: 0, skipped: 0 };
 
   try {
-    // 获取所有激活的周期规则及其模板任务
+    // 获取该用户所有激活的周期规则及其模板任务
     const activeRules = await db.recurrenceRule.findMany({
       where: {
         isActive: true,
+        userId,
       },
       include: {
         todos: {
@@ -89,18 +92,24 @@ export async function syncRecurringTasks(
         for (const occurrenceDate of occurrenceDates) {
           const dateStr = formatDate(occurrenceDate);
 
-          // 使用 upsert 避免竞争条件，依赖数据库唯一约束
+          // 检查是否已存在该日期的任务实例
+          const existingTodo = await db.todo.findFirst({
+            where: {
+              parentRuleId: rule.id,
+              dueDate: dateStr,
+              title: templateTodo.title,
+            },
+          });
+
+          if (existingTodo) {
+            result.skipped++;
+            continue;
+          }
+
+          // 创建新的任务实例
           try {
-            await db.todo.upsert({
-              where: {
-                parentRuleId_dueDate_title: {
-                  parentRuleId: rule.id,
-                  dueDate: dateStr,
-                  title: templateTodo.title,
-                },
-              },
-              update: {}, // 已存在则不更新
-              create: {
+            await db.todo.create({
+              data: {
                 title: templateTodo.title,
                 description: templateTodo.description,
                 status: 'pending',
@@ -113,15 +122,11 @@ export async function syncRecurringTasks(
                 isCycleTask: true,
                 recurrenceRuleId: rule.id,
                 parentRuleId: rule.id,
+                userId,
               },
             });
             result.created++;
           } catch (error) {
-            // 唯一约束冲突说明任务已存在，跳过
-            if (error instanceof Error && error.message.includes('Unique constraint')) {
-              result.skipped++;
-              continue;
-            }
             console.error(`Failed to create recurring task instance:`, error);
           }
         }
@@ -138,34 +143,34 @@ export async function syncRecurringTasks(
 /**
  * 同步未来7天的周期任务
  */
-export async function syncUpcomingWeek(): Promise<{ created: number; skipped: number }> {
+export async function syncUpcomingWeek(userId: string): Promise<{ created: number; skipped: number }> {
   const now = new Date();
   const weekLater = new Date(now);
   weekLater.setDate(weekLater.getDate() + 7);
 
-  return syncRecurringTasks(now, weekLater);
+  return syncRecurringTasks(now, weekLater, userId);
 }
 
 /**
  * 同步未来一个月的周期任务
  */
-export async function syncUpcomingMonth(): Promise<{ created: number; skipped: number }> {
+export async function syncUpcomingMonth(userId: string): Promise<{ created: number; skipped: number }> {
   const now = new Date();
   const monthLater = new Date(now);
   monthLater.setMonth(monthLater.getMonth() + 1);
 
-  return syncRecurringTasks(now, monthLater);
+  return syncRecurringTasks(now, monthLater, userId);
 }
 
 /**
  * 同步指定日期的周期任务
  */
-export async function syncDate(date: Date): Promise<{ created: number; skipped: number }> {
+export async function syncDate(date: Date, userId: string): Promise<{ created: number; skipped: number }> {
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
-  
+
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
 
-  return syncRecurringTasks(startOfDay, endOfDay);
+  return syncRecurringTasks(startOfDay, endOfDay, userId);
 }

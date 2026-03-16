@@ -1,7 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Calendar, ChevronLeft, ChevronRight, Home, Menu, Settings } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
+import { Calendar, ChevronLeft, ChevronRight, Home, Menu, Settings, LogOut, User } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
 import { useViewStore, ViewType } from '@/hooks/use-view-store';
@@ -10,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 export function Header() {
   const t = useTranslations();
+  const { data: session } = useSession();
   const {
     currentView,
     setCurrentView,
@@ -34,6 +36,11 @@ export function Header() {
   };
 
   const isToday = selectedDate === getTodayString();
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    window.location.reload();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -118,15 +125,34 @@ export function Header() {
           )}
         </div>
 
-        {/* 右侧：语言切换和设置按钮 */}
+        {/* 右侧：语言切换、用户信息和设置按钮 */}
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
+
+          {/* 用户信息 */}
+          {session?.user && (
+            <div className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground">
+              <User className="h-4 w-4" />
+              <span>{session.user.name || session.user.username}</span>
+            </div>
+          )}
+
           <Button
             variant={currentView === 'settings' ? 'default' : 'ghost'}
             size="icon"
             onClick={() => setCurrentView('settings')}
           >
             <Settings className="h-5 w-5" />
+          </Button>
+
+          {/* 登出按钮 */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSignOut}
+            title={t('auth.signOut')}
+          >
+            <LogOut className="h-5 w-5" />
           </Button>
         </div>
       </div>

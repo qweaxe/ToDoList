@@ -203,5 +203,33 @@
     "switch": "Switch Language",
     "en": "English",
     "zh": "中文"
+  },
+  "auth": {
+    "tagline": "Minimalist Todo Management",
+    "login": "Login",
+    "register": "Register",
+    "username": "Username",
+    "password": "Password",
+    "nickname": "Nickname",
+    "confirmPassword": "Confirm Password",
+    "usernamePlaceholder": "Enter username",
+    "passwordPlaceholder": "Enter password",
+    "nicknamePlaceholder": "Optional",
+    "usernameRequiredHint": "3-20 characters",
+    "passwordRequiredHint": "Min. 6 characters",
+    "confirmPasswordPlaceholder": "Re-enter password",
+    "rememberMe": "Remember Me",
+    "loginButton": "Login",
+    "registerButton": "Register",
+    "enterUsernameAndPassword": "Please enter username and password",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords do not match",
+    "loginSuccess": "Login successful",
+    "loginFailed": "Login failed, please try again",
+    "registerSuccess": "Registration successful, please login",
+    "registerFailed": "Registration failed, please try again",
+    "testAccount": "Test account: test / 123456",
+    "signOut": "Sign Out",
+    "copyright": "© 2026 To Do List. All rights reserved."
   }
 }

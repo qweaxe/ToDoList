@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
 import { getQuarterStart, getQuarterEnd, formatDate, extractQuarter } from '@/lib/date-utils';
 import { format, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -7,6 +8,16 @@ import { zhCN } from 'date-fns/locale';
 // GET /api/todos/quarterly?date=YYYY-MM-DD - 获取季度数据
 export async function GET(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
 
@@ -22,6 +33,7 @@ export async function GET(request: NextRequest) {
     // 获取季度内的所有里程碑任务
     const milestones = await db.todo.findMany({
       where: {
+        userId,
         isMilestone: true,
         OR: [
           {
@@ -54,6 +66,7 @@ export async function GET(request: NextRequest) {
     // 获取季度内的所有任务统计
     const allTasks = await db.todo.findMany({
       where: {
+        userId,
         OR: [
           {
             startDate: {

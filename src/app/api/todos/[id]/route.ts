@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { updateTodoSchema } from '@/types/api';
+import { getAuthSession } from '@/lib/auth';
 
 // GET /api/todos/[id] - 获取单个任务
 export async function GET(
@@ -8,10 +9,20 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { id } = await params;
 
-    const todo = await db.todo.findUnique({
-      where: { id },
+    const todo = await db.todo.findFirst({
+      where: { id, userId },
       include: {
         category: true,
         level: true,
@@ -45,20 +56,23 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { id } = await params;
     const body = await request.json();
-    
-    // 调试日志
-    console.log('=== PUT /api/todos/[id] ===');
-    console.log('Task ID:', id);
-    console.log('Request body:', JSON.stringify(body, null, 2));
-    
     const validated = updateTodoSchema.parse(body);
-    console.log('Validated data:', JSON.stringify(validated, null, 2));
 
-    // 检查任务是否存在
-    const existing = await db.todo.findUnique({
-      where: { id },
+    // 检查任务是否存在且属于当前用户
+    const existing = await db.todo.findFirst({
+      where: { id, userId },
     });
 
     if (!existing) {
@@ -93,10 +107,8 @@ export async function PUT(
     if (validated.subTasks !== undefined) {
       updateData.subTasks = validated.subTasks ? JSON.stringify(validated.subTasks) : null;
     }
-    
-    console.log('Update data to apply:', JSON.stringify(updateData, null, 2));
-    
-    // 完成日期 - 只有已完成的任务才能设置有效日期
+
+    // 完成日期 - 只有非 null 的有效日期字符串才检查任务状态
     // null/undefined 表示不修改或清除完成日期
     if (validated.completedAt !== undefined) {
       // 如果是非 null 的有效日期字符串，需要检查任务状态
@@ -140,11 +152,21 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getAuthSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
     const { id } = await params;
 
-    // 检查任务是否存在
-    const existing = await db.todo.findUnique({
-      where: { id },
+    // 检查任务是否存在且属于当前用户
+    const existing = await db.todo.findFirst({
+      where: { id, userId },
     });
 
     if (!existing) {
