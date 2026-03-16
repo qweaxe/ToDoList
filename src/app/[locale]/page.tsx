@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { DayView } from '@/components/views/DayView';
 import { CalendarView } from '@/components/views/CalendarView';
@@ -10,28 +12,34 @@ import { YearlyView } from '@/components/views/YearlyView';
 import { SettingsView } from '@/components/views/SettingsView';
 import { OverdueView } from '@/components/views/OverdueView';
 import { TaskListView } from '@/components/views/TaskListView';
+import { AuthPage } from '@/components/auth/AuthPage';
 import { useViewStore } from '@/hooks/use-view-store';
 
 export default function Home() {
+  const t = useTranslations('common');
+  const { data: session, status } = useSession();
   const { currentView } = useViewStore();
-  const [seeded, setSeeded] = useState(false);
 
-  // 初始化种子数据
+  // 初始化种子数据（仅在已登录时）
   useEffect(() => {
-    const seedData = async () => {
-      try {
-        const res = await fetch('/api/seed');
-        const data = await res.json();
-        if (data.success) {
-          setSeeded(true);
-        }
-      } catch (error) {
-        console.error('Failed to seed data:', error);
-      }
-    };
+    if (status === 'authenticated') {
+      fetch('/api/seed').catch(() => {});
+    }
+  }, [status]);
 
-    seedData();
-  }, []);
+  // 加载状态
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">{t('loading')}</div>
+      </div>
+    );
+  }
+
+  // 未登录状态 - 显示登录页面
+  if (status === 'unauthenticated' || !session) {
+    return <AuthPage />;
+  }
 
   // 根据当前视图渲染不同内容
   const renderContent = () => {
