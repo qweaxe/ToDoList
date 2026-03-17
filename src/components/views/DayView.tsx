@@ -24,7 +24,8 @@ import { cn } from '@/lib/utils';
 export function DayView() {
   const t = useTranslations();
   const locale = useLocale();
-  const dateLocale = locale === 'zh' ? zhCN : enUS;
+  const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
+
   const { selectedDate, setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<{
@@ -173,7 +174,7 @@ export function DayView() {
               >
                 <CheckSquare className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
-                  {batchSelection.isSelectMode ? t('batch.cancelSelection') : t('batch.batchActions')}
+                  {batchSelection.isSelectMode ? t('common.cancel') : t('batch.batchActions')}
                 </span>
               </Button>
             )}
@@ -196,7 +197,7 @@ export function DayView() {
               <Button variant="outline" className="gap-2 min-w-[120px] sm:min-w-[140px]">
                 <CalendarIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('task.selectDate')}</span>
-                <span className="sm:hidden">{format(new Date(selectedDate), 'M/d', { locale: dateLocale })}</span>
+                <span className="sm:hidden">{format(new Date(selectedDate), 'M月d日', { locale: dateFnsLocale })}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
@@ -282,7 +283,7 @@ export function DayView() {
               <CardContent className="pt-4 sm:pt-6 px-2 sm:px-6">
                 <div className="text-center">
                   <div className="text-2xl sm:text-3xl font-bold">{data?.data.today.total || 0}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">{t('task.totalTasks')}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{t('task.total')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -292,7 +293,7 @@ export function DayView() {
                   <div className="text-2xl sm:text-3xl font-bold text-yellow-500">
                     {data?.data.today.pending.length || 0}
                   </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">{t('task.pendingTasks')}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{t('task.pending')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -302,7 +303,7 @@ export function DayView() {
                   <div className="text-2xl sm:text-3xl font-bold text-green-500">
                     {data?.data.today.completedCount || 0}
                   </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">{t('task.completedTasks')}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{t('task.completed')}</div>
                 </div>
               </CardContent>
             </Card>

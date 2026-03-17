@@ -1,8 +1,8 @@
-# To Do List - 待办事项管理应用架构文档
+# LifeNexus - 待办事项管理应用架构文档
 
 ## 1. 项目概述
 
-**To Do List** 是一个极简、直观且具有高度交互性的待办事项管理应用，支持按天管理任务，并提供月度日历视图进行宏观规划和数据统计。
+**LifeNexus** 是一个极简、直观且具有高度交互性的待办事项管理应用，支持按天管理任务，并提供月度日历视图进行宏观规划和数据统计。
 
 ---
 
@@ -42,6 +42,14 @@
 | date-fns | 日期处理 |
 | cron-parser | Cron 表达式解析 |
 | zod | 表单验证 |
+| bcryptjs | 密码加密 |
+
+### 2.6 认证与授权
+| 技术 | 用途 |
+|------|------|
+| NextAuth.js v4 | 认证框架 |
+| JWT | 会话管理 |
+| Credentials Provider | 用户名密码登录 |
 
 ---
 
@@ -259,11 +267,115 @@ model Holiday {
 |------|------|------|
 | GET | `/api/holidays?year=YYYY` | 获取年度节假日数据 |
 
+### 5.5 认证 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| POST | `/api/auth/register` | 用户注册 |
+| POST | `/api/auth/[...nextauth]` | NextAuth.js 认证端点 |
+| GET | `/api/auth/session` | 获取当前会话信息 |
+| POST | `/api/auth/signout` | 用户登出 |
+
 ---
 
-## 6. 视图设计详解
+## 6. 认证与授权架构
 
-### 6.1 当日视图 (Day View)
+### 6.1 认证流程
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   登录页面   │────▶│  验证凭证   │────▶│  生成 JWT   │
+└─────────────┘     └─────────────┘     └─────────────┘
+                                               │
+                                               ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   访问资源   │◀────│  携带 Token │◀────│  返回客户端  │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │
+       ▼
+┌─────────────┐     ┌─────────────┐
+│  验证身份    │────▶│  返回数据   │
+└─────────────┘     └─────────────┘
+```
+
+### 6.2 用户数据模型
+
+```prisma
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // bcrypt 加密存储
+  name      String?  // 显示名称
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 关联数据
+  categories Category[]
+  todos      Todo[]
+}
+```
+
+### 6.3 数据隔离策略
+
+| 数据类型 | 隔离级别 | 说明 |
+|----------|----------|------|
+| 任务 (Todo) | 用户级 | 每个用户只能访问自己的任务 |
+| 分类 (Category) | 用户级 | 每个用户有独立的分类数据 |
+| 等级 (Level) | 系统级 | 所有用户共享固定三级等级 |
+| 节假日 (Holiday) | 系统级 | 所有用户共享节假日数据 |
+
+### 6.4 API 权限验证
+
+```typescript
+// API 路由中的权限验证示例
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return NextResponse.json(
+      { success: false, error: '未授权访问' },
+      { status: 401 }
+    );
+  }
+  
+  const userId = session.user.id;
+  // 只查询当前用户的数据
+  const todos = await db.todo.findMany({
+    where: { userId }
+  });
+  
+  return NextResponse.json({ success: true, data: todos });
+}
+```
+
+### 6.5 会话管理
+
+- **JWT 策略**：使用 JWT 存储会话信息，无需服务器端会话存储
+- **有效期**：默认 7 天，选择"记住我"延长至 30 天
+- **刷新机制**：Token 过期前自动刷新
+
+### 6.6 路由保护
+
+```typescript
+// middleware.ts
+export { default } withAuth;
+
+export const config = {
+  matcher: [
+    // 保护所有路由，除了登录/注册页
+    '/((?!api/auth|login|register|_next/static|_next/image|favicon.ico).*)',
+  ],
+};
+```
+
+---
+
+## 7. 视图设计详解
+
+### 7.1 当日视图 (Day View)
 
 **展示内容**：
 - 顶部：日期选择器 + "回到今天"按钮
@@ -275,7 +387,7 @@ model Holiday {
 - 有子任务的卡片 → 点击展开 Checklist
 - 左滑删除（移动端）/ 悬浮删除按钮（桌面端）
 
-### 6.2 日历视图 (Calendar View)
+### 7.2 日历视图 (Calendar View)
 
 **布局**：7×6 标准网格（42个单元格）
 
@@ -290,7 +402,7 @@ model Holiday {
 - 悬浮任务 → 显示简要信息
 - 月度统计：进度条显示完成率
 
-### 6.3 周视图 (Weekly Kanban)
+### 7.3 周视图 (Weekly Kanban)
 
 **布局**：横向7列（周一至周日）
 
@@ -298,7 +410,7 @@ model Holiday {
 - 拖拽任务跨天移动（自动更新 dueDate）
 - 顶部周总结：完成率 + 重点任务
 
-### 6.4 季度视图 (Quarterly Roadmap)
+### 7.4 季度视图 (Quarterly Roadmap)
 
 **展示**：3个月的里程碑时间线
 
@@ -307,7 +419,7 @@ model Holiday {
 - 进度条显示跨天任务周期
 - 截止日期标记
 
-### 6.5 年度视图 (Yearly Heatmap)
+### 7.5 年度视图 (Yearly Heatmap)
 
 **布局**：GitHub 风格贡献图（52周 × 7天）
 
@@ -322,16 +434,16 @@ model Holiday {
 
 ---
 
-## 7. 周期任务同步机制
+## 8. 周期任务同步机制
 
-### 7.1 同步触发时机
+### 8.1 同步触发时机
 
 当调用以下 API 时，执行周期任务同步：
 - `/api/todos/daily`
 - `/api/todos/weekly`
 - `/api/todos/monthly`
 
-### 7.2 同步逻辑
+### 8.2 同步逻辑
 
 ```typescript
 async function syncCycleTasks(startDate: Date, endDate: Date) {
@@ -355,15 +467,15 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 
 ---
 
-## 8. 节假日数据获取方案
+## 9. 节假日数据获取方案
 
-### 8.1 数据来源
+### 9.1 数据来源
 
 使用开源 API 获取中国法定节假日：
 - **主源**: [timor.tech](http://timor.tech/api/holiday) 免费节假日API
 - **备源**: 本地缓存 + 手动配置补充
 
-### 8.2 缓存策略
+### 9.2 缓存策略
 
 1. 首次访问时从 API 拉取当年数据
 2. 存入 SQLite 数据库
@@ -372,9 +484,9 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 
 ---
 
-## 9. 性能优化策略
+## 10. 性能优化策略
 
-### 9.1 数据加载
+### 10.1 数据加载
 
 | 视图 | 策略 |
 |------|------|
@@ -382,7 +494,7 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 | 月视图 | 按月懒加载，切换月份时请求 |
 | 周视图 | 预加载前后各一周数据 |
 
-### 9.2 缓存策略
+### 10.2 缓存策略
 
 使用 TanStack Query 的缓存机制：
 - 任务数据：5分钟过期
@@ -391,9 +503,9 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 
 ---
 
-## 10. UI/UX 规范
+## 11. UI/UX 规范
 
-### 10.1 配色方案
+### 11.1 配色方案
 
 ```css
 /* 主色调 */
@@ -410,13 +522,13 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 --weekend: text-red-500
 ```
 
-### 10.2 动画
+### 11.2 动画
 
 - 任务添加/删除：Fade + Slide
 - 状态切换：Scale + Color transition
 - 视图切换：Cross-fade
 
-### 10.3 响应式断点
+### 11.3 响应式断点
 
 | 断点 | 布局 |
 |------|------|
@@ -426,6 +538,6 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 
 ---
 
-## 11. 开发阶段规划
+## 12. 开发阶段规划
 
 详见 `TODO_PLAN.md`

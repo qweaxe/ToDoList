@@ -18,7 +18,8 @@ import { getTodayString, formatDateDisplay } from '@/lib/date-utils';
 export function OverdueView() {
   const t = useTranslations();
   const locale = useLocale();
-  const dateLocale = locale === 'zh' ? zhCN : enUS;
+  const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
+
   const { setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
   const [editingTask, setEditingTask] = useState<{
     id: string;

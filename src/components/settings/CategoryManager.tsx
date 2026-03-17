@@ -243,7 +243,7 @@ export function CategoryManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t('settings.categoryName')} *</Label>
+              <Label>{t('settings.categoryName')}</Label>
               <Input
                 value={formData.name}
                 onChange={(e) =>
@@ -290,7 +290,7 @@ export function CategoryManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t('settings.categoryName')} *</Label>
+              <Label>{t('settings.categoryName')}</Label>
               <Input
                 value={formData.name}
                 onChange={(e) =>
@@ -335,7 +335,7 @@ export function CategoryManager() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('confirm.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('confirm.deleteDesc', { item: t('settings.categories').toLowerCase().slice(0, -1) })}
+              {t('confirm.deleteDesc', { item: t('settings.categories') })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -1,7 +1,7 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
 import { ChevronUp, Minus, ChevronDown } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,39 +25,15 @@ export function LevelManager() {
   const levels = data?.data || [];
 
   // 固定的三个等级配置
-  const fixedLevels = [
-    { 
-      nameKey: 'view.highPriority',
-      name: t('view.highPriority'),
-      value: 3, 
-      icon: <ChevronUp className="h-4 w-4" />, 
-      color: 'bg-red-500 text-white', 
-      descriptionKey: 'settings.highPriorityDesc',
-      description: t('settings.highPriorityDesc')
-    },
-    { 
-      nameKey: 'view.mediumPriority',
-      name: t('view.mediumPriority'),
-      value: 2, 
-      icon: <Minus className="h-4 w-4" />, 
-      color: 'bg-yellow-500 text-white', 
-      descriptionKey: 'settings.mediumPriorityDesc',
-      description: t('settings.mediumPriorityDesc')
-    },
-    { 
-      nameKey: 'view.lowPriority',
-      name: t('view.lowPriority'),
-      value: 1, 
-      icon: <ChevronDown className="h-4 w-4" />, 
-      color: 'bg-gray-400 text-white', 
-      descriptionKey: 'settings.lowPriorityDesc',
-      description: t('settings.lowPriorityDesc')
-    },
+  const FIXED_LEVELS = [
+    { name: '高', value: 3, icon: <ChevronUp className="h-4 w-4" />, color: 'bg-red-500 text-white', description: t('settings.highPriorityDesc') },
+    { name: '中', value: 2, icon: <Minus className="h-4 w-4" />, color: 'bg-yellow-500 text-white', description: t('settings.mediumPriorityDesc') },
+    { name: '低', value: 1, icon: <ChevronDown className="h-4 w-4" />, color: 'bg-gray-400 text-white', description: t('settings.lowPriorityDesc') },
   ];
 
   // 合并固定等级和数据库中的使用统计
-  const displayLevels = fixedLevels.map(fixed => {
-    const dbLevel = levels.find(l => l.value === fixed.value);
+  const displayLevels = FIXED_LEVELS.map(fixed => {
+    const dbLevel = levels.find(l => l.name === fixed.name);
     return {
       ...fixed,
       id: dbLevel?.id || '',
@@ -70,7 +46,7 @@ export function LevelManager() {
     setTaskListFilter({
       type: 'level',
       id: level.id,
-      name: `${level.name}`,
+      name: `${level.name}优先级`,
       year: new Date().getFullYear(),
     });
     setCurrentView('task-list');
@@ -98,7 +74,7 @@ export function LevelManager() {
         <div className="space-y-2">
           {displayLevels.map((level) => (
             <div
-              key={level.nameKey}
+              key={level.name}
               className="flex items-center justify-between p-4 rounded-lg border bg-card"
             >
               <div className="flex items-center gap-4">
@@ -111,7 +87,7 @@ export function LevelManager() {
                   {level.icon}
                 </div>
                 <div>
-                  <div className="font-medium text-lg">{level.name}</div>
+                  <div className="font-medium text-lg">{level.name}{t('task.priority')}</div>
                   <div className="text-sm text-muted-foreground">
                     {level.description}
                   </div>
@@ -136,9 +112,9 @@ export function LevelManager() {
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
           <h4 className="font-medium mb-2">{t('settings.levelExplanation')}</h4>
           <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• <span className="text-red-500 font-medium">{t('view.highPriority')}</span>: {t('settings.highPriorityDesc')}</li>
-            <li>• <span className="text-yellow-500 font-medium">{t('view.mediumPriority')}</span>: {t('settings.mediumPriorityDesc')}</li>
-            <li>• <span className="text-gray-400 font-medium">{t('view.lowPriority')}</span>: {t('settings.lowPriorityDesc')}</li>
+            <li>• <span className="text-red-500 font-medium">{t('view.highPriority')}</span>：{t('settings.highPriorityDesc')}</li>
+            <li>• <span className="text-yellow-500 font-medium">{t('view.mediumPriority')}</span>：{t('settings.mediumPriorityDesc')}</li>
+            <li>• <span className="text-gray-400 font-medium">{t('view.lowPriority')}</span>：{t('settings.lowPriorityDesc')}</li>
           </ul>
         </div>
       </CardContent>
