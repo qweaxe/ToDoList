@@ -408,3 +408,36 @@ Stage Summary:
 - ✅ 依赖和配置更新完成
 - ⚠️ 需要配置 DIRECT_URL 环境变量才能运行构建
 
+---
+Task ID: 10
+Agent: Main Agent
+Task: 排查并解决 Vercel 登录 401 错误
+
+Work Log:
+1. 问题分析
+   - 用户反馈：登录后无法跳转页面，后台显示 POST /api/auth/callback/credentials 返回 401
+   - Vercel 函数日志只有 warning，没有具体 ERROR 信息
+
+2. 排查过程
+   - 检查 NextAuth 配置文件 src/lib/auth.ts
+   - 确认 NEXTAUTH_SECRET 环境变量已在 Vercel 中配置
+   - 在 authorize 函数中添加调试日志（console.log）定位问题
+   - 开启 NextAuth debug 模式 (debug: true)
+
+3. 根本原因
+   - 环境变量配置后未触发重新部署，导致 NEXTAUTH_SECRET 未正确加载
+
+4. 解决方案
+   - 重新推送代码触发 Vercel 部署
+   - 环境变量正确加载后登录成功
+
+5. 清理工作
+   - 移除调试日志代码
+   - 恢复 debug 模式为生产配置
+
+Stage Summary:
+- ✅ 排查 Vercel 登录 401 错误原因
+- ✅ 确认是环境变量未正确加载导致
+- ✅ 重新部署后问题解决
+- ✅ 清理临时调试代码
+
