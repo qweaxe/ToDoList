@@ -124,7 +124,22 @@
     "levelNamePlaceholder": "Enter level name",
     "levelValue": "Level Value",
     "levelValueDesc": "Higher value means higher priority",
-    "noLevels": "No levels yet. Click the button above to create one."
+    "noLevels": "No levels yet. Click the button above to create one.",
+    "account": "Account Security",
+    "changePassword": "Change Password",
+    "changePasswordDesc": "Changing your password regularly helps protect your account",
+    "currentPassword": "Current Password",
+    "currentPasswordPlaceholder": "Enter current password",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter new password (min. 6 characters)",
+    "confirmNewPassword": "Confirm New Password",
+    "confirmNewPasswordPlaceholder": "Re-enter new password",
+    "changePasswordButton": "Change Password",
+    "enterAllPasswords": "Please fill in all password fields",
+    "passwordTooShort": "New password must be at least 6 characters",
+    "passwordMismatch": "New passwords do not match",
+    "passwordChanged": "Password changed successfully",
+    "passwordChangeFailed": "Failed to change password, please try again"
   },
   "frequency": {
     "daily": "Daily",
