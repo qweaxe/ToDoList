@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 interface AuthPageProps {
   callbackUrl?: string;
@@ -23,6 +24,7 @@ interface AuthPageProps {
 
 export function AuthPage({ callbackUrl }: AuthPageProps) {
   const t = useTranslations('auth');
+  const locale = useLocale();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
@@ -199,6 +201,15 @@ export function AuthPage({ callbackUrl }: AuthPageProps) {
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {t('loginButton')}
                   </Button>
+
+                  <div className="text-center">
+                    <Link
+                      href={`/${locale}/forgot-password`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {t('forgotPassword')}
+                    </Link>
+                  </div>
 
                   <p className="text-xs text-muted-foreground text-center">
                     {t('testAccount')}

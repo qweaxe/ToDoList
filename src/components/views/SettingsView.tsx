@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CategoryManager } from '@/components/settings/CategoryManager';
 import { LevelManager } from '@/components/settings/LevelManager';
 import { ChangePassword } from '@/components/settings/ChangePassword';
+import { SecurityQuestionSetting } from '@/components/settings/SecurityQuestionSetting';
 import { useViewStore } from '@/hooks/use-view-store';
 
 export function SettingsView() {
@@ -30,7 +31,8 @@ export function SettingsView() {
           <LevelManager />
         </TabsContent>
 
-        <TabsContent value="account">
+        <TabsContent value="account" className="space-y-6">
+          <SecurityQuestionSetting />
           <ChangePassword />
         </TabsContent>
       </Tabs>

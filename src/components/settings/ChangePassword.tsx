@@ -9,6 +9,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
+// 错误码到翻译key的映射
+const ERROR_CODE_MAP: Record<string, string> = {
+  UNAUTHORIZED: 'unauthorized',
+  USER_NOT_FOUND: 'userNotFound',
+  WRONG_PASSWORD: 'wrongPassword',
+  SAME_PASSWORD: 'samePassword',
+  VALIDATION_ERROR: 'validationError',
+  INTERNAL_ERROR: 'internalError',
+};
+
 export function ChangePassword() {
   const t = useTranslations('settings');
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +61,8 @@ export function ChangePassword() {
       const data = await response.json();
 
       if (!data.success) {
-        toast.error(data.error);
+        const errorKey = ERROR_CODE_MAP[data.code] || 'passwordChangeFailed';
+        toast.error(t(errorKey));
       } else {
         toast.success(t('passwordChanged'));
         setForm({

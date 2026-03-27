@@ -5,8 +5,8 @@ import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, '请输入当前密码'),
-  newPassword: z.string().min(6, '新密码至少6个字符'),
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6),
 });
 
 // POST /api/auth/change-password - 修改密码
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未登录' },
+        { success: false, code: 'UNAUTHORIZED' },
         { status: 401 }
       );
     }
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '用户不存在' },
+        { success: false, code: 'USER_NOT_FOUND' },
         { status: 404 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     if (!isPasswordValid) {
       return NextResponse.json(
-        { success: false, error: '当前密码错误' },
+        { success: false, code: 'WRONG_PASSWORD' },
         { status: 400 }
       );
     }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // 检查新密码不能与旧密码相同
     if (validated.currentPassword === validated.newPassword) {
       return NextResponse.json(
-        { success: false, error: '新密码不能与当前密码相同' },
+        { success: false, code: 'SAME_PASSWORD' },
         { status: 400 }
       );
     }
@@ -68,19 +68,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: '密码修改成功',
+      code: 'PASSWORD_CHANGED',
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: error.errors[0].message },
+        { success: false, code: 'VALIDATION_ERROR' },
         { status: 400 }
       );
     }
 
     console.error('Change password error:', error);
     return NextResponse.json(
-      { success: false, error: '密码修改失败，请稍后重试' },
+      { success: false, code: 'INTERNAL_ERROR' },
       { status: 500 }
     );
   }
