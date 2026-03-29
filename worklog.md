@@ -441,3 +441,85 @@ Stage Summary:
 - ✅ 重新部署后问题解决
 - ✅ 清理临时调试代码
 
+---
+Task ID: 11
+Agent: Main Agent
+Task: 合并 dev/vercel_login 分支到 dev/vercel
+Date：2026.03.29
+
+Work Log:
+1. 分支状态分析
+   - 检查所有分支状态（main, dev/vercel, dev/vercel_en, dev/vercel_security, dev/vercel_login）
+   - 分析各分支与 dev/vercel 的提交差异
+   - dev/vercel_en: 已合并，无额外提交
+   - dev/vercel_security: 已合并，无额外提交
+   - dev/vercel_login: 有 8 个独特提交待合并
+
+2. 分支合并执行
+   - 切换到 dev/vercel 分支
+   - 执行 git merge dev/vercel_login（Fast-forward 合并，无冲突）
+   - 更新 61 个文件，+4039/-1565 行代码
+
+3. 推送到远程
+   - 推送 dev/vercel 到 origin
+
+Stage Summary:
+- ✅ 成功合并 dev/vercel_login 分支
+- ✅ 合并功能包括：用户认证系统、用户数据隔离、修改密码、密码重置+密保问题
+- ✅ 所有分支已整合到 dev/vercel
+
+---
+Task ID: 12
+Agent: Main Agent
+Task: 修复 Vercel 生产环境登录问题
+Date：2026.03.29
+
+Work Log:
+1. 问题分析
+   - 用户反馈：登录无错误提示，但无法登录成功
+   - 检查 NextAuth 配置和相关组件
+
+2. 问题定位
+   - 发现缺少 trustHost: true 配置
+   - NextAuth.js 在 HTTPS 环境下默认不信任代理主机，导致 cookie 设置失败
+   - 登录处理逻辑只检查 result?.error，未检查 result?.ok
+
+3. 修复实施
+   - 在 src/lib/auth.ts 添加 trustHost: true 配置
+   - 改进 src/components/auth/AuthPage.tsx 登录结果判断逻辑
+
+4. 推送修复
+   - 提交并推送代码触发 Vercel 重新部署
+
+Stage Summary:
+- ✅ 添加 trustHost: true 解决 HTTPS 环境问题
+- ✅ 改进登录错误处理逻辑
+- ⚠️ 问题仍未完全解决，需进一步排查
+
+---
+Task ID: 13
+Agent: Main Agent
+Task: 修复 Prisma 数据库字段缺失问题
+Date：2026.03.29
+
+Work Log:
+1. 问题分析
+   - 用户反馈：登录时后台报错 "The column users.securityQuestion does not exist"
+   - 检查 prisma/schema.prisma 发现定义了安全问题字段
+   - 检查迁移文件发现 1_add_users_auth 迁移未包含这些字段
+
+2. 根本原因
+   - Schema 定义了 securityQuestion、securityAnswer 等字段
+   - 但对应的迁移文件未创建这些数据库列
+   - Prisma Client 查询时找不到对应列导致报错
+
+3. 修复实施
+   - 创建新迁移文件 prisma/migrations/2_add_security_fields/migration.sql
+   - 添加缺失字段：securityQuestion、securityAnswer、securityAnswerAttempts、securityAnswerLockedAt
+   - 提交并推送代码
+
+Stage Summary:
+- ✅ 创建缺失的数据库迁移文件
+- ✅ Vercel 构建时会自动执行 prisma migrate deploy
+- ⏳ 等待部署完成后验证登录功能
+
