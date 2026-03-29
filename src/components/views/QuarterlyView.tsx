@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
+import { useTranslations, useLocale } from 'next-intl';
 import { ChevronLeft, ChevronRight, Flag, Target, TrendingUp, Calendar, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,8 @@ import { formatDate, addMonthsToDate, getTodayString } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
 export function QuarterlyView() {
+  const t = useTranslations();
+  const locale = useLocale();
   const { selectedDate, setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
 
   const { data, isLoading, error } = useQuarterlyTodos(selectedDate);
@@ -54,7 +57,7 @@ export function QuarterlyView() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            加载季度数据失败，请刷新页面重试
+            {t('common.error')}
           </AlertDescription>
         </Alert>
       </div>
@@ -83,7 +86,7 @@ export function QuarterlyView() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            暂无季度数据
+            {t('common.noData')}
           </AlertDescription>
         </Alert>
       </div>
@@ -109,7 +112,7 @@ export function QuarterlyView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-xl sm:text-2xl font-bold">
-            {data?.data.year}年 {data?.data.quarterName}
+            {data?.data.year} {data?.data.quarterName}
           </h1>
           <span className="text-sm text-muted-foreground">
             {data?.data.startDate} - {data?.data.endDate}
@@ -118,7 +121,7 @@ export function QuarterlyView() {
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={goToThisQuarter}>
-            本季度
+            {t('view.thisWeek')}
           </Button>
           <Button variant="outline" size="icon" onClick={goToPreviousQuarter}>
             <ChevronLeft className="h-4 w-4" />
@@ -135,7 +138,7 @@ export function QuarterlyView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs sm:text-sm text-muted-foreground">总任务</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('task.total')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.total}</div>
           </CardContent>
@@ -144,7 +147,7 @@ export function QuarterlyView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">已完成</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('task.completed')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1 text-green-500">{stats.completed}</div>
           </CardContent>
@@ -153,7 +156,7 @@ export function QuarterlyView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <Flag className="h-4 w-4 text-orange-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">里程碑</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('task.milestone')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">
               {stats.completedMilestones}/{stats.milestoneCount}
@@ -162,7 +165,7 @@ export function QuarterlyView() {
         </Card>
         <Card>
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
-            <div className="text-xs sm:text-sm text-muted-foreground">完成率</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">{t('stats.completionRate')}</div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.completionRate}%</div>
             <Progress value={stats.completionRate} className="mt-2 h-2" />
           </CardContent>
@@ -175,7 +178,7 @@ export function QuarterlyView() {
           <CardHeader>
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              月度进度
+              {t('view.monthView')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -189,8 +192,8 @@ export function QuarterlyView() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">{month.month}</span>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span>完成 {month.completed}</span>
-                      <span>待办 {month.pending}</span>
+                      <span>{t('task.completed')} {month.completed}</span>
+                      <span>{t('task.pending')} {month.pending}</span>
                       <span className="font-medium text-foreground">
                         {month.completionRate}%
                       </span>
@@ -208,17 +211,14 @@ export function QuarterlyView() {
           <CardHeader>
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <Flag className="h-5 w-5" />
-              里程碑
+              {t('task.milestone')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {milestones.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Flag className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">本季度暂无里程碑</p>
-                <p className="text-xs mt-1">
-                  在任务编辑中标记"里程碑"即可显示
-                </p>
+                <p className="text-sm">{t('common.noData')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -234,14 +234,14 @@ export function QuarterlyView() {
                   >
                     <div className="flex items-start gap-2">
                       {milestone.status === 'completed' ? (
-                        <Badge variant="secondary" className="text-xs">已完成</Badge>
+                        <Badge variant="secondary" className="text-xs">{t('task.completed')}</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs">进行中</Badge>
+                        <Badge variant="outline" className="text-xs">{t('task.pending')}</Badge>
                       )}
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm truncate">{milestone.title}</h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          截止: {milestone.dueDate}
+                          {milestone.dueDate}
                         </p>
                         {milestone.category && (
                           <Badge variant="secondary" className="text-xs mt-2">

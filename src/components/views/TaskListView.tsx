@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Circle, Clock, TrendingUp } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +14,7 @@ import { useViewStore } from '@/hooks/use-view-store';
 import { cn } from '@/lib/utils';
 
 export function TaskListView() {
+  const t = useTranslations();
   const { taskListFilter, setTaskListFilter, setCurrentView, setSelectedDate } = useViewStore();
   const [selectedYear, setSelectedYear] = useState(taskListFilter?.year || new Date().getFullYear());
   const toggleTodoMutation = useToggleTodo();
@@ -49,12 +51,18 @@ export function TaskListView() {
     setSelectedYear(new Date().getFullYear());
   };
 
+  // Month key helper
+  const getMonthKey = (month: number): string => {
+    const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    return months[month - 1];
+  };
+
   if (!taskListFilter) {
     return (
       <div className="container mx-auto py-6 max-w-4xl">
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            请从设置页面选择分类或等级查看任务明细
+            {t('taskList.selectFromSettings')}
           </CardContent>
         </Card>
       </div>
@@ -87,14 +95,14 @@ export function TaskListView() {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">{taskListFilter.name}</h1>
             <p className="text-sm text-muted-foreground">
-              {taskListFilter.type === 'category' ? '分类任务明细' : '等级任务明细'}
+              {taskListFilter.type === 'category' ? t('taskList.categoryTasks') : t('taskList.levelTasks')}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={goToThisYear}>
-            今年
+            {t('taskList.thisYear')}
           </Button>
           <Button variant="outline" size="icon" onClick={goToPreviousYear}>
             <ChevronLeft className="h-4 w-4" />
@@ -112,7 +120,7 @@ export function TaskListView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-blue-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">总任务</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('taskList.totalTasks')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.total}</div>
           </CardContent>
@@ -121,7 +129,7 @@ export function TaskListView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">已完成</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('taskList.completedTasks')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.completed}</div>
           </CardContent>
@@ -130,7 +138,7 @@ export function TaskListView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <Circle className="h-4 w-4 text-gray-400" />
-              <span className="text-xs sm:text-sm text-muted-foreground">待处理</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('taskList.pendingTasks')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.pending}</div>
           </CardContent>
@@ -139,7 +147,7 @@ export function TaskListView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-yellow-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">完成率</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('taskList.completionRate')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">{completionRate}%</div>
           </CardContent>
@@ -150,7 +158,7 @@ export function TaskListView() {
       <Card className="mb-6">
         <CardContent className="py-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">年度完成进度</span>
+            <span className="text-sm font-medium">{t('taskList.yearlyProgress')}</span>
             <span className="text-sm text-muted-foreground">{stats.completed}/{stats.total}</span>
           </div>
           <Progress value={completionRate} className="h-2" />
@@ -167,7 +175,7 @@ export function TaskListView() {
       ) : todos.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            <p>{selectedYear} 年暂无此{taskListFilter.type === 'category' ? '分类' : '等级'}的任务</p>
+            <p>{t('taskList.noTasksForYear', { year: selectedYear, type: taskListFilter.type === 'category' ? t('taskList.category') : t('taskList.level') })}</p>
           </CardContent>
         </Card>
       ) : (
@@ -179,8 +187,8 @@ export function TaskListView() {
                 <Card key={month}>
                   <CardHeader className="py-3 px-4">
                     <CardTitle className="text-base flex items-center justify-between">
-                      <span>{selectedYear}年{month}月</span>
-                      <Badge variant="secondary">{monthTodos.length} 个任务</Badge>
+                      <span>{selectedYear} {t('month.' + getMonthKey(Number(month)))}</span>
+                      <Badge variant="secondary">{t('taskList.monthTasks', { count: monthTodos.length })}</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="py-2 px-4">

@@ -254,6 +254,38 @@
     "en": "English",
     "zh": "中文"
   },
+  "taskList": {
+    "selectFromSettings": "Please select a category or level from Settings to view task details",
+    "categoryTasks": "Category Tasks",
+    "levelTasks": "Level Tasks",
+    "thisYear": "This Year",
+    "totalTasks": "Total",
+    "completedTasks": "Completed",
+    "pendingTasks": "Pending",
+    "completionRate": "Completion Rate",
+    "yearlyProgress": "Yearly Progress",
+    "noTasksForYear": "No {type} tasks for {year}",
+    "category": "category",
+    "level": "level",
+    "monthTasks": "{count} tasks"
+  },
+  "year": {
+    "yearFootprint": "Year Footprint",
+    "activeDays": "Active Days",
+    "longestStreak": "Longest Streak",
+    "days": " days",
+    "avgPerDay": "Avg/Day",
+    "contributionGraph": "Contribution Graph",
+    "tasksCompleted": "{count} tasks completed",
+    "less": "Less",
+    "more": "More",
+    "monthlyStats": "Monthly Stats",
+    "mostProductiveMonth": "Most Productive Month",
+    "tasksCount": "{count} tasks",
+    "focusArea": "Focus Areas",
+    "noCategoryData": "No category data",
+    "topFocusArea": "Top Focus Area"
+  },
   "auth": {
     "tagline": "Minimalist Todo Management",
     "login": "Login",

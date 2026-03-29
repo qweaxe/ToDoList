@@ -197,7 +197,7 @@ export function DayView() {
               <Button variant="outline" className="gap-2 min-w-[120px] sm:min-w-[140px]">
                 <CalendarIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('task.selectDate')}</span>
-                <span className="sm:hidden">{format(new Date(selectedDate), 'M月d日', { locale: dateFnsLocale })}</span>
+                <span className="sm:hidden">{format(new Date(selectedDate), 'MMM d', { locale: dateFnsLocale })}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">

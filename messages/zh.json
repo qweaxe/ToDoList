@@ -254,6 +254,38 @@
     "en": "English",
     "zh": "中文"
   },
+  "taskList": {
+    "selectFromSettings": "请从设置页面选择分类或等级查看任务明细",
+    "categoryTasks": "分类任务明细",
+    "levelTasks": "等级任务明细",
+    "thisYear": "今年",
+    "totalTasks": "总任务",
+    "completedTasks": "已完成",
+    "pendingTasks": "待处理",
+    "completionRate": "完成率",
+    "yearlyProgress": "年度完成进度",
+    "noTasksForYear": "{year} 年暂无此{type}的任务",
+    "category": "分类",
+    "level": "等级",
+    "monthTasks": "{count} 个任务"
+  },
+  "year": {
+    "yearFootprint": "年度足迹",
+    "activeDays": "活跃天数",
+    "longestStreak": "最长连续",
+    "days": "天",
+    "avgPerDay": "日均完成",
+    "contributionGraph": "年度贡献图",
+    "tasksCompleted": "{count} 个任务完成",
+    "less": "少",
+    "more": "多",
+    "monthlyStats": "月度完成统计",
+    "mostProductiveMonth": "最勤奋月份",
+    "tasksCount": "{count} 个任务",
+    "focusArea": "专注领域",
+    "noCategoryData": "暂无分类数据",
+    "topFocusArea": "最专注领域"
+  },
   "auth": {
     "tagline": "极简待办事项管理",
     "login": "登录",

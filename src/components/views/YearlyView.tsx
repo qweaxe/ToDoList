@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { format, getMonth, getDay } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
+import { useTranslations, useLocale } from 'next-intl';
 import { ChevronLeft, ChevronRight, Flame, Trophy, Calendar, Target, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,9 +20,6 @@ import { useViewStore } from '@/hooks/use-view-store';
 import { getTodayString, formatDate } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
-const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-const DAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
-
 // 热力图颜色等级
 const HEAT_COLORS = [
   'bg-gray-100 dark:bg-gray-800', // 0: 无数据
@@ -32,12 +30,27 @@ const HEAT_COLORS = [
 ];
 
 export function YearlyView() {
+  const t = useTranslations();
+  const locale = useLocale();
   const { selectedDate, setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
   const year = new Date(selectedDate).getFullYear();
   const { data, isLoading } = useYearlyStats(year);
   const today = getTodayString();
+
+  // Month and day labels from translations
+  const MONTH_LABELS = [
+    t('month.january'), t('month.february'), t('month.march'),
+    t('month.april'), t('month.may'), t('month.june'),
+    t('month.july'), t('month.august'), t('month.september'),
+    t('month.october'), t('month.november'), t('month.december')
+  ];
+  const DAY_LABELS = [
+    t('weekday.sunShort'), t('weekday.monShort'), t('weekday.tueShort'),
+    t('weekday.wedShort'), t('weekday.thuShort'), t('weekday.friShort'),
+    t('weekday.satShort')
+  ];
 
   // 切换年份
   const goToPreviousYear = () => {
@@ -119,7 +132,7 @@ export function YearlyView() {
     activeDays: 0,
     avgPerDay: '0',
     longestStreak: 0,
-    mostProductiveMonth: { month: '1月', completed: 0 },
+    mostProductiveMonth: { month: 'Jan', completed: 0 },
     topCategory: null,
   };
 
@@ -131,12 +144,12 @@ export function YearlyView() {
       {/* 标题和控制区 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl sm:text-2xl font-bold">{year} 年度足迹</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{year} {t('year.yearFootprint')}</h1>
         </div>
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={goToThisYear}>
-            今年
+            {t('stats.thisYear')}
           </Button>
           <Button variant="outline" size="icon" onClick={goToPreviousYear}>
             <ChevronLeft className="h-4 w-4" />
@@ -153,7 +166,7 @@ export function YearlyView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-yellow-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">完成任务</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('task.completed')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">{summary.totalCompleted}</div>
           </CardContent>
@@ -162,7 +175,7 @@ export function YearlyView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-blue-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">活跃天数</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('year.activeDays')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">{summary.activeDays}</div>
           </CardContent>
@@ -171,16 +184,16 @@ export function YearlyView() {
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">最长连续</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('year.longestStreak')}</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">{summary.longestStreak}天</div>
+            <div className="text-2xl sm:text-3xl font-bold mt-1">{summary.longestStreak}{t('year.days')}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-green-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">日均完成</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('year.avgPerDay')}</span>
             </div>
             <div className="text-2xl sm:text-3xl font-bold mt-1">{summary.avgPerDay}</div>
           </CardContent>
@@ -192,7 +205,7 @@ export function YearlyView() {
         <CardHeader>
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <Award className="h-5 w-5" />
-            年度贡献图
+            {t('year.contributionGraph')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -200,13 +213,13 @@ export function YearlyView() {
             <div className="min-w-[700px]">
               {/* 月份标签 */}
               <div className="flex mb-2 pl-8">
-                {MONTH_LABELS.map((month, i) => (
+                {MONTH_LABELS.map((monthKey, i) => (
                   <div
-                    key={month}
+                    key={monthKey}
                     className="flex-1 text-xs text-muted-foreground"
                     style={{ minWidth: '52px' }}
                   >
-                    {i % 3 === 0 ? month : ''}
+                    {i % 3 === 0 ? t(monthKey) : ''}
                   </div>
                 ))}
               </div>
@@ -214,12 +227,12 @@ export function YearlyView() {
               <div className="flex gap-1">
                 {/* 星期标签 */}
                 <div className="flex flex-col gap-[2px] pt-1">
-                  {DAY_LABELS.map((day, i) => (
+                  {DAY_LABELS.map((dayKey, i) => (
                     <div
-                      key={day}
+                      key={dayKey}
                       className="h-[11px] text-[10px] text-muted-foreground flex items-center"
                     >
-                      {i % 2 === 1 ? day : ''}
+                      {i % 2 === 1 ? t(dayKey) : ''}
                     </div>
                   ))}
                 </div>
@@ -247,7 +260,7 @@ export function YearlyView() {
                             <TooltipContent side="top" className="text-xs">
                               <div className="text-center">
                                 <div className="font-medium">{day.date}</div>
-                                <div>{day.count} 个任务完成</div>
+                                <div>{t('year.tasksCompleted', { count: day.count })}</div>
                               </div>
                             </TooltipContent>
                           )}
@@ -260,14 +273,14 @@ export function YearlyView() {
 
               {/* 图例 */}
               <div className="flex items-center justify-end gap-2 mt-4 text-xs text-muted-foreground">
-                <span>少</span>
+                <span>{t('year.less')}</span>
                 {HEAT_COLORS.map((color, i) => (
                   <div
                     key={i}
                     className={cn('w-[10px] h-[10px] rounded-sm', color)}
                   />
                 ))}
-                <span>多</span>
+                <span>{t('year.more')}</span>
               </div>
             </div>
           </TooltipProvider>
@@ -279,7 +292,7 @@ export function YearlyView() {
         {/* 月度统计 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base sm:text-lg">月度完成统计</CardTitle>
+            <CardTitle className="text-base sm:text-lg">{t('year.monthlyStats')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -318,10 +331,10 @@ export function YearlyView() {
             <div className="mt-4 pt-4 border-t">
               <div className="flex items-center gap-2 text-sm">
                 <Trophy className="h-4 w-4 text-yellow-500" />
-                <span className="text-muted-foreground">最勤奋月份:</span>
+                <span className="text-muted-foreground">{t('year.mostProductiveMonth')}:</span>
                 <Badge variant="secondary">{summary.mostProductiveMonth.month}</Badge>
                 <span className="text-muted-foreground">
-                  {summary.mostProductiveMonth.completed} 个任务
+                  {t('year.tasksCount', { count: summary.mostProductiveMonth.completed })}
                 </span>
               </div>
             </div>
@@ -331,13 +344,13 @@ export function YearlyView() {
         {/* 分类统计 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base sm:text-lg">专注领域</CardTitle>
+            <CardTitle className="text-base sm:text-lg">{t('year.focusArea')}</CardTitle>
           </CardHeader>
           <CardContent>
             {categoryStats.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Target className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">暂无分类数据</p>
+                <p className="text-sm">{t('year.noCategoryData')}</p>
               </div>
             ) : (
               <>
@@ -353,7 +366,7 @@ export function YearlyView() {
                         </span>
                         <span className="text-sm">{category.name}</span>
                       </div>
-                      <Badge variant="outline">{category.count} 个</Badge>
+                      <Badge variant="outline">{t('year.tasksCount', { count: category.count })}</Badge>
                     </div>
                   ))}
                 </div>
@@ -362,7 +375,7 @@ export function YearlyView() {
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex items-center gap-2 text-sm">
                       <Award className="h-4 w-4 text-purple-500" />
-                      <span className="text-muted-foreground">最专注领域:</span>
+                      <span className="text-muted-foreground">{t('year.topFocusArea')}:</span>
                       <Badge>{summary.topCategory.name}</Badge>
                     </div>
                   </div>
