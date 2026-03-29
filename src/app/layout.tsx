@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "To Do List - 智能待办事项管理",
-  description: "极简、直观且具有高度交互性的待办事项管理应用，支持按天管理任务，并提供月度日历视图进行宏观规划和数据统计。",
-  keywords: ["待办事项", "任务管理", "日历", "Todo", "To Do List", "Next.js"],
+  title: "To Do List - Smart Task Management",
+  description: "A minimalist, intuitive and highly interactive todo management app with daily task management and monthly calendar view for macro planning and statistics.",
+  keywords: ["Todo", "Task Management", "Calendar", "To Do List", "Next.js", "Productivity"],
   authors: [{ name: "To Do List Team" }],
 };
 
