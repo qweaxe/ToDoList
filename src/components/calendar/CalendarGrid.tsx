@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
+import { useTranslations, useLocale } from 'next-intl';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarCell } from './CalendarCell';
 import { formatDate, isTodayDate, isWeekend } from '@/lib/date-utils';
@@ -29,8 +30,6 @@ interface CalendarGridProps {
   maxVisibleTasks?: number;
 }
 
-const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
-
 export function CalendarGrid({
   year,
   month,
@@ -41,6 +40,10 @@ export function CalendarGrid({
   onTaskClick,
   maxVisibleTasks = 3,
 }: CalendarGridProps) {
+  const t = useTranslations();
+  const locale = useLocale();
+  const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
+
   // 获取日历网格日期 (7x6 = 42天)
   const calendarDates = useMemo(() => {
     const firstDay = new Date(year, month - 1, 1);
@@ -67,6 +70,17 @@ export function CalendarGrid({
     return isSameMonth(date, currentMonth);
   };
 
+  // 星期标签
+  const WEEKDAYS = [
+    t('weekday.monShort'),
+    t('weekday.tueShort'),
+    t('weekday.wedShort'),
+    t('weekday.thuShort'),
+    t('weekday.friShort'),
+    t('weekday.satShort'),
+    t('weekday.sunShort')
+  ];
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -79,7 +93,7 @@ export function CalendarGrid({
                 index >= 5 ? 'text-red-500' : 'text-muted-foreground'
               }`}
             >
-              周{day}
+              {t('weekday.weekPrefix')}{day}
             </div>
           ))}
         </div>
@@ -104,7 +118,7 @@ export function CalendarGrid({
               index >= 5 ? 'text-red-500' : 'text-muted-foreground'
             }`}
           >
-            周{day}
+            {t('weekday.weekPrefix')}{day}
           </div>
         ))}
       </div>

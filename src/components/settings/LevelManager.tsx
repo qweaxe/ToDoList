@@ -26,14 +26,15 @@ export function LevelManager() {
 
   // 固定的三个等级配置
   const FIXED_LEVELS = [
-    { name: '高', value: 3, icon: <ChevronUp className="h-4 w-4" />, color: 'bg-red-500 text-white', description: t('settings.highPriorityDesc') },
-    { name: '中', value: 2, icon: <Minus className="h-4 w-4" />, color: 'bg-yellow-500 text-white', description: t('settings.mediumPriorityDesc') },
-    { name: '低', value: 1, icon: <ChevronDown className="h-4 w-4" />, color: 'bg-gray-400 text-white', description: t('settings.lowPriorityDesc') },
+    { name: t('settings.levelHigh'), value: 3, icon: <ChevronUp className="h-4 w-4" />, color: 'bg-red-500 text-white', description: t('settings.highPriorityDesc') },
+    { name: t('settings.levelMedium'), value: 2, icon: <Minus className="h-4 w-4" />, color: 'bg-yellow-500 text-white', description: t('settings.mediumPriorityDesc') },
+    { name: t('settings.levelLow'), value: 1, icon: <ChevronDown className="h-4 w-4" />, color: 'bg-gray-400 text-white', description: t('settings.lowPriorityDesc') },
   ];
 
   // 合并固定等级和数据库中的使用统计
   const displayLevels = FIXED_LEVELS.map(fixed => {
-    const dbLevel = levels.find(l => l.name === fixed.name);
+    // Try to match by value instead of name for i18n compatibility
+    const dbLevel = levels.find(l => l.value === fixed.value);
     return {
       ...fixed,
       id: dbLevel?.id || '',
@@ -43,10 +44,11 @@ export function LevelManager() {
 
   // 点击任务数量，跳转到任务列表视图
   const handleTodoCountClick = (level: { id: string; name: string }) => {
+    const priorityKey = level.value === 3 ? 'levelHighPriority' : level.value === 2 ? 'levelMediumPriority' : 'levelLowPriority';
     setTaskListFilter({
       type: 'level',
       id: level.id,
-      name: `${level.name}优先级`,
+      name: t(`settings.${priorityKey}`),
       year: new Date().getFullYear(),
     });
     setCurrentView('task-list');

@@ -103,6 +103,12 @@
     "categoriesDesc": "Manage task category tags",
     "levels": "Priority Levels",
     "levelsDesc": "Manage task priority levels",
+    "levelHigh": "High",
+    "levelMedium": "Medium",
+    "levelLow": "Low",
+    "levelHighPriority": "High Priority",
+    "levelMediumPriority": "Medium Priority",
+    "levelLowPriority": "Low Priority",
     "levelExplanation": "Level Explanation",
     "highPriorityDesc": "Needs to be handled first",
     "mediumPriorityDesc": "Normal processing",
@@ -210,7 +216,8 @@
     "thuShort": "T",
     "friShort": "F",
     "satShort": "S",
-    "sunShort": "S"
+    "sunShort": "S",
+    "weekPrefix": ""
   },
   "month": {
     "january": "January",
@@ -248,6 +255,9 @@
     "completionRate": "Completion Rate",
     "thisMonth": "This Month",
     "thisYear": "This Year"
+  },
+  "calendar": {
+    "more": "more"
   },
   "language": {
     "switch": "Switch Language",

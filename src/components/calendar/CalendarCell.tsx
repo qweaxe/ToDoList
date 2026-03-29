@@ -1,7 +1,7 @@
 'use client';
 
 import { format, isToday, isWeekend as checkIsWeekend } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/date-utils';
 
@@ -29,11 +29,11 @@ interface CalendarCellProps {
   onTaskClick?: (taskId: string) => void;
 }
 
-// 获取任务等级对应的颜色
+// 获取任务等级对应的颜色（使用 value 而非 name，支持 i18n）
 function getTaskColor(level?: { name: string; value: number } | null) {
   if (!level) return 'bg-muted';
-  if (level.name === '高') return 'bg-red-500';
-  if (level.name === '中') return 'bg-yellow-500';
+  if (level.value === 3) return 'bg-red-500';
+  if (level.value === 2) return 'bg-yellow-500';
   return 'bg-gray-400';
 }
 
@@ -46,6 +46,7 @@ export function CalendarCell({
   onClick,
   onTaskClick,
 }: CalendarCellProps) {
+  const t = useTranslations();
   const isTodayDate = isToday(date);
   const isWeekendDay = checkIsWeekend(date);
 
@@ -141,7 +142,7 @@ export function CalendarCell({
           {/* 更多任务提示 */}
           {hiddenCount > 0 && (
             <div className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted/10 rounded">
-              +{hiddenCount} 更多
+              +{hiddenCount} {t('calendar.more')}
             </div>
           )}
         </div>
