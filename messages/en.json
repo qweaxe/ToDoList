@@ -415,5 +415,12 @@
     "noSubtask": "No subtasks",
     "completedOn": "Completed on",
     "taskNotFound": "Task not found"
+  },
+  "monthStats": {
+    "title": "Monthly Stats",
+    "completionRate": "Completion Rate",
+    "totalTasks": "Total",
+    "completed": "Completed",
+    "pending": "Pending"
   }
 }

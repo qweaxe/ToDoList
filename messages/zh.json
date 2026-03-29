@@ -414,5 +414,12 @@
     "noSubtask": "暂无子任务",
     "completedOn": "完成于",
     "taskNotFound": "任务不存在"
+  },
+  "monthStats": {
+    "title": "本月统计",
+    "completionRate": "完成率",
+    "totalTasks": "总任务",
+    "completed": "已完成",
+    "pending": "待完成"
   }
 }
