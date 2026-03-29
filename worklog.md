@@ -523,3 +523,48 @@ Stage Summary:
 - ✅ Vercel 构建时会自动执行 prisma migrate deploy
 - ⏳ 等待部署完成后验证登录功能
 
+---
+Task ID: 14
+Agent: Main Agent
+Task: 国际化(i18n)问题修复 - 前端组件多语言支持
+Date: 2026.03.29
+
+Work Log:
+1. EmojiPicker.tsx 国际化
+   - 将分类键从中文改为英文（常用→common, 工作→work, 生活→life, 等）
+   - 添加 useTranslations hook
+   - 创建 categoryLabels 映射实现多语言分类标签
+
+2. TaskCard.tsx 下拉菜单国际化
+   - 编辑、删除、标记完成/未完成等操作使用翻译
+   - 使用 t('common.edit')、t('common.delete') 等
+
+3. TaskDetailDialog.tsx 完整国际化
+   - 添加 useTranslations('taskDetail') 和 useLocale hooks
+   - 引入 date-fns locale (zhCN/enUS) 实现日期多语言
+   - 所有标签、按钮、提示信息使用翻译
+
+4. MonthStats.tsx 国际化
+   - 添加 useTranslations('monthStats') hook
+   - 标题、完成率、总任务数、已完成、待办等使用翻译
+
+5. layout.tsx 元数据更新
+   - 更新 title 为 "To Do List - Smart Task Management"
+   - 更新 description 和 keywords
+
+6. Header.tsx 日历标题国际化
+   - 使用 date-fns format 函数配合 locale 参数
+   - 日历月份显示从 "2026年3月" 改为 "March 2026" / "2026年3月"
+
+7. 翻译文件更新
+   - messages/zh.json 和 messages/en.json 添加 taskDetail、monthStats、emojiPicker 命名空间
+
+Stage Summary:
+- ✅ EmojiPicker 组件完整国际化
+- ✅ TaskCard 下拉菜单国际化
+- ✅ TaskDetailDialog 完整国际化
+- ✅ MonthStats 组件国际化
+- ✅ Header 日历月份显示国际化
+- ⚠️ 后端 API 待修复：weekly/route.ts 的 dayName 硬编码 zhCN
+- ⚠️ 后端 API 待修复：quarterly API 的 quarterName 和月份名称
+

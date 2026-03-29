@@ -1,6 +1,8 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { zhCN, enUS } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { useSession, signOut } from 'next-auth/react';
 import { Calendar, ChevronLeft, ChevronRight, Home, Menu, Settings, LogOut, User } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
@@ -11,6 +13,8 @@ import { cn } from '@/lib/utils';
 
 export function Header() {
   const t = useTranslations();
+  const locale = useLocale();
+  const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
   const { data: session } = useSession();
   const {
     currentView,
@@ -92,7 +96,7 @@ export function Header() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="min-w-[120px] text-center font-medium">
-                {calendarYear}年{calendarMonth}月
+                {format(new Date(calendarYear, calendarMonth - 1), 'MMMM yyyy', { locale: dateFnsLocale })}
               </span>
               <Button
                 variant="ghost"
