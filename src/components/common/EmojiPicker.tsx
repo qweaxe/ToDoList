@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Smile, Upload, Clock, Search, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,22 +14,22 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-// 常用 Emoji 分类
-const EMOJI_CATEGORIES = {
-  '常用': ['📝', '✅', '⭐', '🔥', '💡', '📌', '🎯', '💪', '🚀', '⚡', '🌟', '✨', '💫', '🎉', '🎊'],
-  '工作': ['💼', '📊', '📈', '📉', '📋', '📁', '📂', '🗂️', '📑', '🖨️', '📠', '💻', '🖥️', '⌨️', '📱'],
-  '生活': ['🏠', '🏡', '🍳', '🍳', '🛒', '🛍️', '🎁', '🎉', '🎈', '🎊', '🎄', '🎃', '🎅', '🧹', '🧺'],
-  '学习': ['📚', '📖', '📕', '📗', '📘', '📙', '📓', '📒', '📃', '📄', '🗞️', '📑', '🔖', '✏️', '🖊️'],
-  '健康': ['💪', '🏃', '🚴', '🏋️', '🧘', '⚽', '🏀', '🎾', '🏐', '🎯', '🥇', '🏆', '🩺', '💊', '❤️'],
-  '娱乐': ['🎮', '🎬', '🎭', '🎨', '🎵', '🎶', '🎸', '🎹', '🎺', '🎻', '🎲', '🃏', '🎯', '🎱', '🏆'],
-  '美食': ['🍎', '🍕', '🍔', '🍟', '🌭', '🍿', '🧂', '🥓', '🥚', '🍳', '🧇', '🥞', '🧈', '🍞', '🥐'],
-  '出行': ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🚚', '🚛', '✈️', '🚀', '🚁'],
-  '自然': ['🌸', '🌺', '🌻', '🌼', '🌷', '🌱', '🌲', '🌳', '🌴', '🌵', '🌾', '🌿', '☘️', '🍀', '🍁'],
-  '表情': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '😉', '😌', '😍', '🥰', '😘'],
+// Emoji 分类 key -> emojis 映射
+const EMOJI_DATA: Record<string, string[]> = {
+  common: ['📝', '✅', '⭐', '🔥', '💡', '📌', '🎯', '💪', '🚀', '⚡', '🌟', '✨', '💫', '🎉', '🎊'],
+  work: ['💼', '📊', '📈', '📉', '📋', '📁', '📂', '🗂️', '📑', '🖨️', '📠', '💻', '🖥️', '⌨️', '📱'],
+  life: ['🏠', '🏡', '🍳', '🍳', '🛒', '🛍️', '🎁', '🎉', '🎈', '🎊', '🎄', '🎃', '🎅', '🧹', '🧺'],
+  study: ['📚', '📖', '📕', '📗', '📘', '📙', '📓', '📒', '📃', '📄', '🗞️', '📑', '🔖', '✏️', '🖊️'],
+  health: ['💪', '🏃', '🚴', '🏋️', '🧘', '⚽', '🏀', '🎾', '🏐', '🎯', '🥇', '🏆', '🩺', '💊', '❤️'],
+  entertainment: ['🎮', '🎬', '🎭', '🎨', '🎵', '🎶', '🎸', '🎹', '🎺', '🎻', '🎲', '🃏', '🎯', '🎱', '🏆'],
+  food: ['🍎', '🍕', '🍔', '🍟', '🌭', '🍿', '🧂', '🥓', '🥚', '🍳', '🧇', '🥞', '🧈', '🍞', '🥐'],
+  travel: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🚚', '🚛', '✈️', '🚀', '🚁'],
+  nature: ['🌸', '🌺', '🌻', '🌼', '🌷', '🌱', '🌲', '🌳', '🌴', '🌵', '🌾', '🌿', '☘️', '🍀', '🍁'],
+  emoji: ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '😉', '😌', '😍', '🥰', '😘'],
 };
 
 // 所有 emoji 列表（用于搜索）
-const ALL_EMOJIS = Object.values(EMOJI_CATEGORIES).flat();
+const ALL_EMOJIS = Object.values(EMOJI_DATA).flat();
 
 // 从 localStorage 获取最近使用的 emoji
 function getRecentEmojis(): string[] {
@@ -51,11 +52,26 @@ interface EmojiPickerProps {
 }
 
 export function EmojiPicker({ value, onChange, className }: EmojiPickerProps) {
+  const t = useTranslations('emojiPicker');
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [recentEmojis, setRecentEmojis] = useState<string[]>(getRecentEmojis);
-  const [activeTab, setActiveTab] = useState('常用');
+  const [activeTab, setActiveTab] = useState('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 分类 key -> 翻译后的名称
+  const categoryLabels: Record<string, string> = {
+    common: t('common'),
+    work: t('work'),
+    life: t('life'),
+    study: t('study'),
+    health: t('health'),
+    entertainment: t('entertainment'),
+    food: t('food'),
+    travel: t('travel'),
+    nature: t('nature'),
+    emoji: t('emoji'),
+  };
 
   // 保存最近使用的 emoji
   const saveRecentEmoji = (emoji: string) => {
@@ -115,7 +131,7 @@ export function EmojiPicker({ value, onChange, className }: EmojiPickerProps) {
           ) : (
             <Smile className="h-4 w-4 mr-2" />
           )}
-          {value || '选择图标'}
+          {value || t('selectIcon')}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start">
@@ -123,7 +139,7 @@ export function EmojiPicker({ value, onChange, className }: EmojiPickerProps) {
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="搜索 emoji..."
+              placeholder={t('search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
@@ -156,7 +172,7 @@ export function EmojiPicker({ value, onChange, className }: EmojiPickerProps) {
               ))}
               {filteredEmojis.length === 0 && (
                 <div className="col-span-8 text-center text-muted-foreground py-4">
-                  未找到匹配的 emoji
+                  {t('noMatch')}
                 </div>
               )}
             </div>
@@ -166,33 +182,33 @@ export function EmojiPicker({ value, onChange, className }: EmojiPickerProps) {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="w-full justify-start overflow-x-auto h-auto p-0 bg-transparent">
               <TabsTrigger
-                value="最近"
+                value="recent"
                 className="px-3 py-2 text-xs data-[state=active]:bg-muted"
                 disabled={recentEmojis.length === 0}
               >
                 <Clock className="h-3 w-3 mr-1" />
-                最近
+                {t('recent')}
               </TabsTrigger>
-              {Object.keys(EMOJI_CATEGORIES).map((category) => (
+              {Object.keys(EMOJI_DATA).map((category) => (
                 <TabsTrigger
                   key={category}
                   value={category}
                   className="px-3 py-2 text-xs data-[state=active]:bg-muted"
                 >
-                  {category}
+                  {categoryLabels[category]}
                 </TabsTrigger>
               ))}
               <TabsTrigger
-                value="上传"
+                value="upload"
                 className="px-3 py-2 text-xs data-[state=active]:bg-muted"
               >
                 <Upload className="h-3 w-3 mr-1" />
-                上传
+                {t('upload')}
               </TabsTrigger>
             </TabsList>
 
             {/* 最近使用 */}
-            <TabsContent value="最近" className="mt-0">
+            <TabsContent value="recent" className="mt-0">
               <ScrollArea className="h-56 p-2">
                 <div className="grid grid-cols-8 gap-1">
                   {recentEmojis.map((emoji, index) => (
@@ -213,7 +229,7 @@ export function EmojiPicker({ value, onChange, className }: EmojiPickerProps) {
             </TabsContent>
 
             {/* 各分类 */}
-            {Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => (
+            {Object.entries(EMOJI_DATA).map(([category, emojis]) => (
               <TabsContent key={category} value={category} className="mt-0">
                 <ScrollArea className="h-56 p-2">
                   <div className="grid grid-cols-8 gap-1">
@@ -232,7 +248,7 @@ export function EmojiPicker({ value, onChange, className }: EmojiPickerProps) {
             ))}
 
             {/* 上传 */}
-            <TabsContent value="上传" className="mt-0">
+            <TabsContent value="upload" className="mt-0">
               <div className="p-4">
                 <input
                   ref={fileInputRef}
@@ -249,12 +265,12 @@ export function EmojiPicker({ value, onChange, className }: EmojiPickerProps) {
                   <div className="flex flex-col items-center gap-2">
                     <Upload className="h-6 w-6 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      点击上传自定义图标
+                      {t('clickToUpload')}
                     </span>
                   </div>
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                  支持 PNG, JPG, SVG 格式
+                  {t('supportedFormats')}
                 </p>
               </div>
             </TabsContent>
@@ -273,7 +289,7 @@ export function EmojiPicker({ value, onChange, className }: EmojiPickerProps) {
                 setOpen(false);
               }}
             >
-              清除选择
+              {t('clearSelection')}
             </Button>
           </div>
         )}

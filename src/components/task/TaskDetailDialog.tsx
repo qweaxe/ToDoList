@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Calendar,
   Check,
@@ -85,6 +86,10 @@ export function TaskDetailDialog({
   taskId,
   onDeleted,
 }: TaskDetailDialogProps) {
+  const t = useTranslations('taskDetail');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
+  const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -246,13 +251,13 @@ export function TaskDetailDialog({
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg">
-              {isEditing ? '编辑任务' : '任务详情'}
+              {isEditing ? t('editTask') : t('taskDetail')}
             </DialogTitle>
             <div className="flex items-center gap-1">
               {isEditing ? (
                 <>
                   <Button variant="ghost" size="sm" onClick={resetEdit}>
-                    取消
+                    {t('cancel')}
                   </Button>
                   <Button
                     size="sm"
@@ -260,14 +265,14 @@ export function TaskDetailDialog({
                     disabled={!editTitle.trim() || updateMutation.isPending}
                   >
                     <Save className="h-4 w-4 mr-1" />
-                    保存
+                    {t('save')}
                   </Button>
                 </>
               ) : (
                 <>
                   <Button variant="ghost" size="sm" onClick={startEditing}>
                     <Edit2 className="h-4 w-4 mr-1" />
-                    编辑
+                    {t('edit')}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -278,12 +283,12 @@ export function TaskDetailDialog({
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={handleToggle}>
                         <Check className="h-4 w-4 mr-2" />
-                        {isCompleted ? '标记为未完成' : '标记为完成'}
+                        {isCompleted ? t('markAsIncomplete') : t('markAsComplete')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                         <Trash2 className="h-4 w-4 mr-2" />
-                        删除任务
+                        {t('deleteTask')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -319,25 +324,25 @@ export function TaskDetailDialog({
                       task.level.value === 1 && 'border-gray-500 text-gray-500'
                     )}
                   >
-                    {task.level.name}优先级
+                    {task.level.name}{t('priority')}
                   </Badge>
                 )}
                 {task.isMilestone && (
                   <Badge variant="default">
                     <Flag className="h-3 w-3 mr-1" />
-                    里程碑
+                    {t('milestone')}
                   </Badge>
                 )}
                 {task.isCycleTask && (
                   <Badge variant="outline">
                     <Repeat className="h-3 w-3 mr-1" />
-                    周期
+                    {t('recurring')}
                   </Badge>
                 )}
                 {isCrossDay && (
                   <Badge variant="outline">
                     <Clock className="h-3 w-3 mr-1" />
-                    跨天
+                    {t('crossDay')}
                   </Badge>
                 )}
               </div>
@@ -347,7 +352,7 @@ export function TaskDetailDialog({
                 <Input
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="任务标题"
+                  placeholder={t('taskTitle')}
                   className="text-lg font-medium"
                 />
               ) : (
@@ -364,11 +369,11 @@ export function TaskDetailDialog({
               {/* 描述 */}
               {isEditing ? (
                 <div className="space-y-2">
-                  <Label>描述</Label>
+                  <Label>{t('description')}</Label>
                   <Textarea
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
-                    placeholder="任务描述（可选）"
+                    placeholder={t('descriptionPlaceholder')}
                     rows={3}
                   />
                 </div>
@@ -380,7 +385,7 @@ export function TaskDetailDialog({
               {isEditing ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>开始日期</Label>
+                    <Label>{t('startDate')}</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start">
@@ -401,7 +406,7 @@ export function TaskDetailDialog({
                     </Popover>
                   </div>
                   <div className="space-y-2">
-                    <Label>截止日期</Label>
+                    <Label>{t('dueDate')}</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start">
@@ -427,11 +432,11 @@ export function TaskDetailDialog({
                   <Calendar className="h-4 w-4" />
                   {isCrossDay ? (
                     <span>
-                      {format(new Date(task.startDate), 'yyyy年M月d日', { locale: zhCN })} -{' '}
-                      {format(new Date(task.dueDate), 'yyyy年M月d日', { locale: zhCN })}
+                      {format(new Date(task.startDate), 'MMM d, yyyy', { locale: dateFnsLocale })} -{' '}
+                      {format(new Date(task.dueDate), 'MMM d, yyyy', { locale: dateFnsLocale })}
                     </span>
                   ) : (
-                    <span>{format(new Date(task.dueDate), 'yyyy年M月d日', { locale: zhCN })}</span>
+                    <span>{format(new Date(task.dueDate), 'MMM d, yyyy', { locale: dateFnsLocale })}</span>
                   )}
                 </div>
               )}
@@ -440,16 +445,16 @@ export function TaskDetailDialog({
               {isEditing && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>分类</Label>
-                    <Select 
-                      value={editCategoryId || '__none__'} 
+                    <Label>{t('category')}</Label>
+                    <Select
+                      value={editCategoryId || '__none__'}
                       onValueChange={(v) => setEditCategoryId(v === '__none__' ? '' : v)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="选择分类" />
+                        <SelectValue placeholder={t('selectCategory')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">无分类</SelectItem>
+                        <SelectItem value="__none__">{t('noCategory')}</SelectItem>
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.emoji} {cat.name}
@@ -459,16 +464,16 @@ export function TaskDetailDialog({
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>等级</Label>
-                    <Select 
-                      value={editLevelId || '__none__'} 
+                    <Label>{t('level')}</Label>
+                    <Select
+                      value={editLevelId || '__none__'}
                       onValueChange={(v) => setEditLevelId(v === '__none__' ? '' : v)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="选择等级" />
+                        <SelectValue placeholder={t('selectLevel')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">无等级</SelectItem>
+                        <SelectItem value="__none__">{t('noLevel')}</SelectItem>
                         {levels.map((level) => (
                           <SelectItem key={level.id} value={level.id}>
                             {level.name}
@@ -484,7 +489,7 @@ export function TaskDetailDialog({
               <Separator />
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base">子任务</Label>
+                  <Label className="text-base">{t('subtask')}</Label>
                   {parsedSubTasks.length > 0 && (
                     <span className="text-sm text-muted-foreground">
                       {completedSubTasks}/{parsedSubTasks.length} ({subTaskProgress}%)
@@ -497,7 +502,7 @@ export function TaskDetailDialog({
                     <Input
                       value={newSubTaskText}
                       onChange={(e) => setNewSubTaskText(e.target.value)}
-                      placeholder="添加子任务"
+                      placeholder={t('addSubtask')}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -543,7 +548,7 @@ export function TaskDetailDialog({
                 </div>
 
                 {!isEditing && parsedSubTasks.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">暂无子任务</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">{t('noSubtask')}</p>
                 )}
               </div>
 
@@ -553,13 +558,13 @@ export function TaskDetailDialog({
                   <Separator />
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <Check className="h-4 w-4" />
-                    完成于 {format(new Date(task.completedAt), 'yyyy年M月d日', { locale: zhCN })}
+                    {t('completedOn')} {format(new Date(task.completedAt), 'MMM d, yyyy', { locale: dateFnsLocale })}
                   </div>
                 </>
               )}
             </div>
           ) : (
-            <div className="py-8 text-center text-muted-foreground">任务不存在</div>
+            <div className="py-8 text-center text-muted-foreground">{t('taskNotFound')}</div>
           )}
         </ScrollArea>
       </DialogContent>

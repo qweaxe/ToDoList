@@ -428,7 +428,7 @@ export function TaskCard({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onEdit(task)}>
                 <Edit2 className="h-4 w-4 mr-2" />
-                编辑
+                {t('common.edit')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -436,7 +436,7 @@ export function TaskCard({
                 className="text-destructive"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                删除
+                {t('common.delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
