@@ -62,12 +62,12 @@ export function AuthPage({ callbackUrl }: AuthPageProps) {
         redirect: false,
       });
 
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
+      if (result?.ok) {
         toast.success(t('loginSuccess'));
         router.push(callbackUrl || '/');
         router.refresh();
+      } else {
+        toast.error(result?.error || t('loginFailed'));
       }
     } catch {
       toast.error(t('loginFailed'));

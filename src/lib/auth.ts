@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Vercel/HTTPS 环境必须启用
   session: {
     strategy: 'jwt',
     maxAge: 7 * 24 * 60 * 60, // 7 天
