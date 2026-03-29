@@ -241,7 +241,14 @@
     "deleteSelected": "删除选中",
     "confirmDeleteTitle": "确认删除",
     "confirmDeleteDesc": "确定要删除选中的 {count} 个任务吗？此操作无法撤销。",
-    "deleting": "删除中..."
+    "deleting": "删除中...",
+    "selectedCount": "已选择 {count} 项",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    "noCategory": "无分类",
+    "noLevel": "无等级",
+    "category": "分类",
+    "level": "等级"
   },
   "confirm": {
     "deleteTitle": "确认删除",
@@ -255,6 +262,36 @@
     "completionRate": "完成率",
     "thisMonth": "本月统计",
     "thisYear": "本年统计"
+  },
+  "taskCard": {
+    "completed": "完成",
+    "edit": "编辑",
+    "delete": "删除",
+    "subtask": "子任务",
+    "changeCompletionDate": "修改完成日期",
+    "milestone": "里程碑",
+    "recurring": "周期",
+    "crossDay": "跨天"
+  },
+  "emojiPicker": {
+    "selectIcon": "选择图标",
+    "search": "搜索 emoji...",
+    "noMatch": "未找到匹配的 emoji",
+    "recent": "最近",
+    "upload": "上传",
+    "clickToUpload": "点击上传自定义图标",
+    "supportedFormats": "支持 PNG, JPG, SVG 格式",
+    "clearSelection": "清除选择",
+    "common": "常用",
+    "work": "工作",
+    "life": "生活",
+    "study": "学习",
+    "health": "健康",
+    "entertainment": "娱乐",
+    "food": "美食",
+    "travel": "出行",
+    "nature": "自然",
+    "emoji": "表情"
   },
   "calendar": {
     "more": "更多"

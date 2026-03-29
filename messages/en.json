@@ -235,13 +235,21 @@
   },
   "batch": {
     "batchActions": "Batch Actions",
+    "cancel": "Cancel",
     "cancelSelection": "Cancel",
     "completeSelected": "Complete Selected",
     "moveTo": "Move to",
     "deleteSelected": "Delete",
     "confirmDeleteTitle": "Confirm Delete",
     "confirmDeleteDesc": "Are you sure you want to delete {count} selected tasks? This action cannot be undone.",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "selectedCount": "{count} selected",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "noCategory": "No Category",
+    "noLevel": "No Level",
+    "category": "Category",
+    "level": "Level"
   },
   "confirm": {
     "deleteTitle": "Confirm Delete",
@@ -255,6 +263,36 @@
     "completionRate": "Completion Rate",
     "thisMonth": "This Month",
     "thisYear": "This Year"
+  },
+  "taskCard": {
+    "completed": "completed",
+    "edit": "Edit",
+    "delete": "Delete",
+    "subtask": "Subtask",
+    "changeCompletionDate": "Change completion date",
+    "milestone": "Milestone",
+    "recurring": "Recurring",
+    "crossDay": "Multi-day"
+  },
+  "emojiPicker": {
+    "selectIcon": "Select icon",
+    "search": "Search emoji...",
+    "noMatch": "No matching emoji found",
+    "recent": "Recent",
+    "upload": "Upload",
+    "clickToUpload": "Click to upload custom icon",
+    "supportedFormats": "Supports PNG, JPG, SVG formats",
+    "clearSelection": "Clear selection",
+    "common": "Common",
+    "work": "Work",
+    "life": "Life",
+    "study": "Study",
+    "health": "Health",
+    "entertainment": "Entertainment",
+    "food": "Food",
+    "travel": "Travel",
+    "nature": "Nature",
+    "emoji": "Emoji"
   },
   "calendar": {
     "more": "more"
