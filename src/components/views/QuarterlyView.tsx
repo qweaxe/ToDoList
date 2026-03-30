@@ -112,7 +112,7 @@ export function QuarterlyView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-xl sm:text-2xl font-bold">
-            {data?.data.year} {data?.data.quarterName}
+            {data?.data.year} {t('view.quarterView')} - Q{data?.data.quarter}
           </h1>
           <span className="text-sm text-muted-foreground">
             {data?.data.startDate} - {data?.data.endDate}

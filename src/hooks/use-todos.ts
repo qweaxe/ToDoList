@@ -273,7 +273,6 @@ export function useQuarterlyTodos(date?: string) {
     data: {
       year: number;
       quarter: number;
-      quarterName: string;
       startDate: string;
       endDate: string;
       months: Array<{

@@ -116,6 +116,9 @@ export async function POST(request: Request) {
 ### 首次部署
 部署后访问 `/api/seed` 初始化默认分类和等级。
 
+### 更新策略
+如果是纯文档类的更新，使用` git commit -m "docs: update worklog [skip ci]"` 这种形式的git命令，不让后台频繁进行编译影响项目
+
 ## 环境变量
 
 `.env.local` 中需要配置:
