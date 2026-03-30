@@ -70,15 +70,15 @@ export function CalendarGrid({
     return isSameMonth(date, currentMonth);
   };
 
-  // 星期标签
+  // Weekday labels
   const WEEKDAYS = [
-    t('weekday.monShort'),
-    t('weekday.tueShort'),
-    t('weekday.wedShort'),
-    t('weekday.thuShort'),
-    t('weekday.friShort'),
-    t('weekday.satShort'),
-    t('weekday.sunShort')
+    t('weekday.mon'),
+    t('weekday.tue'),
+    t('weekday.wed'),
+    t('weekday.thu'),
+    t('weekday.fri'),
+    t('weekday.sat'),
+    t('weekday.sun')
   ];
 
   if (isLoading) {
