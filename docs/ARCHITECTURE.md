@@ -25,7 +25,7 @@
 | 技术 | 用途 |
 |------|------|
 | Prisma ORM | 数据库 ORM |
-| SQLite | 开发环境数据库 |
+| PostgreSQL | 生产环境数据库 |
 
 ### 2.4 UI 与样式
 | 技术 | 用途 |
@@ -43,6 +43,7 @@
 | cron-parser | Cron 表达式解析 |
 | zod | 表单验证 |
 | bcryptjs | 密码加密 |
+| next-intl | 国际化 (i18n) |
 
 ### 2.6 认证与授权
 | 技术 | 用途 |
@@ -58,10 +59,22 @@
 ```
 src/
 ├── app/                          # Next.js App Router
-│   ├── page.tsx                  # 主页面（单页应用入口）
+│   ├── [locale]/                 # 国际化路由
+│   │   ├── page.tsx              # 主页面（单页应用入口）
+│   │   ├── layout.tsx            # 国际化布局
+│   │   └── forgot-password/      # 忘记密码页面
+│   ├── page.tsx                  # 根页面重定向
 │   ├── layout.tsx                # 根布局
 │   ├── globals.css               # 全局样式
+│   ├── middleware.ts             # 国际化中间件
 │   └── api/                      # API Routes
+│       ├── auth/                 # 认证相关 API
+│       │   ├── register/route.ts # 用户注册
+│       │   ├── [...nextauth]/    # NextAuth.js 端点
+│       │   ├── change-password/  # 修改密码
+│       │   ├── forgot-password/  # 忘记密码
+│       │   ├── reset-password/   # 重置密码
+│       │   └── security-question/# 密保问题
 │       ├── todos/                # 任务相关 API
 │       │   ├── route.ts          # GET(列表) / POST(创建)
 │       │   ├── [id]/route.ts     # GET/PUT/DELETE 单个任务
@@ -70,10 +83,17 @@ src/
 │       │   ├── weekly/route.ts   # 周视图数据
 │       │   ├── monthly/route.ts  # 月视图数据
 │       │   ├── quarterly/route.ts # 季度视图数据
-│       │   └── yearly/route.ts   # 年度统计数据
+│       │   ├── yearly/route.ts   # 年度统计数据
+│       │   ├── filter/route.ts   # 按分类/等级筛选
+│       │   └── toggle/route.ts   # 切换任务状态
 │       ├── categories/           # 任务分类 API
+│       │   ├── route.ts          # 列表/创建
+│       │   └── [id]/route.ts     # 更新/删除
+│       ├── levels/               # 任务等级 API
 │       │   └── route.ts
-│       └── levels/               # 任务等级 API
+│       ├── holidays/             # 节假日 API
+│       │   └── route.ts
+│       └── seed/                 # 初始化种子数据
 │           └── route.ts
 │
 ├── components/
@@ -81,49 +101,80 @@ src/
 │   ├── layout/                   # 布局组件
 │   │   ├── Sidebar.tsx           # 侧边栏导航
 │   │   ├── Header.tsx            # 顶部导航
-│   │   └── Footer.tsx            # 底部栏
+│   │   ├── Footer.tsx            # 底部栏
+│   │   ├── MainLayout.tsx        # 主布局
+│   │   └── SecurityBanner.tsx    # 安全提示横幅
 │   ├── views/                    # 视图组件
 │   │   ├── DayView.tsx           # 当日视图
 │   │   ├── CalendarView.tsx      # 日历视图
-│   │   ├── WeeklyKanban.tsx      # 周视图
-│   │   ├── QuarterlyRoadmap.tsx  # 季度视图
-│   │   └── YearlyHeatmap.tsx     # 年度视图
+│   │   ├── WeekView.tsx          # 周视图（含拖拽）
+│   │   ├── QuarterlyView.tsx     # 季度视图
+│   │   ├── YearlyView.tsx        # 年度视图
+│   │   ├── OverdueView.tsx       # 历史待办视图
+│   │   ├── TaskListView.tsx      # 任务列表视图
+│   │   └── SettingsView.tsx      # 设置视图
 │   ├── task/                     # 任务相关组件
 │   │   ├── TaskCard.tsx          # 任务卡片
 │   │   ├── TaskForm.tsx          # 任务表单
-│   │   ├── TaskDetail.tsx        # 任务详情模态框
-│   │   ├── SubTaskList.tsx       # 子任务列表
-│   │   └── TaskBatchActions.tsx  # 批量操作
+│   │   ├── TaskDetailDialog.tsx  # 任务详情弹窗
+│   │   └── BatchActionsToolbar.tsx # 批量操作工具栏
 │   ├── calendar/                 # 日历相关组件
 │   │   ├── CalendarGrid.tsx      # 日历网格
 │   │   ├── CalendarCell.tsx      # 日历单元格
 │   │   └── MonthStats.tsx        # 月度统计
-│   └── settings/                 # 设置组件
-│       ├── CategoryManager.tsx   # 分类管理
-│       └── LevelManager.tsx      # 等级管理
+│   ├── settings/                 # 设置组件
+│   │   ├── CategoryManager.tsx   # 分类管理
+│   │   ├── LevelManager.tsx      # 等级管理
+│   │   ├── ChangePassword.tsx    # 修改密码
+│   │   └── SecurityQuestionSetting.tsx # 密保问题设置
+│   ├── auth/                     # 认证组件
+│   │   ├── AuthPage.tsx          # 登录/注册页面
+│   │   ├── ForgotPasswordPage.tsx # 忘记密码页面
+│   │   └── SessionProvider.tsx   # 会话提供者
 │   └── common/                   # 通用组件
-│       └── EmojiPicker.tsx       # Emoji 选择器（分类图标选择）
+│       ├── EmojiPicker.tsx       # Emoji 选择器
+│       └── LanguageSwitcher.tsx  # 语言切换
 │
 ├── hooks/                        # 自定义 Hooks
-│   ├── useTodos.ts               # 任务数据 Hook
-│   ├── useCategories.ts          # 分类数据 Hook
-│   ├── useLevels.ts              # 等级数据 Hook
-│   └── useViewStore.ts           # 视图状态 Store
+│   ├── use-todos.ts              # 任务数据 Hook
+│   ├── use-categories.ts         # 分类数据 Hook
+│   ├── use-levels.ts             # 等级数据 Hook
+│   ├── use-view-store.ts         # 视图状态 Store
+│   ├── use-holidays.ts           # 节假日数据 Hook
+│   ├── use-batch-selection.ts    # 批量选择 Hook
+│   └── use-toast.ts              # Toast 提示 Hook
 │
 ├── lib/
 │   ├── db.ts                     # Prisma 客户端
+│   ├── auth.ts                   # NextAuth 配置
 │   ├── date-utils.ts             # 日期处理工具
 │   ├── cron-utils.ts             # Cron 表达式工具
 │   ├── holiday-service.ts        # 节假日服务
+│   ├── static-holidays.ts        # 静态节假日数据
+│   ├── api-utils.ts              # API 工具函数
 │   └── utils.ts                  # 通用工具函数
 │
-├── types/
-│   ├── todo.ts                   # 任务类型定义
-│   ├── category.ts               # 分类类型定义
-│   └── api.ts                    # API 类型定义
+├── services/
+│   └── recurrence-service.ts     # 周期任务同步服务
 │
-└── prisma/
-    └── schema.prisma             # 数据库模型定义
+├── i18n/
+│   ├── request.ts                # next-intl 请求配置
+│   └── routing.ts                # 国际化路由配置
+│
+├── types/
+│   ├── index.ts                  # 类型导出
+│   ├── api.ts                    # API 类型定义
+│   └── next-auth.d.ts            # NextAuth 类型扩展
+│
+├── middleware.ts                 # Next.js 中间件（认证+i18n）
+│
+└── messages/                     # 国际化翻译文件
+    ├── en.json                   # 英文翻译
+    └── zh.json                   # 中文翻译
+
+prisma/
+└── schema.prisma                 # 数据库模型定义
+└── migrations/                   # 数据库迁移文件
 ```
 
 ---
@@ -136,13 +187,17 @@ src/
 // 任务分类
 model Category {
   id          String   @id @default(cuid())
-  name        String   @unique
+  name        String
   description String?
   emoji       String?
   color       String?  // 可选颜色标识
+  userId      String   // 用户级数据隔离
+  user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   todos       Todo[]
+
+  @@unique([name, userId]) // 同一用户下分类名唯一
 }
 
 // 任务等级（固定三级：高、中、低）
@@ -162,25 +217,29 @@ model Todo {
   title       String
   description String?
   status      String   @default("pending") // pending, in_progress, completed
-  
+  completedAt String?  // 完成日期
+
   // 时间维度
   startDate   String   // ISO格式: YYYY-MM-DD
   dueDate     String   // ISO格式: YYYY-MM-DD
-  
+
   // 多步骤任务 - 使用 JSON 存储
   subTasks    String?  // JSON 字符串: [{id, text, isDone}]
-  
+
   // 周期任务
   isCycleTask Boolean  @default(false)
   recurrenceRuleId String?
   recurrenceRule   RecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id])
-  
+  parentRuleId String? // 关联的周期规则ID，用于标识生成的实例
+
   // 关联
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id])
   levelId     String?
   level       Level? @relation(fields: [levelId], references: [id])
-  
+  userId      String
+  user        User   @relation(fields: [userId], references: [id])
+
   // 元数据
   priority    Int      @default(0) // 排序优先级
   isMilestone Boolean  @default(false) // 季度视图里程碑标记
@@ -275,6 +334,12 @@ model Holiday {
 | POST | `/api/auth/[...nextauth]` | NextAuth.js 认证端点 |
 | GET | `/api/auth/session` | 获取当前会话信息 |
 | POST | `/api/auth/signout` | 用户登出 |
+| PUT | `/api/auth/change-password` | 修改密码 |
+| POST | `/api/auth/forgot-password` | 忘记密码（获取密保问题） |
+| POST | `/api/auth/reset-password` | 重置密码 |
+| GET | `/api/auth/security-question` | 获取密保问题状态 |
+| PUT | `/api/auth/security-question` | 设置/更新密保问题 |
+| DELETE | `/api/auth/security-question` | 删除密保问题 |
 
 ---
 
@@ -308,7 +373,13 @@ model User {
   name      String?  // 显示名称
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
+  // 安全相关字段
+  securityQuestion        String?   // 密保问题
+  securityAnswer          String?   // 密保答案（加密存储）
+  securityAnswerAttempts  Int?      // 错误尝试次数
+  securityAnswerLockedAt  DateTime? // 锁定时间
+
   // 关联数据
   categories Category[]
   todos      Todo[]
@@ -324,7 +395,16 @@ model User {
 | 等级 (Level) | 系统级 | 所有用户共享固定三级等级 |
 | 节假日 (Holiday) | 系统级 | 所有用户共享节假日数据 |
 
-### 6.4 API 权限验证
+### 6.4 密码安全功能
+
+| 功能 | 描述 |
+|------|------|
+| 修改密码 | 需验证当前密码，新密码至少6位 |
+| 密保问题 | 支持预设问题或自定义问题，答案加密存储 |
+| 忘记密码 | 通过密保问题验证身份后重置密码 |
+| 错误锁定 | 密保问题连续错误5次后锁定15分钟 |
+
+### 6.5 API 权限验证
 
 ```typescript
 // API 路由中的权限验证示例
@@ -351,13 +431,13 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-### 6.5 会话管理
+### 6.6 会话管理
 
 - **JWT 策略**：使用 JWT 存储会话信息，无需服务器端会话存储
 - **有效期**：默认 7 天，选择"记住我"延长至 30 天
 - **刷新机制**：Token 过期前自动刷新
 
-### 6.6 路由保护
+### 6.7 路由保护
 
 ```typescript
 // middleware.ts
@@ -407,7 +487,7 @@ export const config = {
 **布局**：横向7列（周一至周日）
 
 **功能**：
-- 拖拽任务跨天移动（自动更新 dueDate）
+- 拖拽任务跨天移动（使用 dnd-kit，自动更新 dueDate）
 - 顶部周总结：完成率 + 重点任务
 
 ### 7.4 季度视图 (Quarterly Roadmap)
@@ -432,28 +512,78 @@ export const config = {
 - 悬浮显示当天摘要
 - 点击跳转当日视图
 
+### 7.6 历史待办视图 (Overdue View)
+
+**展示**：所有过期未完成任务
+
+**功能**：
+- 显示 dueDate 早于今天且未完成的任务
+- 点击任务跳转到对应 dueDate 的日视图
+- 支持批量操作
+
+### 7.7 任务列表视图 (Task List View)
+
+**展示**：按分类或等级筛选的任务列表
+
+**功能**：
+- 从设置页面点击分类/等级的任务数量进入
+- 支持年份切换
+- 显示任务统计（总数、完成数、待办数）
+
 ---
 
-## 8. 周期任务同步机制
+## 8. 国际化架构
 
-### 8.1 同步触发时机
+### 8.1 技术方案
+
+使用 `next-intl` 实现国际化：
+- 路由结构：`/[locale]/...` 动态路由
+- 支持语言：中文 (zh)、英文 (en)
+- 翻译文件：`messages/zh.json`、`messages/en.json`
+
+### 8.2 中间件配置
+
+```typescript
+// src/middleware.ts
+export default middleware;
+
+export const config = {
+  matcher: ['/', '/(zh|en)/:path*']
+};
+```
+
+### 8.3 使用方式
+
+```tsx
+// 组件中使用翻译
+import { useTranslations } from 'next-intl';
+
+const t = useTranslations('nav');
+console.log(t('today')); // "今天" 或 "Today"
+```
+
+---
+
+## 9. 周期任务同步机制
+
+### 9.1 同步触发时机
 
 当调用以下 API 时，执行周期任务同步：
 - `/api/todos/daily`
 - `/api/todos/weekly`
 - `/api/todos/monthly`
 
-### 8.2 同步逻辑
+### 9.2 同步逻辑
 
 ```typescript
 async function syncCycleTasks(startDate: Date, endDate: Date) {
   // 1. 查询所有活跃的周期规则
   const rules = await getActiveRecurrenceRules();
-  
+
   // 2. 计算时间窗口内应生成的任务日期
   for (const rule of rules) {
     const dates = calculateOccurrenceDates(rule, startDate, endDate);
-    
+
     // 3. 检查是否已存在，不存在则创建
     for (const date of dates) {
       const exists = await checkTaskExists(rule.id, date);
@@ -467,26 +597,26 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 
 ---
 
-## 9. 节假日数据获取方案
+## 10. 节假日数据获取方案
 
-### 9.1 数据来源
+### 10.1 数据来源
 
 使用开源 API 获取中国法定节假日：
 - **主源**: [timor.tech](http://timor.tech/api/holiday) 免费节假日API
 - **备源**: 本地缓存 + 手动配置补充
 
-### 9.2 缓存策略
+### 10.2 缓存策略
 
 1. 首次访问时从 API 拉取当年数据
-2. 存入 SQLite 数据库
+2. 存入 PostgreSQL 数据库
 3. 后续请求直接读缓存
 4. 跨年时自动拉取新年数据
 
 ---
 
-## 10. 性能优化策略
+## 11. 性能优化策略
 
-### 10.1 数据加载
+### 11.1 数据加载
 
 | 视图 | 策略 |
 |------|------|
@@ -494,7 +624,7 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 | 月视图 | 按月懒加载，切换月份时请求 |
 | 周视图 | 预加载前后各一周数据 |
 
-### 10.2 缓存策略
+### 11.2 缓存策略
 
 使用 TanStack Query 的缓存机制：
 - 任务数据：5分钟过期
@@ -503,9 +633,9 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 
 ---
 
-## 11. UI/UX 规范
+## 12. UI/UX 规范
 
-### 11.1 配色方案
+### 12.1 配色方案
 
 ```css
 /* 主色调 */
@@ -522,13 +652,13 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 --weekend: text-red-500
 ```
 
-### 11.2 动画
+### 12.2 动画
 
 - 任务添加/删除：Fade + Slide
 - 状态切换：Scale + Color transition
 - 视图切换：Cross-fade
 
-### 11.3 响应式断点
+### 12.3 响应式断点
 
 | 断点 | 布局 |
 |------|------|
@@ -538,6 +668,6 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 
 ---
 
-## 12. 开发阶段规划
+## 13. 开发阶段规划
 
 详见 `TODO_PLAN.md`

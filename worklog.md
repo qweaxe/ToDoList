@@ -636,3 +636,38 @@ Stage Summary:
 - ✅ 修复中文版周几显示异常问题
 
 ---
+Task ID: 17
+Agent: Main Agent
+Task: 更新项目架构文档
+Date: 2026.03.30
+
+Work Log:
+1. 技术栈更新
+   - 数据库：SQLite → PostgreSQL
+   - 新增 next-intl 国际化库
+
+2. 项目结构更新
+   - 更新目录结构，反映国际化路由 (`[locale]/`)
+   - 新增认证相关组件和 API
+   - 新增安全功能（修改密码、密保问题）
+   - 新增视图组件（OverdueView、TaskListView、SettingsView）
+
+3. 数据模型更新
+   - User 模型：添加安全相关字段（securityQuestion、securityAnswer 等）
+   - Category 模型：添加 userId 实现用户级数据隔离
+   - Todo 模型：添加 completedAt、parentRuleId、userId 字段
+
+4. API 接口更新
+   - 新增认证 API（修改密码、忘记密码、重置密码、密保问题）
+   - 新增筛选 API（/api/todos/filter）
+
+5. 新增章节
+   - 国际化架构（第 8 章）
+   - 密码安全功能说明（第 6.4 节）
+
+Stage Summary:
+- ✅ 架构文档与实际代码同步
+- ✅ 补充新增功能说明
+- ✅ 修正章节编号
+
+---
