@@ -183,25 +183,33 @@ export function QuarterlyView() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {months.map((month) => (
-                <div
-                  key={month.monthNumber}
-                  className="cursor-pointer hover:bg-muted/50 rounded-lg p-3 transition-colors"
-                  onClick={() => handleMonthClick(month.monthNumber)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">{month.month}</span>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span>{t('task.completed')} {month.completed}</span>
-                      <span>{t('task.pending')} {month.pending}</span>
-                      <span className="font-medium text-foreground">
-                        {month.completionRate}%
-                      </span>
+              {months.map((month) => {
+                const monthNames = [
+                  t('month.january'), t('month.february'), t('month.march'),
+                  t('month.april'), t('month.may'), t('month.june'),
+                  t('month.july'), t('month.august'), t('month.september'),
+                  t('month.october'), t('month.november'), t('month.december')
+                ];
+                return (
+                  <div
+                    key={month.monthNumber}
+                    className="cursor-pointer hover:bg-muted/50 rounded-lg p-3 transition-colors"
+                    onClick={() => handleMonthClick(month.monthNumber)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium">{monthNames[month.monthNumber - 1]}</span>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span>{t('task.completed')} {month.completed}</span>
+                        <span>{t('task.pending')} {month.pending}</span>
+                        <span className="font-medium text-foreground">
+                          {month.completionRate}%
+                        </span>
+                      </div>
                     </div>
+                    <Progress value={month.completionRate} className="h-2" />
                   </div>
-                  <Progress value={month.completionRate} className="h-2" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
