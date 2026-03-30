@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
@@ -96,16 +96,15 @@ export function TaskCard({
   const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
   const [expanded, setExpanded] = useState(false);
 
-  // 解析子任务
-  const subTasks: SubTask[] = task.subTasks
-    ? (() => {
-        try {
-          return JSON.parse(task.subTasks);
-        } catch {
-          return [];
-        }
-      })()
-    : [];
+  // Parse subtasks with memoization
+  const subTasks: SubTask[] = useMemo(() => {
+    if (!task.subTasks) return [];
+    try {
+      return JSON.parse(task.subTasks);
+    } catch {
+      return [];
+    }
+  }, [task.subTasks]);
 
   // 计算子任务完成进度
   const completedSubTasks = subTasks.filter((st) => st.isDone).length;

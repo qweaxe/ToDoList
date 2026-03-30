@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format, getMonth, getDay } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
@@ -75,15 +75,16 @@ export function YearlyView() {
     setCurrentView('day');
   };
 
-  // 组织热力图数据为周视图
-  const buildHeatmapGrid = (heatmap: typeof data.data.heatmap) => {
+  // Build heatmap grid with memoization (365+ cells)
+  const heatmapGrid = useMemo(() => {
+    const heatmap = data?.data?.heatmap;
     if (!heatmap) return [];
 
     const grid: Array<Array<{ date: string; count: number; level: number } | null>> = [];
     let currentWeek: Array<{ date: string; count: number; level: number } | null> = [];
 
     heatmap.forEach((day) => {
-      // 周日开始新的一周
+      // Sunday starts a new week
       if (day.dayOfWeek === 0 && currentWeek.length > 0) {
         grid.push(currentWeek);
         currentWeek = new Array(7).fill(null);
@@ -100,15 +101,13 @@ export function YearlyView() {
       };
     });
 
-    // 添加最后一周
+    // Add the last week
     if (currentWeek.some((d) => d !== null)) {
       grid.push(currentWeek);
     }
 
     return grid;
-  };
-
-  const heatmapGrid = buildHeatmapGrid(data?.data?.heatmap);
+  }, [data?.data?.heatmap]);
 
   if (isLoading) {
     return (

@@ -707,8 +707,33 @@ Work Log:
    - 原流程：GET 获取任务 → PUT 更新任务
    - 优化后：直接 PUT 更新子任务
 
+---
+Task ID: 20
+Agent: Main Agent
+Task: React性能优化 - useMemo添加
+Date: 2026.03.30
+
+Work Log:
+1. TaskCard.tsx 子任务解析优化
+   - 将 subTasks JSON.parse 包装在 useMemo 中
+   - 依赖项: task.subTasks
+   - 避免每次渲染重复解析 JSON
+
+2. CalendarCell.tsx 任务排序优化
+   - 将 sortedTasks 排序逻辑包装在 useMemo 中
+   - 依赖项: tasks
+   - 避免每次渲染重新排序任务列表
+
+3. YearlyView.tsx 热力图网格优化
+   - 将 buildHeatmapGrid 函数改为 useMemo
+   - 依赖项: data?.data?.heatmap
+   - 避免每次渲染重新计算 365+ 个格子的数据结构
+   - 这是最关键的优化，因为数据量大
+
 Stage Summary:
-- ✅ /api/seed 端点添加权限验证
-- ✅ 子任务更新 API 优化，减少 50% 网络请求
+- ✅ TaskCard 子任务解析使用 useMemo
+- ✅ CalendarCell 任务排序使用 useMemo
+- ✅ YearlyView 热力图网格使用 useMemo
+- ✅ 减少不必要的重复计算，提升渲染性能
 
 ---

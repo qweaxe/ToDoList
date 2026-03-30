@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { format, isToday, isWeekend as checkIsWeekend } from 'date-fns';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
@@ -59,12 +60,14 @@ export function CalendarCell({
   // 判断是否是调休工作日（周末但需要上班）
   const isAdjustedWorkday = holiday && !holiday.isHoliday && isWeekendDay;
 
-  // 按优先级排序任务
-  const sortedTasks = [...tasks].sort((a, b) => {
-    const aValue = a.level?.value || 0;
-    const bValue = b.level?.value || 0;
-    return bValue - aValue;
-  });
+  // Sort tasks by priority with memoization
+  const sortedTasks = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      const aValue = a.level?.value || 0;
+      const bValue = b.level?.value || 0;
+      return bValue - aValue;
+    });
+  }, [tasks]);
 
   const visibleTasks = sortedTasks.slice(0, maxVisibleTasks);
   const hiddenCount = sortedTasks.length - maxVisibleTasks;
