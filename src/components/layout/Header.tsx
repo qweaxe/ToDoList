@@ -49,7 +49,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center px-4">
-        {/* 左侧：Logo 和菜单按钮 */}
+        {/* 左侧：菜单按钮（移动端） */}
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -59,9 +59,10 @@ export function Header() {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-2">
+          {/* 移动端显示Logo，桌面端隐藏（Sidebar已有） */}
+          <div className="flex items-center gap-2 md:hidden">
             <Calendar className="h-6 w-6 text-primary" />
-            <span className="font-bold text-lg hidden sm:inline-block">To Do List</span>
+            <span className="font-bold text-lg">To Do List</span>
           </div>
         </div>
 
