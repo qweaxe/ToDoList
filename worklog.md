@@ -1,4 +1,4 @@
-# LifeNexus Todo App - Work Log
+# To Do List  - Work Log
 
 ## 项目完成状态检查报告
 
