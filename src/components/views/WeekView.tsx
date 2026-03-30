@@ -272,13 +272,13 @@ export function WeekView() {
 
   // Day names from translations
   const DAY_NAMES = [
-    t('weekday.mon'),
-    t('weekday.tue'),
-    t('weekday.wed'),
-    t('weekday.thu'),
-    t('weekday.fri'),
-    t('weekday.sat'),
-    t('weekday.sun'),
+    t('weekday.monShort'),
+    t('weekday.tueShort'),
+    t('weekday.wedShort'),
+    t('weekday.thuShort'),
+    t('weekday.friShort'),
+    t('weekday.satShort'),
+    t('weekday.sunShort'),
   ];
 
   // 计算当前周的起始日期

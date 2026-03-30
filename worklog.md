@@ -606,3 +606,29 @@ Stage Summary:
 - ✅ 代码注释统一为英文
 
 ---
+Task ID: 16
+Agent: Main Agent
+Task: 周几显示优化和文档整理
+Date: 2026.03.30
+
+Work Log:
+1. 英文周几显示优化
+   - 修改 messages/en.json 中的 weekday 翻译
+   - 将单字母缩写 (M/T/W/T/F/S/S) 改为三字母缩写 (Mon/Tue/Wed/Thu/Fri/Sat/Sun)
+   - 解决周六和周日都是 "S" 无法区分的问题
+
+2. 组件更新
+   - 更新 CalendarGrid.tsx 使用完整周几名称
+   - 更新 WeekView.tsx 使用完整周几名称
+   - 更新 YearlyView.tsx 使用完整周几名称
+
+3. 文档整理
+   - 将 CLAUDE.md 翻译成中文
+   - 删除 CLAUDE_CN.md，只保留一个中文版本
+
+Stage Summary:
+- ✅ 英文版周几显示从单字母改为三字母缩写，提高辨识度
+- ✅ 日历视图、周视图、年度视图统一更新
+- ✅ 项目文档统一为中文版本
+
+---
