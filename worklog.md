@@ -768,3 +768,31 @@ Stage Summary:
 - ✅ 移动端保持原有交互体验
 
 ---
+Task ID: 22
+Agent: Main Agent
+Task: 子任务自动完成主任务功能
+Date: 2026.03.30
+
+Work Log:
+1. 问题分析
+   - 用户反馈：当所有子任务完成时，主任务应自动完成
+   - 检查 `/api/todos/[id]/subtask` API，发现更新子任务时只更新了 subTasks 字段
+   - 没有检查所有子任务是否完成，也没有更新主任务状态
+
+2. 修复实施
+   - 在更新子任务后检查所有子任务是否已完成
+   - 如果全部完成，自动将主任务状态设为 'completed'
+   - 同时设置 completedAt 为当前日期
+
+3. 代码修改
+   - 添加 `format` 函数导入（来自 date-fns）
+   - 计算 `allSubTasksDone` 布尔值
+   - 构建动态 `updateData` 对象
+   - 当所有子任务完成时，自动更新 status 和 completedAt
+
+Stage Summary:
+- ✅ 当所有子任务完成时，主任务自动标记为已完成
+- ✅ 自动设置完成日期为当前日期
+- ✅ 保持原子性操作，一次 API 调用完成所有更新
+
+---

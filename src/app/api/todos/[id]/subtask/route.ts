@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { z } from 'zod';
+import { format } from 'date-fns';
 
 const updateSubTaskSchema = z.object({
   subTaskId: z.string(),
@@ -47,10 +48,28 @@ export async function PUT(
       st.id === validated.subTaskId ? { ...st, isDone: validated.isDone } : st
     );
 
+    // Check if all subtasks are done
+    const allSubTasksDone = updatedSubTasks.length > 0 && updatedSubTasks.every((st: { isDone: boolean }) => st.isDone);
+
+    // Prepare update data
+    const updateData: {
+      subTasks: string;
+      status?: string;
+      completedAt?: string;
+    } = {
+      subTasks: JSON.stringify(updatedSubTasks),
+    };
+
+    // If all subtasks are done, auto-complete the main task
+    if (allSubTasksDone) {
+      updateData.status = 'completed';
+      updateData.completedAt = format(new Date(), 'yyyy-MM-dd');
+    }
+
     // Update task
     const todo = await db.todo.update({
       where: { id: taskId },
-      data: { subTasks: JSON.stringify(updatedSubTasks) },
+      data: updateData,
       include: {
         category: true,
         level: true,
