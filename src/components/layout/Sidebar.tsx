@@ -81,18 +81,18 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <>
-      {/* 移动端遮罩层 */}
+      {/* 遮罩层 - 移动端侧边栏打开时覆盖Header */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-[55] bg-black/50 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* 侧边栏 */}
+      {/* 侧边栏 - z-index高于Header确保完整显示 */}
       <aside
         className={cn(
-          'fixed md:sticky top-0 left-0 z-50 md:z-auto h-full w-64 bg-background border-r transform transition-transform duration-300 ease-in-out md:transform-none',
+          'fixed md:sticky top-0 left-0 z-[60] md:z-auto h-full w-64 bg-background border-r transform transition-transform duration-300 ease-in-out md:transform-none',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
           className
         )}

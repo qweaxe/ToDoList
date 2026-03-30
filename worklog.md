@@ -796,3 +796,34 @@ Stage Summary:
 - ✅ 保持原子性操作，一次 API 调用完成所有更新
 
 ---
+Task ID: 23
+Agent: Main Agent
+Task: 修复移动端侧边栏被Header遮挡问题
+Date: 2026.03.30
+
+Work Log:
+1. 问题分析
+   - 用户反馈：移动端打开侧边栏时，顶部的 Header 会遮挡部分内容
+   - 检查 z-index 层级关系：
+     - Header: z-50
+     - Sidebar 遮罩层: z-40
+     - Sidebar: z-50
+   - 问题原因：Header 和 Sidebar 的 z-index 相同（都是 z-50），导致 Header 挡住了侧边栏顶部
+
+2. 修复实施
+   - 提高 Sidebar 遮罩层 z-index: z-40 → z-[55]
+   - 提高 Sidebar z-index: z-50 → z-[60]
+   - 确保 Sidebar 在移动端打开时层级高于 Header
+
+3. 层级关系（修复后）
+   - Header: z-50（固定）
+   - Sidebar 遮罩层: z-[55]（移动端，覆盖Header）
+   - Sidebar: z-[60]（移动端，最高层级）
+   - 桌面端 Sidebar: z-auto（正常文档流）
+
+Stage Summary:
+- ✅ 移动端侧边栏不再被 Header 遮挡
+- ✅ 保持桌面端布局不变
+- ✅ 修复 z-index 层级冲突问题
+
+---
