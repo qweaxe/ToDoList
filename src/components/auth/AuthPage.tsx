@@ -211,9 +211,6 @@ export function AuthPage({ callbackUrl }: AuthPageProps) {
                     </Link>
                   </div>
 
-                  <p className="text-xs text-muted-foreground text-center">
-                    {t('testAccount')}
-                  </p>
                 </form>
               </TabsContent>
 

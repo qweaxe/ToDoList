@@ -358,7 +358,6 @@
     "loginFailed": "Login failed, please try again",
     "registerSuccess": "Registration successful, please login",
     "registerFailed": "Registration failed, please try again",
-    "testAccount": "Test account: test / 123456",
     "signOut": "Sign Out",
     "copyright": "© 2026 To Do List. All rights reserved.",
     "forgotPassword": "Forgot Password?",

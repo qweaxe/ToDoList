@@ -51,7 +51,7 @@ interface RecurrenceRule {
   isActive: boolean;
 }
 
-// 获取任务列表
+// Get task list
 export function useTodos(params?: {
   status?: string;
   categoryId?: string;
@@ -82,7 +82,7 @@ export function useTodos(params?: {
   });
 }
 
-// 获取当日任务
+// Get daily tasks
 export function useDailyTodos(date?: string) {
   const params = date ? `?date=${date}` : '';
 
@@ -108,7 +108,7 @@ export function useDailyTodos(date?: string) {
   });
 }
 
-// 获取月度任务
+// Get monthly tasks
 export function useMonthlyTodos(year: number, month: number) {
   return useQuery<{
     success: boolean;
@@ -132,7 +132,7 @@ export function useMonthlyTodos(year: number, month: number) {
   });
 }
 
-// 获取单个任务
+// Get single task
 export function useTodo(id: string | null) {
   return useQuery<{
     success: boolean;
@@ -148,7 +148,7 @@ export function useTodo(id: string | null) {
   });
 }
 
-// 创建任务
+// Create task
 export function useCreateTodo() {
   const queryClient = useQueryClient();
 
@@ -163,21 +163,19 @@ export function useCreateTodo() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        // 强制刷新所有 todos 相关查询
         queryClient.invalidateQueries({ queryKey: ['todos'] });
-        queryClient.refetchQueries({ queryKey: ['todos'] });
-        toast.success('任务创建成功');
+        toast.success('Task created successfully');
       } else {
-        toast.error(result.error || '创建失败');
+        toast.error(result.error || 'Creation failed');
       }
     },
     onError: () => {
-      toast.error('创建任务失败');
+      toast.error('Failed to create task');
     },
   });
 }
 
-// 更新任务
+// Update task
 export function useUpdateTodo() {
   const queryClient = useQueryClient();
 
@@ -193,19 +191,18 @@ export function useUpdateTodo() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['todos'] });
-        queryClient.refetchQueries({ queryKey: ['todos'] });
-        toast.success('任务更新成功');
+        toast.success('Task updated successfully');
       } else {
-        toast.error(result.error || '更新失败');
+        toast.error(result.error || 'Update failed');
       }
     },
     onError: () => {
-      toast.error('更新任务失败');
+      toast.error('Failed to update task');
     },
   });
 }
 
-// 切换任务状态
+// Toggle task status
 export function useToggleTodo() {
   const queryClient = useQueryClient();
 
@@ -221,19 +218,18 @@ export function useToggleTodo() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['todos'] });
-        queryClient.refetchQueries({ queryKey: ['todos'] });
-        toast.success(result.data?.status === 'completed' ? '任务已完成' : '任务已恢复');
+        toast.success(result.data?.status === 'completed' ? 'Task completed' : 'Task restored');
       } else {
-        toast.error(result.error || '操作失败');
+        toast.error(result.error || 'Operation failed');
       }
     },
     onError: () => {
-      toast.error('切换状态失败');
+      toast.error('Failed to toggle status');
     },
   });
 }
 
-// 获取周任务
+// Get weekly tasks
 export function useWeeklyTodos(date?: string) {
   const params = date ? `?date=${date}` : '';
 
@@ -268,7 +264,7 @@ export function useWeeklyTodos(date?: string) {
   });
 }
 
-// 获取季度数据
+// Get quarterly data
 export function useQuarterlyTodos(date?: string) {
   const params = date ? `?date=${date}` : '';
 
@@ -317,7 +313,7 @@ export function useQuarterlyTodos(date?: string) {
   });
 }
 
-// 获取年度统计
+// Get yearly stats
 export function useYearlyStats(year: number) {
   return useQuery<{
     success: boolean;
@@ -356,11 +352,11 @@ export function useYearlyStats(year: number) {
       const res = await fetch(`/api/todos/yearly?year=${year}`);
       return res.json();
     },
-    staleTime: 5 * 60 * 1000, // 5分钟缓存
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 }
 
-// 更新完成日期
+// Update completion date
 export function useUpdateCompletedAt() {
   const queryClient = useQueryClient();
 
@@ -376,18 +372,18 @@ export function useUpdateCompletedAt() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['todos'] });
-        toast.success('完成日期已更新');
+        toast.success('Completion date updated');
       } else {
-        toast.error(result.error || '更新失败');
+        toast.error(result.error || 'Update failed');
       }
     },
     onError: () => {
-      toast.error('更新完成日期失败');
+      toast.error('Failed to update completion date');
     },
   });
 }
 
-// 删除任务
+// Delete task
 export function useDeleteTodo() {
   const queryClient = useQueryClient();
 
@@ -401,19 +397,18 @@ export function useDeleteTodo() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['todos'] });
-        queryClient.refetchQueries({ queryKey: ['todos'] });
-        toast.success('任务删除成功');
+        toast.success('Task deleted successfully');
       } else {
-        toast.error(result.error || '删除失败');
+        toast.error(result.error || 'Deletion failed');
       }
     },
     onError: () => {
-      toast.error('删除任务失败');
+      toast.error('Failed to delete task');
     },
   });
 }
 
-// 批量删除任务
+// Batch delete tasks
 export function useBatchDeleteTodos() {
   const queryClient = useQueryClient();
 
@@ -431,16 +426,16 @@ export function useBatchDeleteTodos() {
         queryClient.invalidateQueries({ queryKey: ['todos'] });
         toast.success(result.message);
       } else {
-        toast.error(result.error || '删除失败');
+        toast.error(result.error || 'Deletion failed');
       }
     },
     onError: () => {
-      toast.error('批量删除失败');
+      toast.error('Batch deletion failed');
     },
   });
 }
 
-// 批量更新任务
+// Batch update tasks
 export function useBatchUpdateTodos() {
   const queryClient = useQueryClient();
 
@@ -458,38 +453,38 @@ export function useBatchUpdateTodos() {
         queryClient.invalidateQueries({ queryKey: ['todos'] });
         toast.success(result.message);
       } else {
-        toast.error(result.error || '更新失败');
+        toast.error(result.error || 'Update failed');
       }
     },
     onError: () => {
-      toast.error('批量更新失败');
+      toast.error('Batch update failed');
     },
   });
 }
 
-// 更新子任务状态
+// Update subtask status
 export function useUpdateSubTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ taskId, subTaskId, isDone }: { taskId: string; subTaskId: string; isDone: boolean }) => {
-      // 首先获取当前任务数据
+      // First get current task data
       const getRes = await fetch(`/api/todos/${taskId}`);
       const taskData = await getRes.json();
-      
+
       if (!taskData.success) {
-        throw new Error(taskData.error || '获取任务失败');
+        throw new Error(taskData.error || 'Failed to get task');
       }
 
-      // 解析现有的子任务
+      // Parse existing subtasks
       const subTasks = taskData.data.subTasks ? JSON.parse(taskData.data.subTasks) : [];
-      
-      // 更新指定子任务的状态
-      const updatedSubTasks = subTasks.map((st: { id: string; isDone: boolean }) => 
+
+      // Update specified subtask status
+      const updatedSubTasks = subTasks.map((st: { id: string; isDone: boolean }) =>
         st.id === subTaskId ? { ...st, isDone } : st
       );
 
-      // 发送更新请求
+      // Send update request
       const res = await fetch(`/api/todos/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -500,18 +495,17 @@ export function useUpdateSubTask() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['todos'] });
-        queryClient.refetchQueries({ queryKey: ['todos'] });
       } else {
-        toast.error(result.error || '更新子任务失败');
+        toast.error(result.error || 'Failed to update subtask');
       }
     },
     onError: () => {
-      toast.error('更新子任务失败');
+      toast.error('Failed to update subtask');
     },
   });
 }
 
-// 获取筛选后的任务列表（按分类或等级）
+// Get filtered task list (by category or level)
 export function useFilteredTodos(type: 'category' | 'level', id: string, year: number) {
   return useQuery<{
     success: boolean;

@@ -3,9 +3,8 @@ import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { getQuarterStart, getQuarterEnd, formatDate, extractQuarter } from '@/lib/date-utils';
 import { format, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 
-// GET /api/todos/quarterly?date=YYYY-MM-DD - 获取季度数据
+// GET /api/todos/quarterly?date=YYYY-MM-DD - Get quarterly data
 export async function GET(request: NextRequest) {
   try {
     const session = await getAuthSession();
@@ -118,7 +117,7 @@ export async function GET(request: NextRequest) {
       const total = monthTasks.length;
 
       return {
-        month: format(month, 'M月', { locale: zhCN }),
+        month: format(month, 'MMMM'),
         monthNumber: parseInt(format(month, 'M'), 10),
         total,
         completed,
@@ -142,7 +141,6 @@ export async function GET(request: NextRequest) {
       data: {
         year,
         quarter,
-        quarterName: `第${quarter}季度`,
         startDate: quarterStartStr,
         endDate: quarterEndStr,
         months: monthlyStats,

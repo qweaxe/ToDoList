@@ -568,3 +568,41 @@ Stage Summary:
 - ⚠️ 后端 API 待修复：weekly/route.ts 的 dayName 硬编码 zhCN
 - ⚠️ 后端 API 待修复：quarterly API 的 quarterName 和月份名称
 
+---
+Task ID: 15
+Agent: Main Agent
+Task: Footer品牌更新和i18n完善
+Date: 2026.03.30
+
+Work Log:
+1. Footer 品牌更新
+   - 修改 src/components/layout/Footer.tsx
+   - 将 "Made with ❤ by To Do List" 改为 "Innovated with ❤ by LRcourior"
+
+2. 登录页面测试账号信息移除
+   - 删除 messages/zh.json 和 messages/en.json 中的 testAccount 翻译键
+   - 移除 src/components/auth/AuthPage.tsx 中显示测试账号的段落
+
+3. 任务列表刷新逻辑优化
+   - 分析 use-todos.ts 中 React Query 的 invalidateQueries 和 refetchQueries 行为
+   - 发现同时使用两者会导致竞态条件和重复请求
+   - 移除所有冗余的 refetchQueries 调用，仅保留 invalidateQueries
+   - 将所有中文注释翻译为英文
+
+4. 季度视图 API 国际化修复
+   - 移除 src/app/api/todos/quarterly/route.ts 中的中文 quarterName 字段
+   - 将月份格式从 'M月' 改为 'MMMM'（完整英文月份名）
+   - 移除未使用的 zhCN locale 导入
+
+5. 其他 hooks 国际化清理
+   - 更新 src/hooks/use-categories.ts 注释为英文
+   - 更新 src/hooks/use-levels.ts 注释为英文
+
+Stage Summary:
+- ✅ Footer 品牌文字更新为 "Innovated with ❤ by LRcourior"
+- ✅ 移除登录页面测试账号显示
+- ✅ 修复任务创建后列表不刷新的问题（移除冗余 refetchQueries）
+- ✅ 季度视图 API 返回数据国际化（移除中文硬编码）
+- ✅ 代码注释统一为英文
+
+---

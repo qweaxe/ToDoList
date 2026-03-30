@@ -12,7 +12,7 @@ interface Level {
   todoCount: number;
 }
 
-// 获取所有等级
+// Get all levels
 export function useLevels() {
   return useQuery<{
     success: boolean;

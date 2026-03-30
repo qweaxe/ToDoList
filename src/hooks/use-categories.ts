@@ -15,7 +15,7 @@ interface Category {
   todoCount: number;
 }
 
-// 获取所有分类
+// Get all categories
 export function useCategories() {
   return useQuery<{
     success: boolean;
@@ -29,7 +29,7 @@ export function useCategories() {
   });
 }
 
-// 创建分类
+// Create category
 export function useCreateCategory() {
   const queryClient = useQueryClient();
 
@@ -45,18 +45,18 @@ export function useCreateCategory() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['categories'] });
-        toast.success('分类创建成功');
+        toast.success('Category created successfully');
       } else {
-        toast.error(result.error || '创建失败');
+        toast.error(result.error || 'Creation failed');
       }
     },
     onError: () => {
-      toast.error('创建分类失败');
+      toast.error('Failed to create category');
     },
   });
 }
 
-// 更新分类
+// Update category
 export function useUpdateCategory() {
   const queryClient = useQueryClient();
 
@@ -72,18 +72,18 @@ export function useUpdateCategory() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['categories'] });
-        toast.success('分类更新成功');
+        toast.success('Category updated successfully');
       } else {
-        toast.error(result.error || '更新失败');
+        toast.error(result.error || 'Update failed');
       }
     },
     onError: () => {
-      toast.error('更新分类失败');
+      toast.error('Failed to update category');
     },
   });
 }
 
-// 删除分类
+// Delete category
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
 
@@ -97,13 +97,13 @@ export function useDeleteCategory() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['categories'] });
-        toast.success('分类删除成功');
+        toast.success('Category deleted successfully');
       } else {
-        toast.error(result.error || '删除失败');
+        toast.error(result.error || 'Deletion failed');
       }
     },
     onError: () => {
-      toast.error('删除分类失败');
+      toast.error('Failed to delete category');
     },
   });
 }
