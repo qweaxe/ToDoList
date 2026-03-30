@@ -618,17 +618,21 @@ Work Log:
    - 解决周六和周日都是 "S" 无法区分的问题
 
 2. 组件更新
-   - 更新 CalendarGrid.tsx 使用完整周几名称
-   - 更新 WeekView.tsx 使用完整周几名称
-   - 更新 YearlyView.tsx 使用完整周几名称
+   - 更新 CalendarGrid.tsx、WeekView.tsx、YearlyView.tsx 使用 monShort 翻译键
+   - 配合 weekPrefix 前缀实现双语支持
 
 3. 文档整理
    - 将 CLAUDE.md 翻译成中文
    - 删除 CLAUDE_CN.md，只保留一个中文版本
 
+4. Bug修复
+   - 修复中文版日历视图显示"星期一"而非"周一"的问题
+   - 改用 monShort + weekPrefix 组合：中文显示"周一"，英文显示"Mon"
+
 Stage Summary:
 - ✅ 英文版周几显示从单字母改为三字母缩写，提高辨识度
 - ✅ 日历视图、周视图、年度视图统一更新
 - ✅ 项目文档统一为中文版本
+- ✅ 修复中文版周几显示异常问题
 
 ---
