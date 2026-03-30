@@ -737,3 +737,34 @@ Stage Summary:
 - ✅ 减少不必要的重复计算，提升渲染性能
 
 ---
+Task ID: 21
+Agent: Main Agent
+Task: 修复布局问题 - 重复Logo和侧边栏空白
+Date: 2026.03.30
+
+Work Log:
+1. 问题分析
+   - 页面顶部出现两个 To Do List 图标
+   - Header 和 Sidebar 都有 Logo 显示
+   - 左侧菜单存在空白区域，布局不对齐
+
+2. MainLayout 重构
+   - 将 Header 移到主内容区域内部
+   - 布局结构：Sidebar | [Header + Main + Footer]
+   - 移除重复渲染 Sidebar 的问题
+
+3. Header 修改
+   - Logo 只在移动端显示 (md:hidden)
+   - 桌面端由 Sidebar 提供 Logo
+
+4. Sidebar 修改
+   - 修复 z-index 层级问题
+   - 桌面端使用 md:transform-none 确保可见
+
+Stage Summary:
+- ✅ 修复桌面端重复 Logo 问题
+- ✅ 修复侧边栏空白区域问题
+- ✅ 优化布局结构，Header 在主内容区域内
+- ✅ 移动端保持原有交互体验
+
+---
