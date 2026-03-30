@@ -671,3 +671,23 @@ Stage Summary:
 - ✅ 修正章节编号
 
 ---
+Task ID: 18
+Agent: Main Agent
+Task: 修复季度视图国际化问题
+Date: 2026.03.30
+
+Work Log:
+1. 问题分析
+   - 季度视图标题显示 quarterName（已删除的中文硬编码字段）
+   - 月度进度中月份显示英文（January、February 等）
+
+2. 修复实施
+   - 移除 use-todos.ts 中 quarterName 类型定义
+   - 修改 QuarterlyView.tsx 标题使用翻译键 `t('view.quarterView')`
+   - 月度进度使用翻译后的月份名数组替代 API 返回的英文月份
+
+Stage Summary:
+- ✅ 季度视图标题正确显示国际化文本
+- ✅ 月份名称根据语言环境正确显示（中文：一月/二月/三月，英文：January/February/March）
+
+---
