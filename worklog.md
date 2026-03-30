@@ -691,3 +691,24 @@ Stage Summary:
 - ✅ 月份名称根据语言环境正确显示（中文：一月/二月/三月，英文：January/February/March）
 
 ---
+Task ID: 19
+Agent: Main Agent
+Task: 安全性修复和性能优化
+Date: 2026.03.30
+
+Work Log:
+1. 安全性修复
+   - `/api/seed` 添加身份验证，防止未授权访问初始化数据
+   - 分类创建时绑定用户ID，实现用户级数据隔离
+
+2. 性能优化
+   - 新增 `/api/todos/[id]/subtask` API 端点
+   - 优化 `useUpdateSubTask` hook：从 2 次 API 请求减少到 1 次
+   - 原流程：GET 获取任务 → PUT 更新任务
+   - 优化后：直接 PUT 更新子任务
+
+Stage Summary:
+- ✅ /api/seed 端点添加权限验证
+- ✅ 子任务更新 API 优化，减少 50% 网络请求
+
+---

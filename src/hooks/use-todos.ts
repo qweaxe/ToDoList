@@ -467,27 +467,10 @@ export function useUpdateSubTask() {
 
   return useMutation({
     mutationFn: async ({ taskId, subTaskId, isDone }: { taskId: string; subTaskId: string; isDone: boolean }) => {
-      // First get current task data
-      const getRes = await fetch(`/api/todos/${taskId}`);
-      const taskData = await getRes.json();
-
-      if (!taskData.success) {
-        throw new Error(taskData.error || 'Failed to get task');
-      }
-
-      // Parse existing subtasks
-      const subTasks = taskData.data.subTasks ? JSON.parse(taskData.data.subTasks) : [];
-
-      // Update specified subtask status
-      const updatedSubTasks = subTasks.map((st: { id: string; isDone: boolean }) =>
-        st.id === subTaskId ? { ...st, isDone } : st
-      );
-
-      // Send update request
-      const res = await fetch(`/api/todos/${taskId}`, {
+      const res = await fetch(`/api/todos/${taskId}/subtask`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subTasks: updatedSubTasks }),
+        body: JSON.stringify({ subTaskId, isDone }),
       });
       return res.json();
     },
