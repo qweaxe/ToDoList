@@ -70,7 +70,7 @@ export function CalendarGrid({
     return isSameMonth(date, currentMonth);
   };
 
-  // Weekday labels
+  // 星期标签
   const WEEKDAYS = [
     t('weekday.monShort'),
     t('weekday.tueShort'),

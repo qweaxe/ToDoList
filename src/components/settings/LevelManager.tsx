@@ -33,7 +33,7 @@ export function LevelManager() {
 
   // 合并固定等级和数据库中的使用统计
   const displayLevels = FIXED_LEVELS.map(fixed => {
-    // Try to match by value instead of name for i18n compatibility
+    // 尝试通过 value 而非 name 匹配，以支持 i18n
     const dbLevel = levels.find(l => l.value === fixed.value);
     return {
       ...fixed,

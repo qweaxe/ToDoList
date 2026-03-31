@@ -39,7 +39,7 @@ export function YearlyView() {
   const { data, isLoading } = useYearlyStats(year);
   const today = getTodayString();
 
-  // Month and day labels from translations
+  // 从翻译获取月份和星期标签
   const MONTH_LABELS = [
     t('month.january'), t('month.february'), t('month.march'),
     t('month.april'), t('month.may'), t('month.june'),
@@ -75,7 +75,7 @@ export function YearlyView() {
     setCurrentView('day');
   };
 
-  // Build heatmap grid with memoization (365+ cells)
+  // 构建热力图网格（使用 memoization，365+ 个单元格）
   const heatmapGrid = useMemo(() => {
     const heatmap = data?.data?.heatmap;
     if (!heatmap) return [];
@@ -84,7 +84,7 @@ export function YearlyView() {
     let currentWeek: Array<{ date: string; count: number; level: number } | null> = [];
 
     heatmap.forEach((day) => {
-      // Sunday starts a new week
+      // 周日开始新的一周
       if (day.dayOfWeek === 0 && currentWeek.length > 0) {
         grid.push(currentWeek);
         currentWeek = new Array(7).fill(null);
@@ -101,7 +101,7 @@ export function YearlyView() {
       };
     });
 
-    // Add the last week
+    // 添加最后一周
     if (currentWeek.some((d) => d !== null)) {
       grid.push(currentWeek);
     }

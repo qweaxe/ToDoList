@@ -96,7 +96,7 @@ export function TaskCard({
   const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
   const [expanded, setExpanded] = useState(false);
 
-  // Parse subtasks with memoization
+  // 解析子任务（使用 memoization）
   const subTasks: SubTask[] = useMemo(() => {
     if (!task.subTasks) return [];
     try {

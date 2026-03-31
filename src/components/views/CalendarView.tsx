@@ -49,7 +49,7 @@ export function CalendarView() {
 
   const isLoading = isTasksLoading || isHolidaysLoading;
 
-  // Month key helper
+  // 月份 key 辅助函数
   const getMonthKey = (month: number): string => {
     const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
     return months[month - 1];

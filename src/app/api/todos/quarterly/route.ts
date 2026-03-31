@@ -4,7 +4,7 @@ import { getAuthSession } from '@/lib/auth';
 import { getQuarterStart, getQuarterEnd, formatDate, extractQuarter } from '@/lib/date-utils';
 import { format, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 
-// GET /api/todos/quarterly?date=YYYY-MM-DD - Get quarterly data
+// GET /api/todos/quarterly?date=YYYY-MM-DD - 获取季度数据
 export async function GET(request: NextRequest) {
   try {
     const session = await getAuthSession();

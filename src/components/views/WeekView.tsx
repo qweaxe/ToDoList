@@ -270,7 +270,7 @@ export function WeekView() {
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
 
-  // Day names from translations
+  // 从翻译获取星期名称
   const DAY_NAMES = [
     t('weekday.monShort'),
     t('weekday.tueShort'),

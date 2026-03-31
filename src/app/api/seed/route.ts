@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
-// Default category data
+// 默认分类数据
 const defaultCategories = [
   { name: '工作', emoji: '💼', description: '工作相关任务', color: 'bg-blue-500' },
   { name: '生活', emoji: '🏠', description: '日常生活事务', color: 'bg-green-500' },
@@ -11,7 +11,7 @@ const defaultCategories = [
   { name: '娱乐', emoji: '🎮', description: '休闲与娱乐', color: 'bg-yellow-500' },
 ];
 
-// Default level data (High, Medium, Low)
+// 默认等级数据（高、中、低）
 const defaultLevels = [
   { name: '高', value: 3, description: '高优先级，需要优先处理' },
   { name: '中', value: 2, description: '中等优先级，正常处理' },
@@ -20,7 +20,7 @@ const defaultLevels = [
 
 export async function GET() {
   try {
-    // Require authentication
+    // 需要认证
     const session = await getAuthSession();
 
     if (!session?.user?.id) {
@@ -30,14 +30,14 @@ export async function GET() {
       );
     }
 
-    // Check if data already exists
+    // 检查数据是否已存在
     const existingCategories = await db.category.count();
     const existingLevels = await db.level.count();
 
     let categoriesCreated = 0;
     let levelsCreated = 0;
 
-    // Create default categories
+    // 创建默认分类
     if (existingCategories === 0) {
       for (const category of defaultCategories) {
         await db.category.create({
@@ -50,7 +50,7 @@ export async function GET() {
       }
     }
 
-    // Create default levels
+    // 创建默认等级
     if (existingLevels === 0) {
       for (const level of defaultLevels) {
         await db.level.create({

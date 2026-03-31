@@ -827,3 +827,31 @@ Stage Summary:
 - ✅ 修复 z-index 层级冲突问题
 
 ---
+
+Task ID: 24
+Agent: Main Agent
+Task: 修复首页日期显示问题和代码注释中文化
+Date: 2026.03.31
+
+Work Log:
+1. 首页日期显示问题修复
+   - 问题：每次访问首页返回的是上一次登录的日期，而非当天日期
+   - 原因：use-view-store.ts 使用 Zustand persist 将 selectedDate 持久化到 localStorage
+   - 修复：从 partialize 中移除 selectedDate，每次访问都从今天开始
+
+2. 代码注释中文化
+   - 将项目中所有英文注释翻译为中文
+   - 涉及文件：
+     - 配置文件：middleware.ts, i18n/request.ts, lib/api-utils.ts
+     - Hooks：use-categories.ts, use-todos.ts, use-toast.ts, use-levels.ts
+     - 组件：CalendarCell.tsx, CalendarGrid.tsx, EmojiPicker.tsx, LevelManager.tsx, TaskCard.tsx, CalendarView.tsx, TaskListView.tsx, WeekView.tsx, YearlyView.tsx
+     - UI组件：chart.tsx, sidebar.tsx
+     - API路由：seed/route.ts, todos/[id]/subtask/route.ts, todos/quarterly/route.ts
+     - 页面：page.tsx, [locale]/layout.tsx
+
+Stage Summary:
+- ✅ 修复首页日期显示问题，每次访问都显示当天日期
+- ✅ 代码注释统一为中文，提高可读性
+- ✅ 涉及 20+ 个文件的注释更新
+
+---
