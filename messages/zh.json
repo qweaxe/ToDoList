@@ -92,10 +92,11 @@
   },
   "overdue": {
     "title": "历史待办",
-    "description": "以下是所有未按时完成的待办任务，点击任务可跳转到对应日期进行管理",
+    "description": "以下是所有未按时完成的待办任务。可以直接在此界面完成任务、展开子任务或编辑任务属性。",
     "noOverdue": "太棒了！没有历史待办任务",
     "returnToday": "返回今日",
-    "tasksCount": "{count} 条任务 →"
+    "tasksCount": "{count} 条任务 →",
+    "jumpToDate": "跳转到任务日期"
   },
   "settings": {
     "title": "设置",

@@ -4,14 +4,15 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
-import { ArrowLeft, AlertTriangle, Calendar } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Calendar, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskCard } from '@/components/task/TaskCard';
-import { useDailyTodos, useToggleTodo, useDeleteTodo, useUpdateCompletedAt } from '@/hooks/use-todos';
+import { TaskForm } from '@/components/task/TaskForm';
+import { useDailyTodos, useToggleTodo, useDeleteTodo, useUpdateCompletedAt, useUpdateSubTask } from '@/hooks/use-todos';
 import { useViewStore } from '@/hooks/use-view-store';
 import { getTodayString, formatDateDisplay } from '@/lib/date-utils';
 
@@ -21,6 +22,7 @@ export function OverdueView() {
   const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
 
   const { setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<{
     id: string;
     title: string;
@@ -41,6 +43,7 @@ export function OverdueView() {
   const toggleMutation = useToggleTodo();
   const deleteMutation = useDeleteTodo();
   const updateCompletedAtMutation = useUpdateCompletedAt();
+  const updateSubTaskMutation = useUpdateSubTask();
 
   const today = getTodayString();
 
@@ -72,6 +75,18 @@ export function OverdueView() {
     status?: string;
   }) => {
     setEditingTask(task);
+    setIsFormOpen(true);
+  };
+
+  // 子任务状态切换
+  const handleSubTaskToggle = (taskId: string, subTaskId: string, isDone: boolean) => {
+    updateSubTaskMutation.mutate({ taskId, subTaskId, isDone });
+  };
+
+  // 关闭编辑表单
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setEditingTask(null);
   };
 
   // 跳转到任务创建日期的那一天
@@ -182,19 +197,27 @@ export function OverdueView() {
                   {/* 任务列表 */}
                   <div className="space-y-2">
                     {tasks.map((task) => (
-                      <div
-                        key={task.id}
-                        className="cursor-pointer"
-                        onClick={() => handleJumpToDate(task.dueDate)}
-                      >
-                        <TaskCard
-                          task={task}
-                          onToggle={handleToggle}
-                          onEdit={handleEdit}
-                          onDelete={handleDelete}
-                          onCompletedAtChange={handleCompletedAtChange}
-                          compact={true}
-                        />
+                      <div key={task.id} className="group relative flex items-start gap-2">
+                        <div className="flex-1">
+                          <TaskCard
+                            task={task}
+                            onToggle={handleToggle}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                            onCompletedAtChange={handleCompletedAtChange}
+                            onSubTaskToggle={handleSubTaskToggle}
+                            compact={false}
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 mt-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleJumpToDate(task.dueDate)}
+                          title={t('overdue.jumpToDate')}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -204,6 +227,13 @@ export function OverdueView() {
           </div>
         </ScrollArea>
       )}
+
+      {/* 任务编辑表单 */}
+      <TaskForm
+        open={isFormOpen}
+        onClose={handleFormClose}
+        initialData={editingTask ?? undefined}
+      />
     </div>
   );
 }

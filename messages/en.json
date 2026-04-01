@@ -92,10 +92,11 @@
   },
   "overdue": {
     "title": "Overdue Tasks",
-    "description": "Here are all overdue tasks. Click on a task to jump to the corresponding date for management.",
+    "description": "Here are all overdue tasks. You can complete tasks, expand subtasks, or edit task properties directly in this view.",
     "noOverdue": "Great! No overdue tasks!",
     "returnToday": "Return to Today",
-    "tasksCount": "{count} tasks →"
+    "tasksCount": "{count} tasks →",
+    "jumpToDate": "Jump to task date"
   },
   "settings": {
     "title": "Settings",
