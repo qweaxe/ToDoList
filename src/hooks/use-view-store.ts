@@ -154,9 +154,10 @@ export const useViewStore = create<ViewState>()(
       name: 'todo-list-view-storage',
       partialize: (state) => ({
         currentView: state.currentView,
-        // selectedDate 不持久化，每次访问都从今天开始
-        calendarYear: state.calendarYear,
-        calendarMonth: state.calendarMonth,
+        // 不持久化日期相关状态，每次访问都从今天开始
+        // selectedDate: state.selectedDate,
+        // calendarYear: state.calendarYear,
+        // calendarMonth: state.calendarMonth,
       }),
     }
   )

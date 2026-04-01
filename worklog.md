@@ -855,3 +855,25 @@ Stage Summary:
 - ✅ 涉及 20+ 个文件的注释更新
 
 ---
+Task ID: 25
+Agent: Main Agent
+Task: 完善日期持久化修复 - 移除 calendarYear/calendarMonth 持久化
+Date: 2026.04.01
+
+Work Log:
+1. 问题分析
+   - 远程已修复 selectedDate 持久化问题（Task ID: 24）
+   - 但 calendarYear 和 calendarMonth 仍然被持久化
+   - 这会导致日历视图也停留在旧月份
+
+2. 修复实施
+   - 合并远程 dev/vercel 分支（包含 4 个新提交）
+   - 进一步移除 calendarYear 和 calendarMonth 的持久化
+   - 只保留 currentView 的持久化（用户偏好的视图类型）
+
+Stage Summary:
+- ✅ 合并远程分支（移动端侧边栏修复、首页日期修复、代码注释中文化）
+- ✅ 完善日期持久化修复，所有日期状态都不再持久化
+- ✅ 每次访问网站，日视图和日历视图都从当前日期开始
+
+---
