@@ -78,6 +78,7 @@ src/
 │       ├── todos/                # 任务相关 API
 │       │   ├── route.ts          # GET(列表) / POST(创建)
 │       │   ├── [id]/route.ts     # GET/PUT/DELETE 单个任务
+│       │   ├── [id]/subtask/route.ts # 子任务操作
 │       │   ├── batch/route.ts    # 批量操作
 │       │   ├── daily/route.ts    # 当日视图数据
 │       │   ├── weekly/route.ts   # 周视图数据
@@ -142,6 +143,7 @@ src/
 │   ├── use-view-store.ts         # 视图状态 Store
 │   ├── use-holidays.ts           # 节假日数据 Hook
 │   ├── use-batch-selection.ts    # 批量选择 Hook
+│   ├── use-mobile.ts             # 移动端检测 Hook
 │   └── use-toast.ts              # Toast 提示 Hook
 │
 ├── lib/
@@ -256,6 +258,9 @@ model RecurrenceRule {
   cronExpr  String?  // 自定义 cron 表达式
   startDate String   // 开始日期
   endDate   String?  // 结束日期（可选）
+  isActive  Boolean  @default(true) // 是否激活
+  userId    String   // 用户级数据隔离
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   todos     Todo[]
@@ -303,7 +308,10 @@ model Holiday {
 | GET | `/api/todos/:id` | 获取单个任务 |
 | PUT | `/api/todos/:id` | 更新任务 |
 | DELETE | `/api/todos/:id` | 删除任务 |
+| PUT | `/api/todos/:id/subtask` | 更新子任务 |
 | POST | `/api/todos/batch` | 批量操作（删除、状态切换） |
+| POST | `/api/todos/toggle` | 切换任务完成状态 |
+| GET | `/api/todos/filter` | 按分类/等级筛选任务 |
 
 ### 5.2 分类 API
 
@@ -381,8 +389,9 @@ model User {
   securityAnswerLockedAt  DateTime? // 锁定时间
 
   // 关联数据
-  categories Category[]
-  todos      Todo[]
+  categories       Category[]
+  todos            Todo[]
+  recurrenceRules  RecurrenceRule[]
 }
 ```
 
