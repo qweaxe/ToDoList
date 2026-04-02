@@ -6,7 +6,7 @@ import { getTodayString } from '@/lib/date-utils';
 export type ViewType = 'day' | 'calendar' | 'week' | 'quarter' | 'year' | 'settings' | 'overdue' | 'task-list';
 
 // 设置子页面类型
-export type SettingsTab = 'categories' | 'levels' | 'account';
+export type SettingsTab = 'categories' | 'levels' | 'account' | 'api';
 
 // 任务列表筛选类型
 export type TaskListFilterType = 'category' | 'level';

@@ -913,3 +913,60 @@ Stage Summary:
 - ✅ UI 变动最小，保持原有布局风格
 
 ---
+Task ID: 27
+Agent: Main Agent
+Task: 实现 API Token 机制和数据导出接口
+Date: 2026.04.02
+
+Work Log:
+1. 功能设计
+   - 采用方案一：完整实现 API Token + 数据导出
+   - 新建分支 feat/api-token 进行开发
+   - 数据库只新增表，不修改现有表结构
+
+2. 数据库层
+   - 新增 ApiKey 模型（prisma/schema.prisma）
+   - 字段：id, name, key(哈希存储), userId, createdAt, lastUsedAt, expiresAt
+   - 手动创建迁移文件 prisma/migrations/3_add_api_key_table/migration.sql
+
+3. 认证中间件
+   - 新建 src/lib/api-auth.ts
+   - 实现 Bearer Token 提取和验证
+   - 实现 generateApiToken() 生成 tdl_ 前缀的 Token
+   - 实现 hashToken() 对 Token 进行 SHA256 哈希存储
+   - 实现 getApiSession() 支持双重认证（Token + Session）
+
+4. API Key 管理接口
+   - 新建 src/app/api/api-keys/route.ts（GET 获取列表, POST 创建）
+   - 新建 src/app/api/api-keys/[id]/route.ts（DELETE 撤销）
+   - 支持设置过期时间（可选）
+   - 创建时返回原始 Token（仅此一次）
+
+5. 数据导出接口
+   - 新建 src/app/api/export/todos/route.ts（支持筛选，支持 JSON/CSV）
+   - 新建 src/app/api/export/backup/route.ts（完整备份）
+   - 支持 Bearer Token 和 Session 双重认证
+
+6. 前端设置页面
+   - 新建 src/components/settings/ApiKeyManager.tsx
+   - 支持创建、查看、撤销 API Key
+   - 显示创建时间、最后使用时间、过期状态
+   - 创建后显示原始 Token 并支持复制
+   - 修改 SettingsView.tsx 添加 API 密钥标签页
+   - 修改 use-view-store.ts 添加 'api' 类型
+
+7. 国际化
+   - 更新 messages/zh.json 添加中文翻译
+   - 更新 messages/en.json 添加英文翻译
+
+Stage Summary:
+- ✅ 新分支 feat/api-token 开发
+- ✅ 数据库模型新增 ApiKey 表（不影响现有数据）
+- ✅ 支持 Bearer Token 认证
+- ✅ API Key 管理接口（创建、查看、撤销）
+- ✅ 数据导出接口（JSON/CSV）
+- ✅ 前端设置页面集成
+- ✅ 中英文国际化支持
+- ⏳ 待推送代码，Vercel 构建时自动迁移数据库
+
+---

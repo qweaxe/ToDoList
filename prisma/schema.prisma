@@ -28,6 +28,7 @@ model User {
   categories      Category[]
   todos           Todo[]
   recurrenceRules RecurrenceRule[]
+  apiKeys         ApiKey[]
 
   @@map("users")
 }
@@ -145,4 +146,20 @@ model Holiday {
 
   @@index([year])
   @@map("holidays")
+}
+
+// API 密钥（用于外部程序访问）
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String    // 密钥名称（如 "Obsidian Plugin"）
+  key         String    @unique // 加密存储的 Token（前缀 + 随机字符串）
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime? // 最后使用时间
+  expiresAt   DateTime? // 可选：过期时间
+
+  @@index([userId])
+  @@index([key])
+  @@map("api_keys")
 }
