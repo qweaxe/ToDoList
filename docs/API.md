@@ -9,9 +9,11 @@
 1. [认证方式](#认证方式)
 2. [API Token 管理](#api-token-管理)
 3. [数据导出接口](#数据导出接口)
-4. [现有数据接口](#现有数据接口)
-5. [错误处理](#错误处理)
-6. [调用示例](#调用示例)
+4. [任务写入接口](#任务写入接口)
+5. [增量同步接口](#增量同步接口)
+6. [现有数据接口](#现有数据接口)
+7. [错误处理](#错误处理)
+8. [调用示例](#调用示例)
 
 ---
 
@@ -245,6 +247,352 @@ Authorization: Bearer <your_token>
 
 ---
 
+## 任务写入接口
+
+以下接口支持通过 API Token 进行写入操作。
+
+### 创建任务
+
+**请求**
+```
+POST /api/todos
+Authorization: Bearer <your_token>
+Content-Type: application/json
+```
+
+**请求体**
+```json
+{
+  "title": "完成项目报告",
+  "description": "Q1 季度报告",
+  "startDate": "2026-04-02",
+  "dueDate": "2026-04-15",
+  "categoryId": "clxxx...",
+  "levelId": "clxxx...",
+  "isMilestone": false,
+  "isCycleTask": false,
+  "priority": 0,
+  "subTasks": [
+    { "id": "st1", "text": "收集数据", "isDone": false },
+    { "id": "st2", "text": "撰写报告", "isDone": false }
+  ]
+}
+```
+
+**请求字段说明**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | 是 | 任务标题（1-100字符） |
+| description | string | 否 | 任务描述（最多1000字符） |
+| startDate | string | 是 | 开始日期 (YYYY-MM-DD) |
+| dueDate | string | 是 | 截止日期 (YYYY-MM-DD) |
+| categoryId | string | 否 | 分类 ID |
+| levelId | string | 否 | 等级 ID |
+| isMilestone | boolean | 否 | 是否为里程碑 |
+| isCycleTask | boolean | 否 | 是否为周期任务 |
+| priority | number | 否 | 优先级（默认 0） |
+| subTasks | array | 否 | 子任务列表 |
+| recurrenceRule | object | 否 | 周期规则（仅当 isCycleTask=true 时有效） |
+
+**recurrenceRule 字段说明**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| frequency | string | 是 | 频率：DAILY/WEEKLY/MONTHLY/YEARLY/CUSTOM |
+| interval | number | 否 | 间隔（默认 1） |
+| byDay | array | 否 | 星期几（0-6，0为周日），用于 WEEKLY |
+| cronExpr | string | 否 | Cron 表达式，用于 CUSTOM |
+| startDate | string | 是 | 规则开始日期 |
+| endDate | string | 否 | 规则结束日期 |
+
+**响应**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clxxx...",
+    "title": "完成项目报告",
+    "description": "Q1 季度报告",
+    "status": "pending",
+    "startDate": "2026-04-02",
+    "dueDate": "2026-04-15",
+    "completedAt": null,
+    "isMilestone": false,
+    "isCycleTask": false,
+    "priority": 0,
+    "subTasks": [
+      { "id": "st1", "text": "收集数据", "isDone": false },
+      { "id": "st2", "text": "撰写报告", "isDone": false }
+    ],
+    "category": { "id": "clxxx...", "name": "工作", "emoji": "💼", "color": "blue" },
+    "level": { "id": "clxxx...", "name": "高", "value": 3 },
+    "createdAt": "2026-04-02T10:00:00.000Z",
+    "updatedAt": "2026-04-02T10:00:00.000Z"
+  }
+}
+```
+
+### 更新任务
+
+**请求**
+```
+PUT /api/todos/{id}
+Authorization: Bearer <your_token>
+Content-Type: application/json
+```
+
+**请求体**
+```json
+{
+  "title": "更新后的标题",
+  "status": "in_progress",
+  "dueDate": "2026-04-20"
+}
+```
+
+> 所有字段均为可选，只传需要更新的字段
+
+**响应**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clxxx...",
+    "title": "更新后的标题",
+    "status": "in_progress",
+    "dueDate": "2026-04-20",
+    ...
+  }
+}
+```
+
+### 删除任务
+
+**请求**
+```
+DELETE /api/todos/{id}
+Authorization: Bearer <your_token>
+```
+
+**响应**
+```json
+{
+  "success": true,
+  "message": "任务已删除"
+}
+```
+
+### 切换任务状态
+
+在 `pending` 和 `completed` 之间切换任务状态。
+
+**请求**
+```
+POST /api/todos/toggle
+Authorization: Bearer <your_token>
+Content-Type: application/json
+```
+
+**请求体**
+```json
+{
+  "id": "clxxx..."
+}
+```
+
+**响应**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clxxx...",
+    "status": "completed",
+    "completedAt": "2026-04-02",
+    ...
+  }
+}
+```
+
+### 批量操作
+
+**请求**
+```
+POST /api/todos/batch
+Authorization: Bearer <your_token>
+Content-Type: application/json
+```
+
+#### 批量删除
+
+**请求体**
+```json
+{
+  "action": "delete",
+  "ids": ["clxxx...", "clyyy...", "clzzz..."]
+}
+```
+
+**响应**
+```json
+{
+  "success": true,
+  "message": "已删除 3 个任务"
+}
+```
+
+#### 批量更新状态
+
+**请求体**
+```json
+{
+  "action": "update",
+  "ids": ["clxxx...", "clyyy..."],
+  "data": {
+    "status": "completed",
+    "categoryId": "clnew..."
+  }
+}
+```
+
+**data 字段说明**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| status | string | 状态：pending/in_progress/completed |
+| categoryId | string | 分类 ID（null 表示移除分类） |
+| levelId | string | 等级 ID（null 表示移除等级） |
+
+**响应**
+```json
+{
+  "success": true,
+  "message": "已更新 2 个任务"
+}
+```
+
+### 获取单个任务详情
+
+**请求**
+```
+GET /api/todos/{id}
+Authorization: Bearer <your_token>
+```
+
+**响应**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clxxx...",
+    "title": "完成项目报告",
+    "description": "Q1 季度报告",
+    "status": "pending",
+    "startDate": "2026-04-02",
+    "dueDate": "2026-04-15",
+    "completedAt": null,
+    "isMilestone": false,
+    "isCycleTask": false,
+    "priority": 0,
+    "subTasks": [...],
+    "category": {...},
+    "level": {...},
+    "recurrenceRule": {...},
+    "createdAt": "2026-04-02T10:00:00.000Z",
+    "updatedAt": "2026-04-02T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+## 增量同步接口
+
+### 增量同步数据
+
+获取指定时间后的数据变更，用于客户端数据同步。
+
+**请求**
+```
+GET /api/sync?since=2026-04-01T00:00:00Z
+Authorization: Bearer <your_token>
+```
+
+**查询参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| since | string | 否 | ISO 8601 时间戳，不传则默认同步最近 7 天 |
+
+**响应**
+```json
+{
+  "success": true,
+  "data": {
+    "syncTime": "2026-04-02T15:30:00.000Z",
+    "since": "2026-04-01T00:00:00.000Z",
+    "todos": {
+      "new": [
+        {
+          "id": "clxxx...",
+          "title": "新创建的任务",
+          "status": "pending",
+          "startDate": "2026-04-02",
+          "dueDate": "2026-04-05",
+          "category": {...},
+          "level": {...},
+          "createdAt": "2026-04-02T10:00:00.000Z",
+          "updatedAt": "2026-04-02T10:00:00.000Z"
+        }
+      ],
+      "updated": [
+        {
+          "id": "clyyy...",
+          "title": "已更新的任务",
+          "status": "completed",
+          "completedAt": "2026-04-02",
+          ...
+        }
+      ],
+      "total": 5
+    },
+    "categories": {
+      "new": [...],
+      "updated": [...],
+      "total": 2
+    },
+    "deleted": {
+      "todos": [],
+      "categories": [],
+      "note": "时间戳方案无法获取已删除记录，如需完整同步请使用 SyncLog 方案"
+    }
+  }
+}
+```
+
+**响应字段说明**
+
+| 字段 | 说明 |
+|------|------|
+| syncTime | 本次同步时间，可作为下次同步的 since 参数 |
+| since | 本次同步的起始时间 |
+| todos.new | 新创建的任务（createdAt >= since） |
+| todos.updated | 更新的任务（createdAt < since && updatedAt >= since） |
+| categories.new | 新创建的分类 |
+| categories.updated | 更新的分类 |
+| deleted | 已删除记录（当前方案暂不支持） |
+
+**同步策略建议**
+
+1. 首次同步：不传 since 参数，获取最近 7 天数据
+2. 增量同步：使用上次的 syncTime 作为 since 参数
+3. 合并数据：
+   - 将 `new` 数组合并到本地数据
+   - 使用 `updated` 数组覆盖本地对应记录
+   - 注意：当前方案无法检测删除操作
+
+---
+
 ## 现有数据接口
 
 以下接口同样支持 Bearer Token 认证：
@@ -433,39 +781,84 @@ export class TodoListAPI {
     this.baseUrl = baseUrl;
   }
 
-  async getTodos(): Promise<TodoItem[]> {
+  private async request(path: string, method: string, body?: any): Promise<any> {
     const response = await requestUrl({
-      url: `${this.baseUrl}/api/export/todos`,
-      method: 'GET',
+      url: `${this.baseUrl}${path}`,
+      method,
       headers: {
         'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
       },
+      body: body ? JSON.stringify(body) : undefined,
     });
 
     const data = response.json;
     if (!data.success) {
       throw new Error(data.error);
     }
+    return data;
+  }
 
+  // 获取任务列表
+  async getTodos(): Promise<TodoItem[]> {
+    const data = await this.request('/api/export/todos', 'GET');
     return data.data.todos;
   }
 
+  // 获取日视图数据
   async getDailyTasks(date: string): Promise<any> {
-    const response = await requestUrl({
-      url: `${this.baseUrl}/api/todos/daily?date=${date}`,
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-      },
-    });
+    return this.request(`/api/todos/daily?date=${date}`, 'GET');
+  }
 
-    return response.json;
+  // 创建任务
+  async createTodo(todo: {
+    title: string;
+    startDate: string;
+    dueDate: string;
+    description?: string;
+    categoryId?: string;
+    levelId?: string;
+  }): Promise<any> {
+    return this.request('/api/todos', 'POST', todo);
+  }
+
+  // 更新任务
+  async updateTodo(id: string, data: Partial<TodoItem>): Promise<any> {
+    return this.request(`/api/todos/${id}`, 'PUT', data);
+  }
+
+  // 删除任务
+  async deleteTodo(id: string): Promise<void> {
+    await this.request(`/api/todos/${id}`, 'DELETE');
+  }
+
+  // 切换任务状态
+  async toggleTodo(id: string): Promise<any> {
+    return this.request('/api/todos/toggle', 'POST', { id });
+  }
+
+  // 增量同步
+  async sync(since?: string): Promise<any> {
+    const query = since ? `?since=${encodeURIComponent(since)}` : '';
+    return this.request(`/api/sync${query}`, 'GET');
   }
 }
 
-// 使用
+// 使用示例
 const api = new TodoListAPI('tdl_xxx...', 'https://your-domain.com');
-const todos = await api.getTodos();
+
+// 创建新任务
+const newTodo = await api.createTodo({
+  title: '从 Obsidian 创建的任务',
+  startDate: '2026-04-02',
+  dueDate: '2026-04-05',
+  categoryId: 'clxxx...',
+});
+
+// 增量同步
+const syncResult = await api.sync('2026-04-01T00:00:00Z');
+console.log(`新增 ${syncResult.data.todos.new.length} 个任务`);
+console.log(`更新 ${syncResult.data.todos.updated.length} 个任务`);
 ```
 
 ---
@@ -484,4 +877,5 @@ const todos = await api.getTodos();
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.1 | 2026-04-02 | 新增任务写入接口、增量同步接口 |
 | 1.0 | 2026-04-02 | 初始版本，支持 API Token 认证和数据导出 |

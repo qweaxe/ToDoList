@@ -970,3 +970,45 @@ Stage Summary:
 - ⏳ 待推送代码，Vercel 构建时自动迁移数据库
 
 ---
+Task ID: 28
+Agent: Main Agent
+Task: 实现外部应用写入接口和增量同步
+Date: 2026.04.02
+
+Work Log:
+1. 功能设计
+   - 基于 feat/api-token 分支创建 feat/api-write 分支
+   - 支持外部应用通过 API Token 进行写入操作
+   - 实现增量同步接口
+
+2. 认证改造
+   - 将所有 CRUD API 从 getAuthSession() 改为 getApiSession(request)
+   - 支持双重认证：Bearer Token 和 Session Cookie
+   - 涉及文件：
+     - src/app/api/todos/route.ts（GET 获取列表, POST 创建）
+     - src/app/api/todos/[id]/route.ts（GET 获取详情, PUT 更新, DELETE 删除）
+     - src/app/api/todos/toggle/route.ts（切换任务状态）
+     - src/app/api/todos/batch/route.ts（批量操作）
+
+3. 增量同步接口
+   - 新建 src/app/api/sync/route.ts
+   - 支持 since 参数（ISO 8601 时间戳）
+   - 返回新创建和更新的任务/分类
+   - 区分 new 和 updated 数据（根据 createdAt 和 since 比较）
+   - 默认同步最近 7 天数据
+
+4. API 文档更新
+   - 更新 docs/API.md
+   - 新增任务写入接口文档（创建、更新、删除、切换状态、批量操作）
+   - 新增增量同步接口文档
+   - 更新 Obsidian 插件示例代码
+   - 更新版本历史
+
+Stage Summary:
+- ✅ 现有 CRUD API 全部支持 Bearer Token 认证
+- ✅ 外部应用可通过 API Token 创建、更新、删除任务
+- ✅ 增量同步接口实现（基于时间戳）
+- ✅ API 文档完整更新
+- ⏳ 待推送代码到远程仓库
+
+---
