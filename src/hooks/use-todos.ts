@@ -518,7 +518,7 @@ export function useBatchUpdateTodos() {
   });
 }
 
-// 更新子任务状态
+// 更新子任务状态（乐观更新）
 export function useUpdateSubTask() {
   const queryClient = useQueryClient();
 
@@ -531,15 +531,72 @@ export function useUpdateSubTask() {
       });
       return res.json();
     },
+    onMutate: async ({ taskId, subTaskId, isDone }) => {
+      // 取消进行中的查询
+      await queryClient.cancelQueries({ queryKey: ['todos'] });
+
+      // 获取所有 todos 相关的查询
+      const queries = queryClient.getQueriesData({ queryKey: ['todos'] });
+      const previousData = new Map(queries);
+
+      // 更新每个查询中的子任务状态
+      queries.forEach(([queryKey, data]) => {
+        if (!data) return;
+
+        const updateSubTaskInData = (obj: unknown): unknown => {
+          if (!obj || typeof obj !== 'object') return obj;
+
+          if (Array.isArray(obj)) {
+            return obj.map(item => updateSubTaskInData(item));
+          }
+
+          const record = obj as Record<string, unknown>;
+
+          // 如果是任务对象且 id 匹配，更新其子任务
+          if (record.id === taskId && typeof record.subTasks === 'string') {
+            try {
+              const subTasks = JSON.parse(record.subTasks as string);
+              const updatedSubTasks = subTasks.map((st: { id: string; isDone: boolean }) =>
+                st.id === subTaskId ? { ...st, isDone } : st
+              );
+              return {
+                ...record,
+                subTasks: JSON.stringify(updatedSubTasks),
+              };
+            } catch {
+              return record;
+            }
+          }
+
+          // 递归处理嵌套对象
+          const result: Record<string, unknown> = {};
+          for (const key in record) {
+            result[key] = updateSubTaskInData(record[key]);
+          }
+          return result;
+        };
+
+        queryClient.setQueryData(queryKey, updateSubTaskInData(data));
+      });
+
+      return { previousData };
+    },
+    onError: (error, _vars, context) => {
+      // 回滚
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      toast.error('Failed to update subtask');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
     onSuccess: (result) => {
-      if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ['todos'] });
-      } else {
+      if (!result.success) {
         toast.error(result.error || 'Failed to update subtask');
       }
-    },
-    onError: () => {
-      toast.error('Failed to update subtask');
     },
   });
 }

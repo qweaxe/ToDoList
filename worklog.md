@@ -1053,3 +1053,28 @@ Stage Summary:
 - ✅ 开发服务器启动正常，所有改动已生效
 
 ---
+Task ID: 30
+Agent: Main Agent
+Task: 修复子任务 checkbox 无法点击问题 + 乐观更新
+Date: 2026.04.04
+
+Work Log:
+1. 子任务 checkbox 点击问题修复
+   - 用户反馈：任务项的子任务勾选框没有反应
+   - 原因：子任务 checkbox 没有使用和主任务相同的交互模式
+   - 为子任务 checkbox 添加外层 div 包裹 + pointer-events-none
+   - 添加 p-0.5 padding 扩大点击区域
+
+2. 子任务乐观更新实现
+   - 修改 useUpdateSubTask hook
+   - onMutate: 立即更新缓存中的子任务状态
+   - 递归查找并更新 JSON.parse(subTasks) 中的对应子任务
+   - onError: 失败时回滚
+   - onSettled: 最终重新获取数据确保同步
+
+Stage Summary:
+- ✅ 子任务 checkbox 可正常点击切换状态
+- ✅ 子任务切换使用乐观更新，UI 立即响应
+- ✅ 与主任务保持一致的交互体验
+
+---
