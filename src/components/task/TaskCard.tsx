@@ -425,11 +425,18 @@ export function TaskCard({
                   key={st.id}
                   className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Checkbox
-                    checked={st.isDone}
-                    onCheckedChange={() => handleSubTaskToggle(st.id)}
-                    className="h-3.5 w-3.5 sm:h-4 sm:w-4"
-                  />
+                  <div
+                    className="flex-shrink-0 -ml-0.5 p-0.5 rounded hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubTaskToggle(st.id);
+                    }}
+                  >
+                    <Checkbox
+                      checked={st.isDone}
+                      className="h-3.5 w-3.5 sm:h-4 sm:w-4 pointer-events-none"
+                    />
+                  </div>
                   <span
                     className={cn(
                       st.isDone && 'line-through text-muted-foreground'
