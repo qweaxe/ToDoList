@@ -42,8 +42,8 @@ export interface RecurrenceRule {
   interval: number;
   byDay?: number[] | null; // 0-6 代表周日到周六
   cronExpr?: string | null;
-  startDate: string;
-  endDate?: string | null;
+  startDate: Date;
+  endDate?: Date | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -56,9 +56,10 @@ export interface Todo {
   description?: string | null;
   status: TodoStatus;
 
-  // 时间维度
-  startDate: string; // YYYY-MM-DD
-  dueDate: string;   // YYYY-MM-DD
+  // 时间维度（DateTime，精确到秒）
+  startDate: Date;
+  dueDate: Date;
+  completedAt?: Date | null;
 
   // 多步骤任务
   subTasks?: SubTask[] | null;
@@ -123,8 +124,8 @@ export interface WeeklyData {
 export interface QuarterlyMilestone {
   id: string;
   title: string;
-  startDate: string;
-  dueDate: string;
+  startDate: Date;
+  dueDate: Date;
   status: TodoStatus;
   progress: number; // 0-100
 }

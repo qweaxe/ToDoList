@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getTodayString } from '@/lib/date-utils';
 import { getApiSession } from '@/lib/api-auth';
 
 // POST /api/todos/toggle - 切换任务状态
@@ -39,14 +38,13 @@ export async function POST(request: NextRequest) {
 
     // 切换状态
     const newStatus = existing.status === 'completed' ? 'pending' : 'completed';
-    const today = getTodayString();
 
     const todo = await db.todo.update({
       where: { id },
       data: {
         status: newStatus,
-        // 完成时记录完成日期，未完成时清空
-        completedAt: newStatus === 'completed' ? today : null,
+        // 完成时记录完成日期时间，未完成时清空
+        completedAt: newStatus === 'completed' ? new Date() : null,
       },
       include: {
         category: true,

@@ -37,20 +37,20 @@ export async function GET(request: NextRequest) {
         OR: [
           {
             startDate: {
-              gte: quarterStartStr,
-              lte: quarterEndStr,
+              gte: quarterStart,
+              lte: quarterEnd,
             },
           },
           {
             dueDate: {
-              gte: quarterStartStr,
-              lte: quarterEndStr,
+              gte: quarterStart,
+              lte: quarterEnd,
             },
           },
           {
             AND: [
-              { startDate: { lte: quarterStartStr } },
-              { dueDate: { gte: quarterStartStr } },
+              { startDate: { lte: quarterStart } },
+              { dueDate: { gte: quarterStart } },
             ],
           },
         ],
@@ -69,20 +69,20 @@ export async function GET(request: NextRequest) {
         OR: [
           {
             startDate: {
-              gte: quarterStartStr,
-              lte: quarterEndStr,
+              gte: quarterStart,
+              lte: quarterEnd,
             },
           },
           {
             dueDate: {
-              gte: quarterStartStr,
-              lte: quarterEndStr,
+              gte: quarterStart,
+              lte: quarterEnd,
             },
           },
           {
             AND: [
-              { startDate: { lte: quarterStartStr } },
-              { dueDate: { gte: quarterStartStr } },
+              { startDate: { lte: quarterStart } },
+              { dueDate: { gte: quarterStart } },
             ],
           },
         ],
@@ -106,8 +106,8 @@ export async function GET(request: NextRequest) {
     });
 
     const monthlyStats = months.map((month) => {
-      const monthStart = formatDate(startOfMonth(month));
-      const monthEnd = formatDate(endOfMonth(month));
+      const monthStart = startOfMonth(month);
+      const monthEnd = endOfMonth(month);
 
       const monthTasks = allTasks.filter((task) => {
         return task.startDate <= monthEnd && task.dueDate >= monthStart;

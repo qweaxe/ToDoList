@@ -46,22 +46,22 @@ export async function GET(request: NextRequest) {
           // 任务开始日期在这一周内
           {
             startDate: {
-              gte: weekStartStr,
-              lte: weekEndStr,
+              gte: weekStart,
+              lte: weekEnd,
             },
           },
           // 任务截止日期在这一周内
           {
             dueDate: {
-              gte: weekStartStr,
-              lte: weekEndStr,
+              gte: weekStart,
+              lte: weekEnd,
             },
           },
           // 跨天任务：开始日期在周开始之前，截止日期在周开始之后
           {
             AND: [
-              { startDate: { lte: weekStartStr } },
-              { dueDate: { gte: weekStartStr } },
+              { startDate: { lte: weekStart } },
+              { dueDate: { gte: weekStart } },
             ],
           },
         ],
@@ -81,8 +81,8 @@ export async function GET(request: NextRequest) {
     for (const date of weekDates) {
       const dateStr = formatDate(date);
       tasksByDate[dateStr] = todos.filter((todo) => {
-        const todoStart = todo.startDate;
-        const todoEnd = todo.dueDate;
+        const todoStart = formatDate(todo.startDate);
+        const todoEnd = formatDate(todo.dueDate);
         return dateStr >= todoStart && dateStr <= todoEnd;
       });
     }

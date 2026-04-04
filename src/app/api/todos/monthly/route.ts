@@ -55,22 +55,22 @@ export async function GET(request: NextRequest) {
           // 任务开始日期在日历范围内
           {
             startDate: {
-              gte: calendarStartStr,
-              lte: calendarEndStr,
+              gte: calendarStartDate,
+              lte: calendarEndDate,
             },
           },
           // 任务截止日期在日历范围内
           {
             dueDate: {
-              gte: calendarStartStr,
-              lte: calendarEndStr,
+              gte: calendarStartDate,
+              lte: calendarEndDate,
             },
           },
           // 任务跨越整个日历范围
           {
             AND: [
-              { startDate: { lte: calendarStartStr } },
-              { dueDate: { gte: calendarEndStr } },
+              { startDate: { lte: calendarStartDate } },
+              { dueDate: { gte: calendarEndDate } },
             ],
           },
         ],
@@ -110,9 +110,9 @@ export async function GET(request: NextRequest) {
       where: {
         userId,
         OR: [
-          { startDate: { gte: monthStartStr, lte: monthEndStr } },
-          { dueDate: { gte: monthStartStr, lte: monthEndStr } },
-          { AND: [{ startDate: { lte: monthStartStr } }, { dueDate: { gte: monthEndStr } }] },
+          { startDate: { gte: firstDayOfMonth, lte: lastDayOfMonth } },
+          { dueDate: { gte: firstDayOfMonth, lte: lastDayOfMonth } },
+          { AND: [{ startDate: { lte: firstDayOfMonth } }, { dueDate: { gte: lastDayOfMonth } }] },
         ],
       },
     });

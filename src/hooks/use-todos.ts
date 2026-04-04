@@ -10,8 +10,8 @@ interface Todo {
   title: string;
   description: string | null;
   status: string;
-  startDate: string;
-  dueDate: string;
+  startDate: string; // ISO 8601 datetime string from API
+  dueDate: string;   // ISO 8601 datetime string from API
   completedAt: string | null;
   subTasks: string | null;
   isCycleTask: boolean;
@@ -47,7 +47,7 @@ interface RecurrenceRule {
   interval: number;
   byDay: string | null;
   cronExpr: string | null;
-  startDate: string;
+  startDate: string; // ISO 8601 datetime string from API
   endDate: string | null;
   isActive: boolean;
 }

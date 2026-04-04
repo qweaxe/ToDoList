@@ -17,8 +17,8 @@ interface RecurrenceRuleWithTodo {
   interval: number;
   byDay: string | null;
   cronExpr: string | null;
-  startDate: string;
-  endDate: string | null;
+  startDate: Date;
+  endDate: Date | null;
   isActive: boolean;
   todos: Array<{
     id: string;
@@ -68,20 +68,20 @@ export async function syncRecurringTasks(
       if (rule.todos.length === 0) continue;
 
       // 计算规则的有效结束日期
-      const ruleEndDate = rule.endDate ? parseDateString(rule.endDate) : null;
+      const ruleEndDate = rule.endDate;
       const effectiveEnd = ruleEndDate && ruleEndDate < windowEnd ? ruleEndDate : windowEnd;
 
       // 计算此规则在时间窗口内的执行日期
       const byDayArray = rule.byDay ? JSON.parse(rule.byDay) : null;
-      
+
       const occurrenceDates = calculateOccurrenceDates(
         {
           frequency: rule.frequency as Frequency,
           interval: rule.interval,
           byDay: byDayArray,
           cronExpr: rule.cronExpr,
-          startDate: rule.startDate,
-          endDate: rule.endDate,
+          startDate: formatDate(rule.startDate),
+          endDate: rule.endDate ? formatDate(rule.endDate) : null,
         },
         windowStart,
         effectiveEnd
@@ -96,7 +96,7 @@ export async function syncRecurringTasks(
           const existingTodo = await db.todo.findFirst({
             where: {
               parentRuleId: rule.id,
-              dueDate: dateStr,
+              dueDate: occurrenceDate,
               title: templateTodo.title,
             },
           });
@@ -113,8 +113,8 @@ export async function syncRecurringTasks(
                 title: templateTodo.title,
                 description: templateTodo.description,
                 status: 'pending',
-                startDate: dateStr,
-                dueDate: dateStr,
+                startDate: occurrenceDate,
+                dueDate: occurrenceDate,
                 categoryId: templateTodo.categoryId,
                 levelId: templateTodo.levelId,
                 priority: templateTodo.priority,

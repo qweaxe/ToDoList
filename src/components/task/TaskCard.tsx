@@ -43,8 +43,8 @@ interface TaskCardProps {
     title: string;
     description?: string | null;
     status: string;
-    startDate: string;
-    dueDate: string;
+    startDate: string; // ISO datetime string from API
+    dueDate: string;   // ISO datetime string from API
     completedAt?: string | null;
     subTasks?: string | null;
     isCycleTask: boolean;
@@ -76,6 +76,11 @@ interface TaskCardProps {
   selectMode?: boolean;
   isSelected?: boolean;
   onSelect?: (id: string) => void;
+}
+
+// 辅助函数：从 ISO datetime 提取日期部分进行比较
+function getDateOnly(isoString: string): string {
+  return isoString.split('T')[0];
 }
 
 export function TaskCard({
@@ -114,10 +119,10 @@ export function TaskCard({
       ? Math.round((completedSubTasks / subTasks.length) * 100)
       : 0;
 
-  // 判断是否跨天任务
-  const isCrossDay = task.startDate !== task.dueDate;
+  // 判断是否跨天任务（比较日期部分）
+  const isCrossDay = getDateOnly(task.startDate) !== getDateOnly(task.dueDate);
 
-  // 判断是否过期
+  // 判断是否过期（比较日期部分）
   const isOverdue =
     task.status !== 'completed' &&
     new Date(task.dueDate) < new Date(new Date().toDateString());

@@ -1170,3 +1170,65 @@ Stage Summary:
 - ⏳ 待实现提醒服务
 
 ---
+Task ID: 34
+Agent: Main Agent
+Task: 实施浏览器通知提醒 - 前端组件和提醒服务
+Date: 2026.04.04
+
+Work Log:
+1. 类型定义更新
+   - src/types/api.ts：Zod schema 支持 ISO 8601 datetime 格式
+   - src/types/index.ts：Todo/RecurrenceRule 接口改为 Date 类型
+
+2. API 路由更新（全部改用 Date 对象查询）
+   - src/app/api/todos/route.ts
+   - src/app/api/todos/[id]/route.ts
+   - src/app/api/todos/daily/route.ts
+   - src/app/api/todos/toggle/route.ts
+   - src/app/api/todos/weekly/route.ts
+   - src/app/api/todos/monthly/route.ts
+   - src/app/api/todos/quarterly/route.ts
+   - src/app/api/todos/yearly/route.ts
+   - src/app/api/todos/filter/route.ts
+
+3. 服务层更新
+   - src/services/recurrence-service.ts：更新接口和查询逻辑
+
+4. 提醒服务实现
+   - 新建 src/services/reminder-service.ts
+   - 创建、查询、删除提醒
+   - 预设提醒配置（提前5/15/30分钟、1/2小时、1天）
+   - 待发送提醒处理
+
+5. 提醒 Hooks
+   - 新建 src/hooks/use-reminders.ts
+   - useTodoReminders、useCreateReminder、useDeleteReminder
+   - usePendingReminders（每分钟轮询）
+
+6. 浏览器通知 Hook
+   - 新建 src/hooks/use-notifications.ts
+   - 请求通知权限
+   - 发送通知
+   - 自动处理待发送提醒
+
+7. 提醒组件
+   - 新建 src/components/reminder/NotificationPermissionPrompt.tsx
+   - 新建 src/components/reminder/ReminderManager.tsx
+   - 预设提醒按钮、自定义时间选择
+
+8. 提醒 API 路由
+   - 新建 src/app/api/reminders/pending/route.ts
+   - 新建 src/app/api/reminders/[id]/route.ts
+   - 新建 src/app/api/reminders/[id]/sent/route.ts
+   - 新建 src/app/api/todos/[id]/reminders/route.ts
+
+Stage Summary:
+- ✅ 前端组件 DateTime 处理完成
+- ✅ 提醒服务实现完成
+- ✅ 浏览器通知 Hook 实现
+- ✅ 提醒管理组件实现
+- ✅ API 路由完整
+- ⏳ 待集成到任务表单
+- ⏳ 待测试迁移和通知功能
+
+---
