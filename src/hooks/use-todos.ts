@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { CreateTodoInput, UpdateTodoInput } from '@/types/api';
+import { mutationManager, isAbortError } from '@/lib/mutation-manager';
 
 interface Todo {
   id: string;
@@ -202,17 +203,30 @@ export function useUpdateTodo() {
   });
 }
 
-// 切换任务状态（乐观更新）
+// 切换任务状态（乐观更新 + 请求取消）
 export function useToggleTodo() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // 创建 AbortController，自动取消之前的请求
+      const controller = mutationManager.createController(`toggle-${id}`);
+
       const res = await fetch('/api/todos/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
+        signal: controller.signal,
       });
+
+      // 清理 controller
+      mutationManager.clear(`toggle-${id}`);
+
+      // 检查是否被取消
+      if (controller.signal.aborted) {
+        return { cancelled: true };
+      }
+
       return res.json();
     },
     onMutate: async (id: string) => {
@@ -264,6 +278,9 @@ export function useToggleTodo() {
       return { previousData };
     },
     onError: (error, _id, context) => {
+      // 如果是取消错误，不处理
+      if (isAbortError(error)) return;
+
       // 回滚到之前的数据
       if (context?.previousData) {
         context.previousData.forEach(([queryKey, data]) => {
@@ -277,6 +294,9 @@ export function useToggleTodo() {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     },
     onSuccess: (result) => {
+      // 如果是被取消的请求，不处理
+      if (result?.cancelled) return;
+
       if (result.success) {
         toast.success(result.data?.status === 'completed' ? 'Task completed' : 'Task restored');
       } else {
@@ -518,17 +538,30 @@ export function useBatchUpdateTodos() {
   });
 }
 
-// 更新子任务状态（乐观更新）
+// 更新子任务状态（乐观更新 + 请求取消）
 export function useUpdateSubTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ taskId, subTaskId, isDone }: { taskId: string; subTaskId: string; isDone: boolean }) => {
+      // 创建 AbortController，自动取消之前的请求
+      const controller = mutationManager.createController(`subtask-${taskId}-${subTaskId}`);
+
       const res = await fetch(`/api/todos/${taskId}/subtask`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subTaskId, isDone }),
+        signal: controller.signal,
       });
+
+      // 清理 controller
+      mutationManager.clear(`subtask-${taskId}-${subTaskId}`);
+
+      // 检查是否被取消
+      if (controller.signal.aborted) {
+        return { cancelled: true };
+      }
+
       return res.json();
     },
     onMutate: async ({ taskId, subTaskId, isDone }) => {
@@ -582,6 +615,9 @@ export function useUpdateSubTask() {
       return { previousData };
     },
     onError: (error, _vars, context) => {
+      // 如果是取消错误，不处理
+      if (isAbortError(error)) return;
+
       // 回滚
       if (context?.previousData) {
         context.previousData.forEach(([queryKey, data]) => {
@@ -594,6 +630,9 @@ export function useUpdateSubTask() {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     },
     onSuccess: (result) => {
+      // 如果是被取消的请求，不处理
+      if (result?.cancelled) return;
+
       if (!result.success) {
         toast.error(result.error || 'Failed to update subtask');
       }

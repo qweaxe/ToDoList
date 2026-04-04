@@ -1112,3 +1112,30 @@ Stage Summary:
 - ⏳ 后续可添加 mutation 取消机制进一步降低风险
 
 ---
+Task ID: 32
+Agent: Main Agent
+Task: 实施阶段1 - Mutation 取消机制
+Date: 2026.04.04
+
+Work Log:
+1. 创建 MutationManager
+   - 新建 src/lib/mutation-manager.ts
+   - 实现 AbortController 管理：createController、abort、clear
+   - 提供 isAbortError 辅助函数判断取消错误
+
+2. 修改 useToggleTodo
+   - 集成 mutationManager，使用 `toggle-${id}` 作为 key
+   - mutationFn 中创建 AbortController 并传递 signal
+   - onSuccess/onError 中检查 cancelled/AbortError 跳过处理
+
+3. 修改 useUpdateSubTask
+   - 同样集成 mutationManager，使用 `subtask-${taskId}-${subTaskId}` 作为 key
+   - 处理逻辑与 useToggleTodo 一致
+
+Stage Summary:
+- ✅ Mutation 取消机制实现完成
+- ✅ 解决快速点击导致的竞态条件问题
+- ✅ 被取消的请求不会触发错误提示和回滚
+- ⏳ 待测试验证
+
+---
