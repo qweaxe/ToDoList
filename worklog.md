@@ -1139,3 +1139,34 @@ Stage Summary:
 - ⏳ 待测试验证
 
 ---
+Task ID: 33
+Agent: Main Agent
+Task: 实施浏览器通知提醒 - 数据模型和迁移
+Date: 2026.04.04
+
+Work Log:
+1. Prisma Schema 修改
+   - Todo 模型：startDate/dueDate/completedAt 从 String 改为 DateTime
+   - RecurrenceRule 模型：startDate/endDate 从 String 改为 DateTime
+   - 新增 Reminder 模型：todoId、remindAt、type、offset、sent
+
+2. 数据库迁移文件
+   - 创建 4_datetime_and_reminder/migration.sql
+   - 自动将现有日期字符串转换为 DateTime（时间设为 00:00:00）
+   - 创建 reminders 表及索引
+
+3. 日期工具函数更新 (date-utils.ts)
+   - 新增 DateInput 类型：Date | string | number
+   - 新增 toDate() 统一转换函数
+   - 新增 formatDateTime()、formatTime()、toISOString()
+   - 新增时间操作：addHoursToDate、addMinutesToDate、setTime
+   - 新增提醒相关：calculateReminderTime、shouldSendReminder
+
+Stage Summary:
+- ✅ 数据模型已更新为 DateTime
+- ✅ 迁移脚本自动转换现有数据
+- ✅ 日期工具函数已更新
+- ⏳ 待更新前端组件日期处理
+- ⏳ 待实现提醒服务
+
+---
