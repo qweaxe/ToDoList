@@ -202,7 +202,7 @@ export function useUpdateTodo() {
   });
 }
 
-// 切换任务状态
+// 切换任务状态（乐观更新）
 export function useToggleTodo() {
   const queryClient = useQueryClient();
 
@@ -215,16 +215,73 @@ export function useToggleTodo() {
       });
       return res.json();
     },
+    onMutate: async (id: string) => {
+      // 取消所有进行中的查询，防止乐观更新被覆盖
+      await queryClient.cancelQueries({ queryKey: ['todos'] });
+
+      // 获取所有 todos 相关的查询
+      const queries = queryClient.getQueriesData({ queryKey: ['todos'] });
+
+      // 保存旧数据用于回滚
+      const previousData = new Map(queries);
+
+      // 更新每个查询中的任务状态
+      queries.forEach(([queryKey, data]) => {
+        if (!data) return;
+
+        // 递归更新数据中的任务
+        const updateTodoInData = (obj: unknown): unknown => {
+          if (!obj || typeof obj !== 'object') return obj;
+
+          if (Array.isArray(obj)) {
+            return obj.map(item => updateTodoInData(item));
+          }
+
+          const record = obj as Record<string, unknown>;
+
+          // 如果是 todo 对象且 id 匹配
+          if (record.id === id && typeof record.status === 'string') {
+            const newStatus = record.status === 'completed' ? 'pending' : 'completed';
+            const today = new Date().toISOString().split('T')[0];
+            return {
+              ...record,
+              status: newStatus,
+              completedAt: newStatus === 'completed' ? today : null,
+            };
+          }
+
+          // 递归处理嵌套对象
+          const result: Record<string, unknown> = {};
+          for (const key in record) {
+            result[key] = updateTodoInData(record[key]);
+          }
+          return result;
+        };
+
+        queryClient.setQueryData(queryKey, updateTodoInData(data));
+      });
+
+      return { previousData };
+    },
+    onError: (error, _id, context) => {
+      // 回滚到之前的数据
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      toast.error('Failed to toggle status');
+    },
+    onSettled: () => {
+      // 重新获取数据确保同步
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
     onSuccess: (result) => {
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ['todos'] });
         toast.success(result.data?.status === 'completed' ? 'Task completed' : 'Task restored');
       } else {
         toast.error(result.error || 'Operation failed');
       }
-    },
-    onError: () => {
-      toast.error('Failed to toggle status');
     },
   });
 }

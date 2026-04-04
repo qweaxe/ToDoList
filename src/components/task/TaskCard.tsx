@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check,
   ChevronDown,
@@ -156,22 +157,43 @@ export function TaskCard({
           />
         )}
         {!selectMode && (
-          <Checkbox
-            checked={isCompleted}
-            onCheckedChange={() => onToggle(task.id)}
-            className="flex-shrink-0 h-4 w-4 sm:h-5 sm:w-5"
-          />
+          <div
+            className="flex-shrink-0 -ml-1 -mt-1 p-1 rounded hover:bg-accent/50 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(task.id);
+            }}
+          >
+            <Checkbox
+              checked={isCompleted}
+              className="h-4 w-4 sm:h-5 sm:w-5 pointer-events-none"
+            />
+          </div>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span
+            <motion.span
+              layout
               className={cn(
-                'truncate text-xs sm:text-sm',
-                isCompleted && 'line-through text-muted-foreground'
+                'truncate text-xs sm:text-sm relative',
+                isCompleted && 'text-muted-foreground'
               )}
             >
               {task.title}
-            </span>
+              <AnimatePresence mode="wait">
+                {isCompleted && (
+                  <motion.span
+                    key="strikethrough"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    exit={{ scaleX: 0 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="absolute left-0 top-1/2 w-full h-[1px] bg-current origin-left"
+                    style={{ transform: 'translateY(-50%)' }}
+                  />
+                )}
+              </AnimatePresence>
+            </motion.span>
           </div>
           {task.description && (
             <p className="text-xs text-muted-foreground truncate mt-0.5 hidden sm:block">
@@ -287,24 +309,46 @@ export function TaskCard({
       )}>
         {/* 完成状态复选框 - 非选择模式下显示 */}
         {!selectMode && (
-          <Checkbox
-            checked={isCompleted}
-            onCheckedChange={() => onToggle(task.id)}
-            className="mt-0.5 sm:mt-1 flex-shrink-0 h-4 w-4 sm:h-5 sm:w-5"
-          />
+          <div
+            className="flex-shrink-0 -ml-2 -mt-1 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(task.id);
+            }}
+          >
+            <Checkbox
+              checked={isCompleted}
+              className="h-4 w-4 sm:h-5 sm:w-5 pointer-events-none"
+            />
+          </div>
         )}
 
         {/* 内容 */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            <h4
+            <motion.h4
+              layout
               className={cn(
-                'font-medium text-xs sm:text-sm',
-                isCompleted && 'line-through text-muted-foreground'
+                'font-medium text-xs sm:text-sm relative',
+                isCompleted && 'text-muted-foreground'
               )}
             >
               {task.title}
-            </h4>
+              {/* 完成时的划线动画 */}
+              <AnimatePresence mode="wait">
+                {isCompleted && (
+                  <motion.span
+                    key="strikethrough"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    exit={{ scaleX: 0 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="absolute left-0 top-1/2 w-full h-[1px] bg-current origin-left"
+                    style={{ transform: 'translateY(-50%)' }}
+                  />
+                )}
+              </AnimatePresence>
+            </motion.h4>
 
             {/* 完成日期显示和编辑 */}
             {isCompleted && task.completedAt && (

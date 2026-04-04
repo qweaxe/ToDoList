@@ -1012,3 +1012,44 @@ Stage Summary:
 - ⏳ 待推送代码到远程仓库
 
 ---
+Task ID: 29
+Agent: Main Agent
+Task: 任务完成交互优化 - Checkbox点击区域、动画效果、乐观更新
+Date: 2026.04.04
+
+Work Log:
+1. Checkbox 点击区域扩大
+   - 修改 TaskCard.tsx，为 checkbox 添加 p-2 padding 的可点击区域
+   - 使用 pointer-events-none 防止 checkbox 本身捕获事件
+   - hover 时显示背景色反馈
+
+2. WeekView checkbox 统一
+   - 修改 WeekView.tsx，DraggableTaskCard 添加 checkbox 和 onToggle prop
+   - DateColumn 传递 onToggleTask 回调
+   - 保持拖拽功能（需要移动 8px 才触发）
+   - OverlayTaskCard 也显示 checkbox
+
+3. TaskListView checkbox 统一
+   - 修改 TaskListView.tsx，将自定义 CheckCircle2/Circle 图标替换为标准 Checkbox 组件
+
+4. 完成动画效果
+   - 修改 checkbox.tsx，使用 Framer Motion 添加勾选动画
+   - 弹簧效果：scale 0→1 + opacity 0→1
+   - 修改 TaskCard.tsx，添加划线动画
+   - 完成时文字从左到右出现删除线
+
+5. 乐观更新实现
+   - 修改 use-todos.ts 的 useToggleTodo hook
+   - onMutate: 立即更新所有缓存中的任务状态
+   - onError: 失败时回滚到之前的数据
+   - onSettled: 最终重新获取数据确保同步
+   - 递归更新嵌套数据结构中的任务
+
+Stage Summary:
+- ✅ Checkbox 点击区域扩大，更易点击
+- ✅ WeekView 和 TaskListView 统一使用 Checkbox 组件
+- ✅ 添加勾选动画和划线动画效果
+- ✅ 实现乐观更新，UI 立即响应无需等待服务器
+- ✅ 开发服务器启动正常，所有改动已生效
+
+---

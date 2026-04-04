@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useFilteredTodos, useToggleTodo } from '@/hooks/use-todos';
 import { useViewStore } from '@/hooks/use-view-store';
 import { cn } from '@/lib/utils';
@@ -193,57 +194,60 @@ export function TaskListView() {
                   </CardHeader>
                   <CardContent className="py-2 px-4">
                     <div className="space-y-2">
-                      {monthTodos.map((todo) => (
-                        <div
-                          key={todo.id}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                          onClick={() => handleDateClick(todo.dueDate)}
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleTodo(todo.id);
-                            }}
-                            className="flex-shrink-0"
+                      {monthTodos.map((todo) => {
+                        const isCompleted = todo.status === 'completed';
+
+                        return (
+                          <div
+                            key={todo.id}
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                            onClick={() => handleDateClick(todo.dueDate)}
                           >
-                            {todo.status === 'completed' ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-500" />
-                            ) : (
-                              <Circle className="h-5 w-5 text-gray-300" />
-                            )}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <div className={cn(
-                              "font-medium text-sm truncate",
-                              todo.status === 'completed' && "line-through text-muted-foreground"
-                            )}>
-                              {todo.title}
+                            <div
+                              className="flex-shrink-0 -ml-1 p-1 rounded hover:bg-accent/50 transition-colors cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleTodo(todo.id);
+                              }}
+                            >
+                              <Checkbox
+                                checked={isCompleted}
+                                className="h-4 w-4 pointer-events-none"
+                              />
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{todo.dueDate}</span>
-                              {todo.category && (
-                                <Badge variant="outline" className="text-xs py-0 px-1">
-                                  {todo.category.emoji && <span className="mr-1">{todo.category.emoji}</span>}
-                                  {todo.category.name}
-                                </Badge>
-                              )}
-                              {todo.level && (
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn(
-                                    "text-xs py-0 px-1",
-                                    todo.level.value === 3 && "border-red-300 text-red-600",
-                                    todo.level.value === 2 && "border-yellow-300 text-yellow-600",
-                                    todo.level.value === 1 && "border-gray-300 text-gray-600"
-                                  )}
-                                >
-                                  {todo.level.name}
-                                </Badge>
-                              )}
+                            <div className="flex-1 min-w-0">
+                              <div className={cn(
+                                "font-medium text-sm truncate",
+                                isCompleted && "line-through text-muted-foreground"
+                              )}>
+                                {todo.title}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>{todo.dueDate}</span>
+                                {todo.category && (
+                                  <Badge variant="outline" className="text-xs py-0 px-1">
+                                    {todo.category.emoji && <span className="mr-1">{todo.category.emoji}</span>}
+                                    {todo.category.name}
+                                  </Badge>
+                                )}
+                                {todo.level && (
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "text-xs py-0 px-1",
+                                      todo.level.value === 3 && "border-red-300 text-red-600",
+                                      todo.level.value === 2 && "border-yellow-300 text-yellow-600",
+                                      todo.level.value === 1 && "border-gray-300 text-gray-600"
+                                    )}
+                                  >
+                                    {todo.level.name}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
