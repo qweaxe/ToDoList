@@ -1271,3 +1271,17 @@ Stage Summary:
 - `src/components/task/TaskDetailDialog.tsx` - 优化日期时间编辑区域布局
 
 ---
+
+## 2026-04-06: 扩大任务表单对话框宽度以完整显示时间
+
+### 改动内容
+- 将任务表单对话框宽度从 max-w-2xl 扩大到 max-w-3xl
+- 将任务详情对话框宽度从 max-w-lg 扩大到 max-w-3xl
+- 将时间输入框宽度从 w-20 (80px) 扩大到 w-28 (112px)
+- 确保日期和时间都能完整显示
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 对话框宽度 max-w-3xl，时间输入 w-28
+- `src/components/task/TaskDetailDialog.tsx` - 对话框宽度 max-w-3xl，时间输入 w-28
+
+---

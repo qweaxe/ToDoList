@@ -277,7 +277,7 @@ export function TaskDetailDialog({
         setIsEditing(false);
       }
     }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg">
@@ -438,7 +438,7 @@ export function TaskDetailDialog({
                         type="time"
                         value={editStartTime}
                         onChange={(e) => setEditStartTime(e.target.value)}
-                        className="w-20"
+                        className="w-28"
                       />
                     </div>
                   </div>
@@ -466,7 +466,7 @@ export function TaskDetailDialog({
                         type="time"
                         value={editDueTime}
                         onChange={(e) => setEditDueTime(e.target.value)}
-                        className="w-20"
+                        className="w-28"
                       />
                     </div>
                   </div>

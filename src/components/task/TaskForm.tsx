@@ -265,7 +265,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {initialData ? t('task.editTask') : t('task.createTask')}
@@ -332,7 +332,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-20"
+                  className="w-28"
                 />
               </div>
             </div>
@@ -369,7 +369,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                   type="time"
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
-                  className="w-20"
+                  className="w-28"
                 />
               </div>
             </div>
