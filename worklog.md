@@ -1257,3 +1257,17 @@ Stage Summary:
 - `src/components/views/WeekView.tsx` - 修复拖拽时保留时间部分
 
 ---
+
+## 2026-04-06: 优化日期时间选择器布局
+
+### 改动内容
+- 优化日期时间选择器响应式布局，移动端单列、桌面端双列
+- 设置日期按钮最小宽度 140px，确保完整显示 yyyy-MM-dd 格式
+- 时间输入框固定宽度 80px，足够显示 HH:mm 格式
+- 移除不必要的 truncate 和 flex-shrink 类，简化代码
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 优化日期时间选择区域布局
+- `src/components/task/TaskDetailDialog.tsx` - 优化日期时间编辑区域布局
+
+---
