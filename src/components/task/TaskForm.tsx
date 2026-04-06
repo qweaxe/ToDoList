@@ -299,7 +299,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           </div>
 
           {/* 日期时间选择 */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t('task.startDate')}</Label>
               <div className="flex gap-2">
@@ -308,12 +308,14 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                     <Button
                       variant="outline"
                       className={cn(
-                        'flex-1 justify-start text-left font-normal',
+                        'flex-1 min-w-0 justify-start text-left font-normal',
                         !startDate && 'text-muted-foreground'
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                      <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">
+                        {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                      </span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -332,7 +334,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-28"
+                  className="w-24 sm:w-28 flex-shrink-0"
                 />
               </div>
             </div>
@@ -345,12 +347,14 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                     <Button
                       variant="outline"
                       className={cn(
-                        'flex-1 justify-start text-left font-normal',
+                        'flex-1 min-w-0 justify-start text-left font-normal',
                         !dueDate && 'text-muted-foreground'
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                      <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">
+                        {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                      </span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -369,7 +373,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                   type="time"
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
-                  className="w-28"
+                  className="w-24 sm:w-28 flex-shrink-0"
                 />
               </div>
             </div>
