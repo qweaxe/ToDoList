@@ -401,15 +401,27 @@ export function WeekView() {
       // 如果是跨天任务，只更新 dueDate
       const allTasks = Object.values(data?.data.tasksByDate || {}).flat();
       const task = allTasks.find((t: TaskItem) => t.id === taskId);
-      
+
       if (task) {
-        const isSameDay = task.startDate === task.dueDate;
+        // 比较日期部分（不含时间）
+        const taskStartDate = task.startDate.split('T')[0];
+        const taskDueDate = task.dueDate.split('T')[0];
+        const isSameDay = taskStartDate === taskDueDate;
+
+        // 提取时间部分
+        const dueTime = task.dueDate.includes('T') ? task.dueDate.split('T')[1] : '23:59:59.000Z';
+        const startTime = task.startDate.includes('T') ? task.startDate.split('T')[1] : '00:00:00.000Z';
+
+        // 构建新的日期时间
+        const newDueDate = task.dueDate.includes('T') ? `${newDate}T${dueTime}` : newDate;
+        const newStartDate = isSameDay ? (task.startDate.includes('T') ? `${newDate}T${startTime}` : newDate) : task.startDate;
+
         updateMutation.mutate({
           id: taskId,
           data: {
-            dueDate: newDate,
+            dueDate: newDueDate,
             // 如果是单天任务，同时更新 startDate
-            ...(isSameDay && { startDate: newDate }),
+            ...(isSameDay && { startDate: newStartDate }),
           },
         });
       }

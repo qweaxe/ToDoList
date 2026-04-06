@@ -390,16 +390,16 @@ export function TaskCard({
             </p>
           )}
 
-          {/* 日期显示 */}
+          {/* 日期时间显示 */}
           {showDate && (
             <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
               {isCrossDay ? (
                 <>
-                  {format(new Date(task.startDate), 'MM/dd')} -{' '}
-                  {format(new Date(task.dueDate), 'MM/dd')}
+                  {format(new Date(task.startDate), 'MM/dd HH:mm')} -{' '}
+                  {format(new Date(task.dueDate), 'MM/dd HH:mm')}
                 </>
               ) : (
-                format(new Date(task.dueDate), 'MM/dd')
+                format(new Date(task.dueDate), 'MM/dd HH:mm')
               )}
             </p>
           )}

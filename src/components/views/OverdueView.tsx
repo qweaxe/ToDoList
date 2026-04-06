@@ -103,10 +103,10 @@ export function OverdueView() {
     setCurrentView('day');
   };
 
-  // 按日期分组历史待办
+  // 按日期分组历史待办（提取日期部分）
   const groupedOverdue = data?.data.overdue.reduce(
     (acc, task) => {
-      const date = task.dueDate;
+      const date = task.dueDate.split('T')[0]; // 提取日期部分
       if (!acc[date]) {
         acc[date] = [];
       }

@@ -1232,3 +1232,28 @@ Stage Summary:
 - ⏳ 待测试迁移和通知功能
 
 ---
+
+## 2026-04-05: 添加任务时间选择和显示功能
+
+### 改动内容
+- 在任务表单中添加时间选择器，支持设置开始时间和截止时间
+- 默认开始时间为 00:00，默认截止时间为 23:59
+- 任务卡片和详情对话框始终显示时间部分（包括 00:00）
+- 修复历史待办按日期分组逻辑，正确处理带时间的 ISO 字符串
+- 修复周视图拖拽任务时保留时间部分
+
+### 技术细节
+- 新增 `startTime` 和 `dueTime` 状态管理时间选择
+- 新增 `extractTimeFromISO` 函数从 ISO 字符串提取时间
+- 新增 `combineDateAndTime` 函数合并日期和时间为 ISO 字符串
+- 修改日期显示格式为 `MM/dd HH:mm` 和 `MMM d, yyyy HH:mm`
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 添加时间选择器，修改提交逻辑合并日期时间
+- `src/components/task/TaskCard.tsx` - 日期显示改为日期时间显示
+- `src/components/task/TaskDetailDialog.tsx` - 添加时间选择器，修改保存逻辑
+- `src/components/views/DayView.tsx` - 修复历史待办分组逻辑
+- `src/components/views/OverdueView.tsx` - 修复历史待办分组逻辑
+- `src/components/views/WeekView.tsx` - 修复拖拽时保留时间部分
+
+---
