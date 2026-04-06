@@ -416,14 +416,12 @@ export function TaskDetailDialog({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('startDate')}</Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="flex-1 min-w-0 justify-start">
-                            <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="truncate">
-                              {editStartDate ? format(new Date(editStartDate), 'yyyy-MM-dd') : ''}
-                            </span>
+                          <Button variant="outline" className="min-w-[140px] justify-start">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {editStartDate ? format(new Date(editStartDate), 'yyyy-MM-dd') : ''}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -440,20 +438,18 @@ export function TaskDetailDialog({
                         type="time"
                         value={editStartTime}
                         onChange={(e) => setEditStartTime(e.target.value)}
-                        className="w-24 sm:w-28 flex-shrink-0"
+                        className="w-20"
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>{t('dueDate')}</Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="flex-1 min-w-0 justify-start">
-                            <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="truncate">
-                              {editDueDate ? format(new Date(editDueDate), 'yyyy-MM-dd') : ''}
-                            </span>
+                          <Button variant="outline" className="min-w-[140px] justify-start">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {editDueDate ? format(new Date(editDueDate), 'yyyy-MM-dd') : ''}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -470,7 +466,7 @@ export function TaskDetailDialog({
                         type="time"
                         value={editDueTime}
                         onChange={(e) => setEditDueTime(e.target.value)}
-                        className="w-24 sm:w-28 flex-shrink-0"
+                        className="w-20"
                       />
                     </div>
                   </div>
