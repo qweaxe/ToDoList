@@ -438,7 +438,7 @@ export function TaskDetailDialog({
                         type="time"
                         value={editStartTime}
                         onChange={(e) => setEditStartTime(e.target.value)}
-                        className="w-28"
+                        className="w-32"
                       />
                     </div>
                   </div>
@@ -466,7 +466,7 @@ export function TaskDetailDialog({
                         type="time"
                         value={editDueTime}
                         onChange={(e) => setEditDueTime(e.target.value)}
-                        className="w-28"
+                        className="w-32"
                       />
                     </div>
                   </div>
