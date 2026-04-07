@@ -1285,3 +1285,70 @@ Stage Summary:
 - `src/components/task/TaskDetailDialog.tsx` - 对话框宽度 max-w-3xl，时间输入 w-28
 
 ---
+
+## 2026-04-07: 时间选择器优化和时区问题修复
+
+### 改动内容
+
+1. **更新代码到最新版本**
+   - 拉取远程 12 个新提交
+   - 新功能：时间选择器、浏览器通知提醒、DateTime 支持、乐观更新优化
+
+2. **创建自定义 TimePicker 组件**
+   - 新建 `src/components/ui/time-picker.tsx`
+   - 使用 Popover 弹出选择器，左侧显示时钟图标，右侧显示时间值
+   - 与日期选择器布局风格一致
+   - 替换原生 `<Input type="time">` 解决图标被遮挡问题
+
+3. **修复时区转换问题**
+   - 问题：用户输入 2026-04-08 00:00，因时区转换存储为 2026-04-07T16:00:00.000Z
+   - 导致日历视图显示在错误的日期
+   - 修复：`combineDateAndTime` 函数不再进行时区转换
+   - 直接拼接日期和时间字符串：`${dateStr}T${timeStr}:00.000Z`
+   - 用户输入什么时间就存储什么时间，不进行时区偏移
+
+4. **时间选择器布局优化**
+   - 对话框宽度调整：sm:max-w-3xl → sm:max-w-lg → sm:max-w-2xl
+   - 最终使用 `justify-between` 策略让时间选择器右对齐
+   - 移除日期按钮的 `min-w-[140px]` 限制，让内容自适应
+   - 时间选择器自动对齐到每列右边缘，与其他表单元素对齐
+
+### 技术细节
+
+**时区问题修复前：**
+```javascript
+const combineDateAndTime = (dateStr, timeStr) => {
+  const date = new Date(dateStr);  // 本地时区
+  date.setHours(hours, minutes, 0, 0);
+  return date.toISOString();  // 转换为 UTC，导致偏移
+};
+```
+
+**时区问题修复后：**
+```javascript
+const combineDateAndTime = (dateStr, timeStr) => {
+  return `${dateStr}T${timeStr}:00.000Z`;  // 直接拼接，无偏移
+};
+```
+
+### 修改的文件
+- `src/components/ui/time-picker.tsx` - 新建自定义时间选择器组件
+- `src/components/task/TaskForm.tsx` - 使用 TimePicker，修复时区转换，优化布局
+- `src/components/task/TaskDetailDialog.tsx` - 使用 TimePicker，修复时区转换，优化布局
+
+### 提交记录
+- `a42bd82` feat: add custom TimePicker component with consistent styling
+- `cb77488` fix: use sm:max-w-3xl to override dialog base width
+- `ac7c853` style: reduce dialog width to sm:max-w-lg (512px)
+- `21a8565` style: adjust dialog width to sm:max-w-2xl (672px)
+- `8702905` style: increase gap between start and due date columns to gap-x-8
+- `8252e30` style: adjust date-time grid gap to gap-x-6 for better alignment
+- `5d1f242` style: increase gap between date and time picker to gap-5 (20px)
+- `9b96ddb` style: increase gap between start and due date columns to gap-x-8
+- `7332495` style: increase grid gap to gap-x-20 for right edge alignment
+- `423adc7` style: set grid gap to 88px for right edge alignment
+- `b201f44` style: increase grid gap to 96px for right edge alignment
+- `a316931` fix: remove timezone conversion in date-time combination
+- `b352e9a` style: use justify-between for date-time alignment
+
+---
