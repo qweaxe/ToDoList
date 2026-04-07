@@ -332,7 +332,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-32"
+                  className="w-36 pr-2"
                 />
               </div>
             </div>
@@ -369,7 +369,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                   type="time"
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
-                  className="w-32"
+                  className="w-36 pr-2"
                 />
               </div>
             </div>
