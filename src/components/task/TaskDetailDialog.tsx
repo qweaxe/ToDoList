@@ -414,7 +414,7 @@ export function TaskDetailDialog({
 
               {/* 日期时间 */}
               {isEditing ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
                   <div className="space-y-2">
                     <Label>{t('startDate')}</Label>
                     <div className="flex gap-2 items-center">
