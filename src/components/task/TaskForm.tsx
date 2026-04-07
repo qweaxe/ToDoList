@@ -266,7 +266,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {initialData ? t('task.editTask') : t('task.createTask')}
