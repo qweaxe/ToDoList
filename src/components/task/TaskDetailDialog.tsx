@@ -413,13 +413,13 @@ export function TaskDetailDialog({
 
               {/* 日期时间 */}
               {isEditing ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-[96px] gap-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('startDate')}</Label>
-                    <div className="flex gap-2 items-center">
+                    <div className="flex gap-2 items-center justify-between">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="min-w-[140px] justify-start">
+                          <Button variant="outline" className="justify-start">
                             <Calendar className="h-4 w-4 mr-2" />
                             {editStartDate ? format(new Date(editStartDate), 'yyyy-MM-dd') : ''}
                           </Button>
@@ -442,10 +442,10 @@ export function TaskDetailDialog({
                   </div>
                   <div className="space-y-2">
                     <Label>{t('dueDate')}</Label>
-                    <div className="flex gap-2 items-center">
+                    <div className="flex gap-2 items-center justify-between">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="min-w-[140px] justify-start">
+                          <Button variant="outline" className="justify-start">
                             <Calendar className="h-4 w-4 mr-2" />
                             {editDueDate ? format(new Date(editDueDate), 'yyyy-MM-dd') : ''}
                           </Button>

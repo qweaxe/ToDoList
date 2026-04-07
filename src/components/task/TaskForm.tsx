@@ -299,16 +299,16 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           </div>
 
           {/* 日期时间选择 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-[96px] gap-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t('task.startDate')}</Label>
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center justify-between">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        'min-w-[140px] justify-start text-left font-normal',
+                        'justify-start text-left font-normal',
                         !startDate && 'text-muted-foreground'
                       )}
                     >
@@ -337,13 +337,13 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
 
             <div className="space-y-2">
               <Label>{t('task.dueDate')}</Label>
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center justify-between">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        'min-w-[140px] justify-start text-left font-normal',
+                        'justify-start text-left font-normal',
                         !dueDate && 'text-muted-foreground'
                       )}
                     >
