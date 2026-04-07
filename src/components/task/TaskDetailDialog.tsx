@@ -113,12 +113,11 @@ export function TaskDetailDialog({
     return isDueDate ? '23:59' : '00:00';
   };
 
-  // 合并日期和时间为 ISO 字符串
+  // 合并日期和时间为 ISO 字符串（不进行时区转换）
   const combineDateAndTime = (dateStr: string, timeStr: string): string => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const date = new Date(dateStr);
-    date.setHours(hours, minutes, 0, 0);
-    return date.toISOString();
+    // 直接拼接日期和时间，不进行时区转换
+    // 格式：YYYY-MM-DDTHH:mm:ss.sssZ（假装是 UTC，实际就是用户输入的时间）
+    return `${dateStr}T${timeStr}:00.000Z`;
   };
 
   const { data, isLoading, refetch } = useTodo(taskId);
