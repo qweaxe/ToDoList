@@ -1307,3 +1307,14 @@ Stage Summary:
 
 ### 修改的文件
 - `src/components/task/TaskForm.tsx` - 简化日期时间选择区域布局
+
+---
+
+## 2026-04-07: 修复对话框宽度被基础样式覆盖问题
+
+### 改动内容
+- 将 `max-w-3xl` 改为 `sm:max-w-3xl` 以正确覆盖 DialogContent 基础样式中的 `sm:max-w-lg`
+- 确保对话框在桌面端有足够的宽度显示所有内容
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 修复对话框宽度响应式类名
