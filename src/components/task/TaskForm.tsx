@@ -299,86 +299,80 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           </div>
 
           {/* 日期时间选择 */}
-          <div className="space-y-2">
-            <div className="flex flex-wrap justify-between gap-y-2">
-              {/* 开始日期时间 */}
+          <div className="flex justify-between gap-4">
+            {/* 开始日期时间 */}
+            <div className="space-y-2">
+              <Label>{t('task.startDate')}</Label>
               <div className="flex gap-2 items-center">
-                <div className="space-y-2">
-                  <Label>{t('task.startDate')}</Label>
-                  <div className="flex gap-2 items-center">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'min-w-[140px] justify-start text-left font-normal',
-                            !startDate && 'text-muted-foreground'
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : t('task.selectDate')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={startDate ? new Date(startDate) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              setValue('startDate', format(date, 'yyyy-MM-dd'));
-                            }
-                          }}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Input
-                      type="time"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className="w-28"
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'min-w-[140px] justify-start text-left font-normal',
+                        !startDate && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate ? new Date(startDate) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setValue('startDate', format(date, 'yyyy-MM-dd'));
+                        }
+                      }}
                     />
-                  </div>
-                </div>
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-28"
+                />
               </div>
+            </div>
 
-              {/* 截止日期时间 */}
+            {/* 截止日期时间 */}
+            <div className="space-y-2">
+              <Label>{t('task.dueDate')}</Label>
               <div className="flex gap-2 items-center">
-                <div className="space-y-2">
-                  <Label>{t('task.dueDate')}</Label>
-                  <div className="flex gap-2 items-center">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'min-w-[140px] justify-start text-left font-normal',
-                            !dueDate && 'text-muted-foreground'
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : t('task.selectDate')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dueDate ? new Date(dueDate) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              setValue('dueDate', format(date, 'yyyy-MM-dd'));
-                            }
-                          }}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Input
-                      type="time"
-                      value={dueTime}
-                      onChange={(e) => setDueTime(e.target.value)}
-                      className="w-28"
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'min-w-[140px] justify-start text-left font-normal',
+                        !dueDate && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate ? new Date(dueDate) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setValue('dueDate', format(date, 'yyyy-MM-dd'));
+                        }
+                      }}
                     />
-                  </div>
-                </div>
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  type="time"
+                  value={dueTime}
+                  onChange={(e) => setDueTime(e.target.value)}
+                  className="w-28"
+                />
               </div>
             </div>
           </div>

@@ -1295,3 +1295,15 @@ Stage Summary:
 
 ### 修改的文件
 - `src/components/task/TaskForm.tsx` - 调整日期时间选择区域布局结构
+
+---
+
+## 2026-04-07: 修复日期时间选择器单行布局
+
+### 改动内容
+- 简化布局结构，移除多余的嵌套层级
+- 使用 `flex justify-between` 让开始日期和截止日期在同一行占据两端
+- 保持日期和时间输入框之间的 `gap-2` 小间距
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 简化日期时间选择区域布局
