@@ -300,10 +300,10 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           </div>
 
           {/* 日期时间选择 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
             <div className="space-y-2">
               <Label>{t('task.startDate')}</Label>
-              <div className="flex gap-5 items-center">
+              <div className="flex gap-2 items-center">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -338,7 +338,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
 
             <div className="space-y-2">
               <Label>{t('task.dueDate')}</Label>
-              <div className="flex gap-5 items-center">
+              <div className="flex gap-2 items-center">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
