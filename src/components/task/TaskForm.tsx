@@ -28,6 +28,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
+import { TimePicker } from '@/components/ui/time-picker';
 import {
   Popover,
   PopoverContent,
@@ -328,11 +329,9 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                     />
                   </PopoverContent>
                 </Popover>
-                <Input
-                  type="time"
+                <TimePicker
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-36 pr-2"
+                  onChange={setStartTime}
                 />
               </div>
             </div>
@@ -365,11 +364,9 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                     />
                   </PopoverContent>
                 </Popover>
-                <Input
-                  type="time"
+                <TimePicker
                   value={dueTime}
-                  onChange={(e) => setDueTime(e.target.value)}
-                  className="w-36 pr-2"
+                  onChange={setDueTime}
                 />
               </div>
             </div>

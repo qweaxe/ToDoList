@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import {
   Calendar,
   Check,
+  Clock,
   Edit2,
   Flag,
   MoreHorizontal,
@@ -15,7 +16,6 @@ import {
   X,
   Save,
   Plus,
-  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -48,6 +48,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { TimePicker } from '@/components/ui/time-picker';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -434,11 +435,9 @@ export function TaskDetailDialog({
                           />
                         </PopoverContent>
                       </Popover>
-                      <Input
-                        type="time"
+                      <TimePicker
                         value={editStartTime}
-                        onChange={(e) => setEditStartTime(e.target.value)}
-                        className="w-36 pr-2"
+                        onChange={setEditStartTime}
                       />
                     </div>
                   </div>
@@ -462,11 +461,9 @@ export function TaskDetailDialog({
                           />
                         </PopoverContent>
                       </Popover>
-                      <Input
-                        type="time"
+                      <TimePicker
                         value={editDueTime}
-                        onChange={(e) => setEditDueTime(e.target.value)}
-                        className="w-36 pr-2"
+                        onChange={setEditDueTime}
                       />
                     </div>
                   </div>
