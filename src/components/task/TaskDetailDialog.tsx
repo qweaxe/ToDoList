@@ -414,10 +414,10 @@ export function TaskDetailDialog({
 
               {/* 日期时间 */}
               {isEditing ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('startDate')}</Label>
-                    <div className="flex gap-2 items-center">
+                    <div className="flex gap-5 items-center">
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="outline" className="min-w-[140px] justify-start">
@@ -443,7 +443,7 @@ export function TaskDetailDialog({
                   </div>
                   <div className="space-y-2">
                     <Label>{t('dueDate')}</Label>
-                    <div className="flex gap-2 items-center">
+                    <div className="flex gap-5 items-center">
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="outline" className="min-w-[140px] justify-start">
