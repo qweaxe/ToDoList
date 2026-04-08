@@ -126,12 +126,10 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     return isDueDate ? '23:59' : '00:00';
   };
 
-  // 合并日期和时间为 ISO 字符串
+  // 合并日期和时间为 ISO 字符串（不进行时区转换）
   const combineDateAndTime = (dateStr: string, timeStr: string): string => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const date = new Date(dateStr);
-    date.setHours(hours, minutes, 0, 0);
-    return date.toISOString();
+    // 直接拼接日期和时间，不进行时区转换
+    return `${dateStr}T${timeStr}:00.000Z`;
   };
 
   // 使用 ref 跟踪已初始化的任务 ID，避免重复重置

@@ -1337,3 +1337,20 @@ Stage Summary:
 ### 修改的文件
 - `src/app/api/todos/[id]/subtask/route.ts` - 修复子任务自动完成的 completedAt 格式
 - `src/components/task/BatchActionsToolbar.tsx` - 修复批量完成的 completedAt 格式
+
+---
+
+## 2026-04-08: 修复任务创建时时区转换导致跨天显示问题
+
+### 问题描述
+- 用户创建 4月8日 00:00 - 23:59 的任务，但日视图显示为跨天任务（4月7日和4月8日）
+- 原因：`combineDateAndTime` 函数使用 `toISOString()` 进行时区转换
+- 中国用户（UTC+8）输入 2026-04-08 00:00，转换后变成 2026-04-07T16:00:00.000Z
+
+### 改动内容
+- 修改 `combineDateAndTime` 函数，不进行时区转换
+- 直接拼接日期和时间字符串：`${dateStr}T${timeStr}:00.000Z`
+- 用户输入什么时间就存储什么时间，不做时区偏移
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 修复 combineDateAndTime 函数
