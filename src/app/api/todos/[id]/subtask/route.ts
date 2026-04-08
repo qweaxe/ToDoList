@@ -63,7 +63,11 @@ export async function PUT(
     // 如果所有子任务都已完成，自动完成主任务
     if (allSubTasksDone) {
       updateData.status = 'completed';
-      updateData.completedAt = format(new Date(), 'yyyy-MM-dd');
+      // 使用本地时间，不进行时区转换
+      const now = new Date();
+      const localDate = format(now, 'yyyy-MM-dd');
+      const localTime = format(now, 'HH:mm:ss');
+      updateData.completedAt = `${localDate}T${localTime}.000Z`;
     }
 
     // 更新任务

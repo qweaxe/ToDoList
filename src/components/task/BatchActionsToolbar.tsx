@@ -96,10 +96,16 @@ export function BatchActionsToolbar({
 
   // 批量标记完成
   const handleBatchComplete = () => {
+    // 使用本地时间，不进行时区转换
+    const now = new Date();
+    const localDate = format(now, 'yyyy-MM-dd');
+    const localTime = format(now, 'HH:mm:ss');
+    const completedAt = `${localDate}T${localTime}.000Z`;
+
     batchUpdateMutation.mutate(
       {
         ids: selectedIds,
-        data: { status: 'completed', completedAt: format(new Date(), 'yyyy-MM-dd') },
+        data: { status: 'completed', completedAt },
       },
       {
         onSuccess: () => {

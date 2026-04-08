@@ -1318,3 +1318,22 @@ Stage Summary:
 
 ### 修改的文件
 - `src/components/task/TaskForm.tsx` - 修复对话框宽度响应式类名
+
+---
+
+## 2026-04-07: 修复 completedAt 格式导致的 PrismaClientValidationError
+
+### 问题描述
+- 子任务全部完成时自动完成主任务，报错 PrismaClientValidationError
+- 批量标记任务完成时也出现相同错误
+- 原因：completedAt 使用 "yyyy-MM-dd" 格式，但 Prisma DateTime 字段需要 ISO-8601 格式
+
+### 改动内容
+- 修复子任务自动完成主任务的 completedAt 格式
+- 修复批量标记完成的 completedAt 格式
+- 使用本地时间生成 ISO-8601 格式：`${localDate}T${localTime}.000Z`
+- 不进行时区转换，使用用户浏览器所在时区的时间
+
+### 修改的文件
+- `src/app/api/todos/[id]/subtask/route.ts` - 修复子任务自动完成的 completedAt 格式
+- `src/components/task/BatchActionsToolbar.tsx` - 修复批量完成的 completedAt 格式
