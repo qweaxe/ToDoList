@@ -1374,3 +1374,45 @@ Stage Summary:
 - `src/components/task/TaskCard.tsx` - 使用 parseISO 解析 completedAt 显示
 - `src/components/task/TaskDetailDialog.tsx` - 使用 parseISO 解析 completedAt 显示
 - `src/app/api/todos/toggle/route.ts` - 修复任务切换时 completedAt 使用本地时间格式
+
+---
+
+## 2026-04-09: Cloudflare 迁移改造
+
+### 改动内容
+1. **安装 Cloudflare 依赖**
+   - `@cloudflare/next-on-pages` - Next.js 适配器
+   - `wrangler` - Cloudflare CLI
+
+2. **创建 Cloudflare 配置**
+   - `wrangler.toml` - Cloudflare Pages 配置
+   - 修改 `next.config.ts` - 添加 `unoptimized: true` 图片配置
+
+3. **替换 bcryptjs 为 Web Crypto API**
+   - 创建 `src/lib/password.ts` - 使用 PBKDF2 算法
+   - 修改所有认证相关 API 使用新的密码工具
+   - 移除 bcryptjs 依赖（Cloudflare Workers 不支持）
+
+4. **添加 Edge Runtime**
+   - 所有 API 路由添加 `export const runtime = 'edge'`
+   - 支持 Cloudflare Workers 运行环境
+
+5. **降级 Next.js 版本**
+   - Next.js 16.1.1 → 15.2.4
+   - eslint-config-next 同步降级
+   - 原因：@cloudflare/next-on-pages 最高支持 Next.js 15.5.2
+
+6. **新增构建脚本**
+   - `build:cf` - 构建 Cloudflare 版本
+   - `preview:cf` - 本地预览
+   - `deploy:cf` - 部署到 Cloudflare
+
+### 修改的文件
+- `package.json` - 添加依赖和脚本，降级 Next.js
+- `next.config.ts` - Cloudflare 图片配置
+- `wrangler.toml` - 新增 Cloudflare 配置
+- `src/lib/password.ts` - 新增密码加密工具
+- `src/lib/auth.ts` - 替换 bcrypt 调用
+- `src/app/api/auth/*/route.ts` - 替换 bcrypt，添加 edge runtime
+- `src/app/api/**/route.ts` - 添加 edge runtime
+- `docs/CLOUDFLARE_MIGRATION_GUIDE.md` - 新增迁移操作指南

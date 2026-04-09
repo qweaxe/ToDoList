@@ -1,5 +1,7 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
+import { verifyPassword, hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证当前密码
-    const isPasswordValid = await bcrypt.compare(
+    const isPasswordValid = await verifyPassword(
       validated.currentPassword,
       user.password
     );
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 加密新密码
-    const hashedPassword = await bcrypt.hash(validated.newPassword, 10);
+    const hashedPassword = await hashPassword(validated.newPassword);
 
     // 更新密码
     await db.user.update({

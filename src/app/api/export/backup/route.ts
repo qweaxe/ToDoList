@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 /**
  * 完整数据备份接口
  * GET: 导出用户的所有数据（任务、分类、周期规则等）

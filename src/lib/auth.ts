@@ -1,6 +1,6 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
+import { verifyPassword } from '@/lib/password';
 import { db } from '@/lib/db';
 
 export const authOptions: NextAuthOptions = {
@@ -34,7 +34,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error('用户名或密码错误');
         }
 
-        const isPasswordValid = await bcrypt.compare(
+        const isPasswordValid = await verifyPassword(
           credentials.password,
           user.password
         );

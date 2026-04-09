@@ -1,5 +1,7 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     const validated = setSecurityQuestionSchema.parse(body);
 
     // 加密答案（存储时忽略大小写差异）
-    const hashedAnswer = await bcrypt.hash(validated.answer.toLowerCase().trim(), 10);
+    const hashedAnswer = await hashPassword(validated.answer.toLowerCase().trim());
 
     await db.user.update({
       where: { id: session.user.id },

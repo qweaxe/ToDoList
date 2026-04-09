@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 /**
  * API Key 管理接口
  * GET: 获取当前用户的所有 API Key

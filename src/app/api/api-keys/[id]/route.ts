@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 /**
  * 删除单个 API Key
  * DELETE: 撤销（删除）指定的 API Key

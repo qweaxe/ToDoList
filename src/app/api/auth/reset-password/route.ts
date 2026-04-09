@@ -1,5 +1,7 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
+import { verifyPassword, hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证答案（忽略大小写）
-    const isAnswerValid = await bcrypt.compare(
+    const isAnswerValid = await verifyPassword(
       validated.answer.toLowerCase().trim(),
       user.securityAnswer
     );
@@ -119,7 +121,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证成功，重置尝试次数并更新密码
-    const hashedPassword = await bcrypt.hash(validated.newPassword, 10);
+    const hashedPassword = await hashPassword(validated.newPassword);
 
     await db.user.update({
       where: { id: user.id },

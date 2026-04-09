@@ -1,0 +1,6 @@
+name = "to-do-list"
+compatibility_date = "2026-04-10"
+pages_build_output_dir = ".vercel/output/static"
+
+[vars]
+NEXTAUTH_URL = "https://todolist-72d.pages.dev"

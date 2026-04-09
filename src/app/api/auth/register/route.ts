@@ -1,5 +1,7 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 加密密码
-    const hashedPassword = await bcrypt.hash(validated.password, 10);
+    const hashedPassword = await hashPassword(validated.password);
 
     // 创建用户
     const user = await db.user.create({

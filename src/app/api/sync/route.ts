@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 /**
  * 增量同步接口
  * 获取指定时间后的数据变更

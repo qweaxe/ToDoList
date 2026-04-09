@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 /**
  * 任务数据导出接口
  * GET: 导出用户的所有任务数据
