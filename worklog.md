@@ -1416,3 +1416,10 @@ Stage Summary:
 - `src/app/api/auth/*/route.ts` - 替换 bcrypt，添加 edge runtime
 - `src/app/api/**/route.ts` - 添加 edge runtime
 - `docs/CLOUDFLARE_MIGRATION_GUIDE.md` - 新增迁移操作指南
+## 2026-04-09: 修复 Cloudflare 构建错误 - nodejs_compat
+
+### 改动内容
+- 在 wrangler.toml 添加 `nodejs_compat` 兼容标志，解决 next-auth v4 依赖 Node.js `crypto` 模块导致的构建失败
+
+### 修改的文件
+- `wrangler.toml` - 添加 `compatibility_flags = ["nodejs_compat"]`
