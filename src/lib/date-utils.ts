@@ -17,9 +17,12 @@ import {
   subWeeks,
   subMonths,
   subYears,
+  addHours,
+  addMinutes,
   differenceInDays,
   differenceInWeeks,
   differenceInMonths,
+  differenceInMinutes,
   isSameDay,
   isSameWeek,
   isSameMonth,
@@ -38,48 +41,90 @@ import {
   eachWeekOfInterval,
   eachMonthOfInterval,
   isValid,
+  startOfDay,
+  endOfDay,
+  setHours,
+  setMinutes,
+  getHours,
+  getMinutes,
 } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+
+// ==================== 类型定义 ====================
+
+/** 日期输入类型：Date 对象、ISO 字符串、或时间戳 */
+export type DateInput = Date | string | number;
+
+/** 将输入转换为 Date 对象 */
+export function toDate(date: DateInput): Date {
+  if (date instanceof Date) return date;
+  if (typeof date === 'number') return new Date(date);
+  return parseISO(date);
+}
 
 // ==================== 格式化函数 ====================
 
 /**
  * 格式化日期为 YYYY-MM-DD 格式
  */
-export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function formatDate(date: DateInput): string {
+  const d = toDate(date);
   return format(d, 'yyyy-MM-dd');
+}
+
+/**
+ * 格式化日期时间为 YYYY-MM-DD HH:mm 格式
+ */
+export function formatDateTime(date: DateInput): string {
+  const d = toDate(date);
+  return format(d, 'yyyy-MM-dd HH:mm');
+}
+
+/**
+ * 格式化时间为 HH:mm 格式
+ */
+export function formatTime(date: DateInput): string {
+  const d = toDate(date);
+  return format(d, 'HH:mm');
+}
+
+/**
+ * 格式化日期为 ISO 字符串（用于 API）
+ */
+export function toISOString(date: DateInput): string {
+  const d = toDate(date);
+  return d.toISOString();
 }
 
 /**
  * 格式化日期为显示格式
  */
-export function formatDateDisplay(date: Date | string, formatStr: string = 'yyyy年MM月dd日'): string {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function formatDateDisplay(date: DateInput, formatStr: string = 'yyyy年MM月dd日'): string {
+  const d = toDate(date);
   return format(d, formatStr, { locale: zhCN });
 }
 
 /**
  * 格式化日期为简短格式
  */
-export function formatDateShort(date: Date | string): string {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function formatDateShort(date: DateInput): string {
+  const d = toDate(date);
   return format(d, 'MM/dd', { locale: zhCN });
 }
 
 /**
  * 格式化星期几
  */
-export function formatWeekday(date: Date | string): string {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function formatWeekday(date: DateInput): string {
+  const d = toDate(date);
   return format(d, 'EEEE', { locale: zhCN });
 }
 
 /**
  * 格式化月份
  */
-export function formatMonth(date: Date | string): string {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function formatMonth(date: DateInput): string {
+  const d = toDate(date);
   return format(d, 'yyyy年MM月', { locale: zhCN });
 }
 
@@ -93,66 +138,87 @@ export function getTodayString(): string {
 }
 
 /**
+ * 获取当前时间（Date 对象）
+ */
+export function getNow(): Date {
+  return new Date();
+}
+
+/**
+ * 获取今天的开始时间（00:00:00）
+ */
+export function getTodayStart(): Date {
+  return startOfDay(new Date());
+}
+
+/**
+ * 获取今天的结束时间（23:59:59）
+ */
+export function getTodayEnd(): Date {
+  return endOfDay(new Date());
+}
+
+/**
  * 获取周的第一天（周一）
  */
-export function getWeekStart(date: Date | string): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function getWeekStart(date: DateInput): Date {
+  const d = toDate(date);
   return startOfWeek(d, { weekStartsOn: 1 });
 }
 
 /**
  * 获取周的最后一天（周日）
  */
-export function getWeekEnd(date: Date | string): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function getWeekEnd(date: DateInput): Date {
+  const d = toDate(date);
   return endOfWeek(d, { weekStartsOn: 1 });
 }
 
 /**
  * 获取月的第一天
  */
-export function getMonthStart(date: Date | string): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function getMonthStart(date: DateInput): Date {
+  const d = toDate(date);
   return startOfMonth(d);
 }
 
 /**
  * 获取月的最后一天
  */
-export function getMonthEnd(date: Date | string): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function getMonthEnd(date: DateInput): Date {
+  const d = toDate(date);
   return endOfMonth(d);
 }
 
 /**
  * 获取年的第一天
  */
-export function getYearStart(date: Date | string): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function getYearStart(date: DateInput): Date {
+  const d = toDate(date);
   return startOfYear(d);
 }
 
 /**
  * 获取年的最后一天
  */
-export function getYearEnd(date: Date | string): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function getYearEnd(date: DateInput): Date {
+  const d = toDate(date);
   return endOfYear(d);
 }
 
 /**
  * 获取季度的第一天
  */
-export function getQuarterStart(date: Date | string): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function getQuarterStart(date: DateInput): Date {
+  const d = toDate(date);
   return startOfQuarter(d);
 }
 
 /**
  * 获取季度的最后一天
  */
-export function getQuarterEnd(date: Date | string): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function getQuarterEnd(date: DateInput): Date {
+  const d = toDate(date);
   return endOfQuarter(d);
 }
 
@@ -161,41 +227,81 @@ export function getQuarterEnd(date: Date | string): Date {
 /**
  * 加天数
  */
-export function addDaysToDate(date: Date | string, days: number): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function addDaysToDate(date: DateInput, days: number): Date {
+  const d = toDate(date);
   return addDays(d, days);
 }
 
 /**
  * 减天数
  */
-export function subtractDaysFromDate(date: Date | string, days: number): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function subtractDaysFromDate(date: DateInput, days: number): Date {
+  const d = toDate(date);
   return subDays(d, days);
 }
 
 /**
  * 加周数
  */
-export function addWeeksToDate(date: Date | string, weeks: number): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function addWeeksToDate(date: DateInput, weeks: number): Date {
+  const d = toDate(date);
   return addWeeks(d, weeks);
 }
 
 /**
  * 加月数
  */
-export function addMonthsToDate(date: Date | string, months: number): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function addMonthsToDate(date: DateInput, months: number): Date {
+  const d = toDate(date);
   return addMonths(d, months);
 }
 
 /**
  * 加年数
  */
-export function addYearsToDate(date: Date | string, years: number): Date {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function addYearsToDate(date: DateInput, years: number): Date {
+  const d = toDate(date);
   return addYears(d, years);
+}
+
+/**
+ * 加小时
+ */
+export function addHoursToDate(date: DateInput, hours: number): Date {
+  const d = toDate(date);
+  return addHours(d, hours);
+}
+
+/**
+ * 加分钟
+ */
+export function addMinutesToDate(date: DateInput, minutes: number): Date {
+  const d = toDate(date);
+  return addMinutes(d, minutes);
+}
+
+/**
+ * 设置时间（小时和分钟）
+ */
+export function setTime(date: DateInput, hours: number, minutes: number): Date {
+  const d = toDate(date);
+  return setMinutes(setHours(d, hours), minutes);
+}
+
+/**
+ * 获取小时
+ */
+export function extractHours(date: DateInput): number {
+  const d = toDate(date);
+  return getHours(d);
+}
+
+/**
+ * 获取分钟
+ */
+export function extractMinutes(date: DateInput): number {
+  const d = toDate(date);
+  return getMinutes(d);
 }
 
 // ==================== 日期比较 ====================
@@ -203,25 +309,25 @@ export function addYearsToDate(date: Date | string, years: number): Date {
 /**
  * 判断是否为今天
  */
-export function isTodayDate(date: Date | string): boolean {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function isTodayDate(date: DateInput): boolean {
+  const d = toDate(date);
   return isToday(d);
 }
 
 /**
  * 判断两个日期是否为同一天
  */
-export function isSameDayDate(date1: Date | string, date2: Date | string): boolean {
-  const d1 = typeof date1 === 'string' ? parseISO(date1) : date1;
-  const d2 = typeof date2 === 'string' ? parseISO(date2) : date2;
+export function isSameDayDate(date1: DateInput, date2: DateInput): boolean {
+  const d1 = toDate(date1);
+  const d2 = toDate(date2);
   return isSameDay(d1, d2);
 }
 
 /**
  * 判断是否为周末
  */
-export function isWeekend(date: Date | string): boolean {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function isWeekend(date: DateInput): boolean {
+  const d = toDate(date);
   const day = getDay(d);
   return day === 0 || day === 6; // 0=周日, 6=周六
 }
@@ -229,38 +335,47 @@ export function isWeekend(date: Date | string): boolean {
 /**
  * 判断日期是否在范围内
  */
-export function isDateInRange(date: Date | string, start: Date | string, end: Date | string): boolean {
-  const d = typeof date === 'string' ? parseISO(date) : date;
-  const s = typeof start === 'string' ? parseISO(start) : start;
-  const e = typeof end === 'string' ? parseISO(end) : end;
+export function isDateInRange(date: DateInput, start: DateInput, end: DateInput): boolean {
+  const d = toDate(date);
+  const s = toDate(start);
+  const e = toDate(end);
   return isWithinInterval(d, { start: s, end: e });
 }
 
 /**
  * 判断日期是否在另一个日期之前
  */
-export function isDateBefore(date: Date | string, dateToCompare: Date | string): boolean {
-  const d = typeof date === 'string' ? parseISO(date) : date;
-  const dtc = typeof dateToCompare === 'string' ? parseISO(dateToCompare) : dateToCompare;
+export function isDateBefore(date: DateInput, dateToCompare: DateInput): boolean {
+  const d = toDate(date);
+  const dtc = toDate(dateToCompare);
   return isBefore(d, dtc);
 }
 
 /**
  * 判断日期是否在另一个日期之后
  */
-export function isDateAfter(date: Date | string, dateToCompare: Date | string): boolean {
-  const d = typeof date === 'string' ? parseISO(date) : date;
-  const dtc = typeof dateToCompare === 'string' ? parseISO(dateToCompare) : dateToCompare;
+export function isDateAfter(date: DateInput, dateToCompare: DateInput): boolean {
+  const d = toDate(date);
+  const dtc = toDate(dateToCompare);
   return isAfter(d, dtc);
 }
 
 /**
  * 计算两个日期之间的天数差
  */
-export function getDaysDifference(date1: Date | string, date2: Date | string): number {
-  const d1 = typeof date1 === 'string' ? parseISO(date1) : date1;
-  const d2 = typeof date2 === 'string' ? parseISO(date2) : date2;
+export function getDaysDifference(date1: DateInput, date2: DateInput): number {
+  const d1 = toDate(date1);
+  const d2 = toDate(date2);
   return differenceInDays(d2, d1);
+}
+
+/**
+ * 计算两个时间之间的分钟差
+ */
+export function getMinutesDifference(date1: DateInput, date2: DateInput): number {
+  const d1 = toDate(date1);
+  const d2 = toDate(date2);
+  return differenceInMinutes(d2, d1);
 }
 
 // ==================== 日历网格计算 ====================
@@ -285,8 +400,8 @@ export function getCalendarGrid(year: number, month: number): Date[] {
 /**
  * 获取一周的所有日期
  */
-export function getWeekDates(date: Date | string): Date[] {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function getWeekDates(date: DateInput): Date[] {
+  const d = toDate(date);
   const start = getWeekStart(d);
   const end = getWeekEnd(d);
   return eachDayOfInterval({ start, end });
@@ -316,40 +431,40 @@ export function getQuarterMonths(year: number, quarter: 1 | 2 | 3 | 4): Date[] {
 /**
  * 获取年份
  */
-export function extractYear(date: Date | string): number {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function extractYear(date: DateInput): number {
+  const d = toDate(date);
   return getYear(d);
 }
 
 /**
  * 获取月份（1-12）
  */
-export function extractMonth(date: Date | string): number {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function extractMonth(date: DateInput): number {
+  const d = toDate(date);
   return getMonth(d) + 1; // date-fns 返回 0-11，转换为 1-12
 }
 
 /**
  * 获取季度（1-4）
  */
-export function extractQuarter(date: Date | string): number {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function extractQuarter(date: DateInput): number {
+  const d = toDate(date);
   return getQuarter(d);
 }
 
 /**
  * 获取周数（一年中的第几周）
  */
-export function extractWeekNumber(date: Date | string): number {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function extractWeekNumber(date: DateInput): number {
+  const d = toDate(date);
   return getWeek(d, { weekStartsOn: 1 });
 }
 
 /**
  * 获取星期几（1-7，周一到周日）
  */
-export function extractDayOfWeek(date: Date | string): number {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function extractDayOfWeek(date: DateInput): number {
+  const d = toDate(date);
   const day = getDay(d);
   return day === 0 ? 7 : day; // 转换周日为7
 }
@@ -366,9 +481,9 @@ export function getDaysInMonthCount(year: number, month: number): number {
 /**
  * 计算过期天数
  */
-export function calculateOverdueDays(dueDate: string): number {
+export function calculateOverdueDays(dueDate: DateInput): number {
   const today = new Date();
-  const due = parseISO(dueDate);
+  const due = toDate(dueDate);
   if (isAfter(today, due)) {
     return differenceInDays(today, due);
   }
@@ -379,10 +494,11 @@ export function calculateOverdueDays(dueDate: string): number {
  * 判断是否为历史待办任务
  * 定义：开始日期早于今天，且未完成
  */
-export function isOverdueTask(startDate: string, status: string): boolean {
+export function isOverdueTask(startDate: DateInput, status: string): boolean {
   if (status === 'completed') return false;
-  const today = getTodayString();
-  return isDateBefore(startDate, today);
+  const today = getTodayStart();
+  const start = toDate(startDate);
+  return isDateBefore(start, today);
 }
 
 // ==================== 验证 ====================
@@ -404,4 +520,23 @@ export function isValidDateString(dateString: string): boolean {
  */
 export function parseDateString(dateString: string): Date {
   return parseISO(dateString);
+}
+
+// ==================== 提醒相关 ====================
+
+/**
+ * 计算提醒时间（基于截止时间和提前分钟数）
+ */
+export function calculateReminderTime(dueDate: DateInput, offsetMinutes: number): Date {
+  const d = toDate(dueDate);
+  return addMinutes(subDays(d, 0), -offsetMinutes); // 提前 offsetMinutes 分钟
+}
+
+/**
+ * 检查提醒是否应该发送
+ */
+export function shouldSendReminder(remindAt: DateInput): boolean {
+  const now = new Date();
+  const remind = toDate(remindAt);
+  return isBefore(remind, now) || isSameDay(remind, now);
 }

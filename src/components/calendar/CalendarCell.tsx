@@ -60,7 +60,7 @@ export function CalendarCell({
   // 判断是否是调休工作日（周末但需要上班）
   const isAdjustedWorkday = holiday && !holiday.isHoliday && isWeekendDay;
 
-  // Sort tasks by priority with memoization
+  // 按优先级排序任务（使用 memoization）
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
       const aValue = a.level?.value || 0;

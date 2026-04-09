@@ -1,6 +1,6 @@
 "use client"
 
-// Inspired by react-hot-toast library
+// 灵感来自 react-hot-toast 库
 import * as React from "react"
 
 import type {
@@ -93,8 +93,7 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
+      // 副作用 - 可以提取到 dismissToast() action 中，但为了简洁保留在此
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {

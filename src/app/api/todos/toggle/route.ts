@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getTodayString } from '@/lib/date-utils';
-import { getAuthSession } from '@/lib/auth';
+import { getApiSession } from '@/lib/api-auth';
 
 // POST /api/todos/toggle - 切换任务状态
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const authResult = await getApiSession(request);
 
-    if (!session?.user?.id) {
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: authResult.error || '未授权访问' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = authResult.userId;
     const body = await request.json();
     const { id } = body;
 
@@ -39,14 +38,17 @@ export async function POST(request: NextRequest) {
 
     // 切换状态
     const newStatus = existing.status === 'completed' ? 'pending' : 'completed';
-    const today = getTodayString();
+
+    // 使用本地时间格式（与 startDate/dueDate 保持一致）
+    const now = new Date();
+    const localCompletedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.000Z`;
 
     const todo = await db.todo.update({
       where: { id },
       data: {
         status: newStatus,
-        // 完成时记录完成日期，未完成时清空
-        completedAt: newStatus === 'completed' ? today : null,
+        // 完成时记录完成日期时间，未完成时清空
+        completedAt: newStatus === 'completed' ? new Date(localCompletedAt) : null,
       },
       include: {
         category: true,

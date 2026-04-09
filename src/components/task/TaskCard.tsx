@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check,
   ChevronDown,
@@ -42,8 +43,8 @@ interface TaskCardProps {
     title: string;
     description?: string | null;
     status: string;
-    startDate: string;
-    dueDate: string;
+    startDate: string; // ISO datetime string from API
+    dueDate: string;   // ISO datetime string from API
     completedAt?: string | null;
     subTasks?: string | null;
     isCycleTask: boolean;
@@ -77,6 +78,11 @@ interface TaskCardProps {
   onSelect?: (id: string) => void;
 }
 
+// 辅助函数：从 ISO datetime 提取日期部分进行比较
+function getDateOnly(isoString: string): string {
+  return isoString.split('T')[0];
+}
+
 export function TaskCard({
   task,
   onToggle,
@@ -96,7 +102,7 @@ export function TaskCard({
   const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
   const [expanded, setExpanded] = useState(false);
 
-  // Parse subtasks with memoization
+  // 解析子任务（使用 memoization）
   const subTasks: SubTask[] = useMemo(() => {
     if (!task.subTasks) return [];
     try {
@@ -113,10 +119,10 @@ export function TaskCard({
       ? Math.round((completedSubTasks / subTasks.length) * 100)
       : 0;
 
-  // 判断是否跨天任务
-  const isCrossDay = task.startDate !== task.dueDate;
+  // 判断是否跨天任务（比较日期部分）
+  const isCrossDay = getDateOnly(task.startDate) !== getDateOnly(task.dueDate);
 
-  // 判断是否过期
+  // 判断是否过期（比较日期部分）
   const isOverdue =
     task.status !== 'completed' &&
     new Date(task.dueDate) < new Date(new Date().toDateString());
@@ -156,22 +162,43 @@ export function TaskCard({
           />
         )}
         {!selectMode && (
-          <Checkbox
-            checked={isCompleted}
-            onCheckedChange={() => onToggle(task.id)}
-            className="flex-shrink-0 h-4 w-4 sm:h-5 sm:w-5"
-          />
+          <div
+            className="flex-shrink-0 -ml-1 -mt-1 p-1 rounded hover:bg-accent/50 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(task.id);
+            }}
+          >
+            <Checkbox
+              checked={isCompleted}
+              className="h-4 w-4 sm:h-5 sm:w-5 pointer-events-none"
+            />
+          </div>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span
+            <motion.span
+              layout
               className={cn(
-                'truncate text-xs sm:text-sm',
-                isCompleted && 'line-through text-muted-foreground'
+                'truncate text-xs sm:text-sm relative',
+                isCompleted && 'text-muted-foreground'
               )}
             >
               {task.title}
-            </span>
+              <AnimatePresence mode="wait">
+                {isCompleted && (
+                  <motion.span
+                    key="strikethrough"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    exit={{ scaleX: 0 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="absolute left-0 top-1/2 w-full h-[1px] bg-current origin-left"
+                    style={{ transform: 'translateY(-50%)' }}
+                  />
+                )}
+              </AnimatePresence>
+            </motion.span>
           </div>
           {task.description && (
             <p className="text-xs text-muted-foreground truncate mt-0.5 hidden sm:block">
@@ -287,24 +314,46 @@ export function TaskCard({
       )}>
         {/* 完成状态复选框 - 非选择模式下显示 */}
         {!selectMode && (
-          <Checkbox
-            checked={isCompleted}
-            onCheckedChange={() => onToggle(task.id)}
-            className="mt-0.5 sm:mt-1 flex-shrink-0 h-4 w-4 sm:h-5 sm:w-5"
-          />
+          <div
+            className="flex-shrink-0 -ml-2 -mt-1 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(task.id);
+            }}
+          >
+            <Checkbox
+              checked={isCompleted}
+              className="h-4 w-4 sm:h-5 sm:w-5 pointer-events-none"
+            />
+          </div>
         )}
 
         {/* 内容 */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            <h4
+            <motion.h4
+              layout
               className={cn(
-                'font-medium text-xs sm:text-sm',
-                isCompleted && 'line-through text-muted-foreground'
+                'font-medium text-xs sm:text-sm relative',
+                isCompleted && 'text-muted-foreground'
               )}
             >
               {task.title}
-            </h4>
+              {/* 完成时的划线动画 */}
+              <AnimatePresence mode="wait">
+                {isCompleted && (
+                  <motion.span
+                    key="strikethrough"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    exit={{ scaleX: 0 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="absolute left-0 top-1/2 w-full h-[1px] bg-current origin-left"
+                    style={{ transform: 'translateY(-50%)' }}
+                  />
+                )}
+              </AnimatePresence>
+            </motion.h4>
 
             {/* 完成日期显示和编辑 */}
             {isCompleted && task.completedAt && (
@@ -312,7 +361,7 @@ export function TaskCard({
                 <PopoverTrigger asChild>
                   <button className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs text-green-600 hover:text-green-700 hover:bg-green-50 px-1 sm:px-1.5 py-0.5 rounded transition-colors">
                     <CalendarCheck className="h-3 w-3" />
-                    <span>{format(new Date(task.completedAt), 'MMM d', { locale: dateFnsLocale })} {t('taskCard.completed')}</span>
+                    <span>{format(parseISO(task.completedAt), 'MMM d', { locale: dateFnsLocale })} {t('taskCard.completed')}</span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -321,13 +370,12 @@ export function TaskCard({
                   </div>
                   <Calendar
                     mode="single"
-                    selected={task.completedAt ? new Date(task.completedAt) : undefined}
+                    selected={task.completedAt ? parseISO(task.completedAt) : undefined}
                     onSelect={(date) => {
                       if (date && onCompletedAtChange) {
                         onCompletedAtChange(task.id, format(date, 'yyyy-MM-dd'));
                       }
                     }}
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -341,16 +389,16 @@ export function TaskCard({
             </p>
           )}
 
-          {/* 日期显示 */}
+          {/* 日期时间显示 */}
           {showDate && (
             <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
               {isCrossDay ? (
                 <>
-                  {format(new Date(task.startDate), 'MM/dd')} -{' '}
-                  {format(new Date(task.dueDate), 'MM/dd')}
+                  {format(new Date(task.startDate), 'MM/dd HH:mm')} -{' '}
+                  {format(new Date(task.dueDate), 'MM/dd HH:mm')}
                 </>
               ) : (
-                format(new Date(task.dueDate), 'MM/dd')
+                format(new Date(task.dueDate), 'MM/dd HH:mm')
               )}
             </p>
           )}
@@ -381,11 +429,18 @@ export function TaskCard({
                   key={st.id}
                   className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Checkbox
-                    checked={st.isDone}
-                    onCheckedChange={() => handleSubTaskToggle(st.id)}
-                    className="h-3.5 w-3.5 sm:h-4 sm:w-4"
-                  />
+                  <div
+                    className="flex-shrink-0 -ml-0.5 p-0.5 rounded hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubTaskToggle(st.id);
+                    }}
+                  >
+                    <Checkbox
+                      checked={st.isDone}
+                      className="h-3.5 w-3.5 sm:h-4 sm:w-4 pointer-events-none"
+                    />
+                  </div>
                   <span
                     className={cn(
                       st.isDone && 'line-through text-muted-foreground'

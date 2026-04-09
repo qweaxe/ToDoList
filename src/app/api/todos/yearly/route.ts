@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
-import { getYearStart, getYearEnd, formatDate } from '@/lib/date-utils';
+import { formatDate } from '@/lib/date-utils';
 import { format, eachDayOfInterval, getDay, getMonth } from 'date-fns';
 
 // GET /api/todos/yearly?year=YYYY - 获取年度统计数据
@@ -24,17 +24,14 @@ export async function GET(request: NextRequest) {
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year, 11, 31);
 
-    const yearStartStr = formatDate(yearStart);
-    const yearEndStr = formatDate(yearEnd);
-
     // 获取年度内已完成的任务（用于热力图）
     const completedTasks = await db.todo.findMany({
       where: {
         userId,
         status: 'completed',
         completedAt: {
-          gte: yearStartStr,
-          lte: yearEndStr,
+          gte: yearStart,
+          lte: yearEnd,
         },
       },
       select: {
@@ -53,7 +50,8 @@ export async function GET(request: NextRequest) {
     const heatmap: Record<string, number> = {};
     completedTasks.forEach((task) => {
       if (task.completedAt) {
-        heatmap[task.completedAt] = (heatmap[task.completedAt] || 0) + 1;
+        const dateStr = formatDate(task.completedAt);
+        heatmap[dateStr] = (heatmap[dateStr] || 0) + 1;
       }
     });
 
@@ -76,8 +74,8 @@ export async function GET(request: NextRequest) {
 
     // 按月统计
     const monthlyStats = Array.from({ length: 12 }, (_, i) => {
-      const monthStart = formatDate(new Date(year, i, 1));
-      const monthEnd = formatDate(new Date(year, i + 1, 0));
+      const monthStart = new Date(year, i, 1);
+      const monthEnd = new Date(year, i + 1, 0);
 
       const monthTasks = completedTasks.filter(
         (t) => t.completedAt && t.completedAt >= monthStart && t.completedAt <= monthEnd

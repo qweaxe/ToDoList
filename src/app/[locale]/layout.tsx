@@ -14,13 +14,12 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
   
-  // Ensure that the incoming `locale` is valid
+  // 确保传入的 `locale` 有效
   if (!routing.locales.includes(locale as 'en' | 'zh')) {
     notFound();
   }
 
-  // Providing all messages to the client
-  // side is the easiest way to get started
+  // 将所有消息提供给客户端是最简单的入门方式
   const messages = await getMessages();
 
   return (

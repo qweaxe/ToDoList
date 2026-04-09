@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { z } from 'zod';
+import { format } from 'date-fns';
 
 const updateSubTaskSchema = z.object({
   subTaskId: z.string(),
   isDone: z.boolean(),
 });
 
-// PUT /api/todos/[id]/subtask - Update subtask status
+// PUT /api/todos/[id]/subtask - 更新子任务状态
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -28,7 +29,7 @@ export async function PUT(
     const body = await request.json();
     const validated = updateSubTaskSchema.parse(body);
 
-    // Check if task exists and belongs to current user
+    // 检查任务是否存在且属于当前用户
     const existing = await db.todo.findFirst({
       where: { id: taskId, userId },
       select: { id: true, subTasks: true },
@@ -41,16 +42,38 @@ export async function PUT(
       );
     }
 
-    // Parse and update subtasks
+    // 解析并更新子任务
     const subTasks = existing.subTasks ? JSON.parse(existing.subTasks) : [];
     const updatedSubTasks = subTasks.map((st: { id: string; isDone: boolean }) =>
       st.id === validated.subTaskId ? { ...st, isDone: validated.isDone } : st
     );
 
-    // Update task
+    // 检查是否所有子任务都已完成
+    const allSubTasksDone = updatedSubTasks.length > 0 && updatedSubTasks.every((st: { isDone: boolean }) => st.isDone);
+
+    // 准备更新数据
+    const updateData: {
+      subTasks: string;
+      status?: string;
+      completedAt?: string;
+    } = {
+      subTasks: JSON.stringify(updatedSubTasks),
+    };
+
+    // 如果所有子任务都已完成，自动完成主任务
+    if (allSubTasksDone) {
+      updateData.status = 'completed';
+      // 使用本地时间，不进行时区转换
+      const now = new Date();
+      const localDate = format(now, 'yyyy-MM-dd');
+      const localTime = format(now, 'HH:mm:ss');
+      updateData.completedAt = `${localDate}T${localTime}.000Z`;
+    }
+
+    // 更新任务
     const todo = await db.todo.update({
       where: { id: taskId },
-      data: { subTasks: JSON.stringify(updatedSubTasks) },
+      data: updateData,
       include: {
         category: true,
         level: true,

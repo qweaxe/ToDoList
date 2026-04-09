@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { createTodoSchema } from '@/types/api';
-import { getAuthSession } from '@/lib/auth';
+import { getApiSession } from '@/lib/api-auth';
 
 // GET /api/todos - 获取任务列表
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const authResult = await getApiSession(request);
 
-    if (!session?.user?.id) {
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: authResult.error || '未授权访问' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = authResult.userId;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const categoryId = searchParams.get('categoryId');
@@ -42,28 +42,30 @@ export async function GET(request: NextRequest) {
       where.isMilestone = true;
     }
 
-    // 日期范围筛选
+    // 日期范围筛选（DateTime 类型）
     if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
       where.OR = [
         {
           // 任务开始日期在范围内
           startDate: {
-            gte: startDate,
-            lte: endDate,
+            gte: start,
+            lte: end,
           },
         },
         {
           // 任务截止日期在范围内
           dueDate: {
-            gte: startDate,
-            lte: endDate,
+            gte: start,
+            lte: end,
           },
         },
         {
           // 任务跨越整个范围
           AND: [
-            { startDate: { lte: startDate } },
-            { dueDate: { gte: endDate } },
+            { startDate: { lte: start } },
+            { dueDate: { gte: end } },
           ],
         },
       ];
@@ -98,21 +100,23 @@ export async function GET(request: NextRequest) {
 // POST /api/todos - 创建任务
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const authResult = await getApiSession(request);
 
-    if (!session?.user?.id) {
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: authResult.error || '未授权访问' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = authResult.userId;
     const body = await request.json();
     const validated = createTodoSchema.parse(body);
 
-    // 验证日期
-    if (validated.startDate > validated.dueDate) {
+    // 验证日期时间
+    const startDateObj = new Date(validated.startDate);
+    const dueDateObj = new Date(validated.dueDate);
+    if (startDateObj > dueDateObj) {
       return NextResponse.json(
         { success: false, error: '开始日期不能晚于截止日期' },
         { status: 400 }
@@ -128,8 +132,8 @@ export async function POST(request: NextRequest) {
           interval: validated.recurrenceRule.interval,
           byDay: validated.recurrenceRule.byDay ? JSON.stringify(validated.recurrenceRule.byDay) : null,
           cronExpr: validated.recurrenceRule.cronExpr,
-          startDate: validated.recurrenceRule.startDate,
-          endDate: validated.recurrenceRule.endDate,
+          startDate: new Date(validated.recurrenceRule.startDate),
+          endDate: validated.recurrenceRule.endDate ? new Date(validated.recurrenceRule.endDate) : null,
           userId,
         },
       });
@@ -141,8 +145,9 @@ export async function POST(request: NextRequest) {
       data: {
         title: validated.title,
         description: validated.description,
-        startDate: validated.startDate,
-        dueDate: validated.dueDate,
+        startDate: new Date(validated.startDate),
+        dueDate: new Date(validated.dueDate),
+        completedAt: validated.completedAt ? new Date(validated.completedAt) : null,
         categoryId: validated.categoryId,
         levelId: validated.levelId,
         subTasks: validated.subTasks ? JSON.stringify(validated.subTasks) : null,

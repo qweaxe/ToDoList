@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
 import {
   Calendar,
   Check,
+  Clock,
   Edit2,
   Flag,
   MoreHorizontal,
@@ -15,7 +16,6 @@ import {
   X,
   Save,
   Plus,
-  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -48,6 +48,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { TimePicker } from '@/components/ui/time-picker';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -99,6 +100,25 @@ export function TaskDetailDialog({
   const [editLevelId, setEditLevelId] = useState('');
   const [editSubTasks, setEditSubTasks] = useState<SubTask[]>([]);
   const [newSubTaskText, setNewSubTaskText] = useState('');
+  // 时间选择器状态
+  const [editStartTime, setEditStartTime] = useState<string>('00:00');
+  const [editDueTime, setEditDueTime] = useState<string>('23:59');
+
+  // 从 ISO 字符串提取时间部分
+  const extractTimeFromISO = (isoString: string, isDueDate: boolean = false): string => {
+    if (isoString.includes('T')) {
+      const date = new Date(isoString);
+      return format(date, 'HH:mm');
+    }
+    return isDueDate ? '23:59' : '00:00';
+  };
+
+  // 合并日期和时间为 ISO 字符串（不进行时区转换）
+  const combineDateAndTime = (dateStr: string, timeStr: string): string => {
+    // 直接拼接日期和时间，不进行时区转换
+    // 格式：YYYY-MM-DDTHH:mm:ss.sssZ（假装是 UTC，实际就是用户输入的时间）
+    return `${dateStr}T${timeStr}:00.000Z`;
+  };
 
   const { data, isLoading, refetch } = useTodo(taskId);
   const updateMutation = useUpdateTodo();
@@ -139,6 +159,9 @@ export function TaskDetailDialog({
       setEditCategoryId(initial.categoryId);
       setEditLevelId(initial.levelId);
       setEditSubTasks(initial.subTasks);
+      // 重置时间
+      setEditStartTime(extractTimeFromISO(initial.startDate, false));
+      setEditDueTime(extractTimeFromISO(initial.dueDate, true));
     }
     setIsEditing(false);
   }, [getInitialEditValues]);
@@ -147,14 +170,18 @@ export function TaskDetailDialog({
   const handleSave = () => {
     if (!taskId || !editTitle.trim()) return;
 
+    // 合并日期和时间
+    const startDateWithTime = combineDateAndTime(editStartDate, editStartTime);
+    const dueDateWithTime = combineDateAndTime(editDueDate, editDueTime);
+
     updateMutation.mutate(
       {
         id: taskId,
         data: {
           title: editTitle,
           description: editDescription || undefined,
-          startDate: editStartDate,
-          dueDate: editDueDate,
+          startDate: startDateWithTime,
+          dueDate: dueDateWithTime,
           categoryId: editCategoryId || undefined,
           levelId: editLevelId || undefined,
           subTasks: editSubTasks.length > 0 ? editSubTasks : undefined,
@@ -236,6 +263,9 @@ export function TaskDetailDialog({
       setEditCategoryId(task.categoryId || '');
       setEditLevelId(task.levelId || '');
       setEditSubTasks(parsedSubTasks);
+      // 设置时间
+      setEditStartTime(extractTimeFromISO(task.startDate, false));
+      setEditDueTime(extractTimeFromISO(task.dueDate, true));
       setIsEditing(true);
     }
   };
@@ -247,7 +277,7 @@ export function TaskDetailDialog({
         setIsEditing(false);
       }
     }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg">
@@ -381,50 +411,60 @@ export function TaskDetailDialog({
                 <p className="text-sm text-muted-foreground">{task.description}</p>
               ) : null}
 
-              {/* 日期 */}
+              {/* 日期时间 */}
               {isEditing ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('startDate')}</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {editStartDate}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={new Date(editStartDate)}
-                          onSelect={(date) =>
-                            date && setEditStartDate(format(date, 'yyyy-MM-dd'))
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="flex gap-2 items-center justify-between">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="justify-start">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {editStartDate ? format(new Date(editStartDate), 'yyyy-MM-dd') : ''}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={editStartDate ? new Date(editStartDate) : undefined}
+                            onSelect={(date) =>
+                              date && setEditStartDate(format(date, 'yyyy-MM-dd'))
+                            }
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <TimePicker
+                        value={editStartTime}
+                        onChange={setEditStartTime}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>{t('dueDate')}</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {editDueDate}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={new Date(editDueDate)}
-                          onSelect={(date) =>
-                            date && setEditDueDate(format(date, 'yyyy-MM-dd'))
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="flex gap-2 items-center justify-between">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="justify-start">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {editDueDate ? format(new Date(editDueDate), 'yyyy-MM-dd') : ''}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={editDueDate ? new Date(editDueDate) : undefined}
+                            onSelect={(date) =>
+                              date && setEditDueDate(format(date, 'yyyy-MM-dd'))
+                            }
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <TimePicker
+                        value={editDueTime}
+                        onChange={setEditDueTime}
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -432,11 +472,11 @@ export function TaskDetailDialog({
                   <Calendar className="h-4 w-4" />
                   {isCrossDay ? (
                     <span>
-                      {format(new Date(task.startDate), 'MMM d, yyyy', { locale: dateFnsLocale })} -{' '}
-                      {format(new Date(task.dueDate), 'MMM d, yyyy', { locale: dateFnsLocale })}
+                      {format(new Date(task.startDate), 'MMM d, yyyy HH:mm', { locale: dateFnsLocale })} -{' '}
+                      {format(new Date(task.dueDate), 'MMM d, yyyy HH:mm', { locale: dateFnsLocale })}
                     </span>
                   ) : (
-                    <span>{format(new Date(task.dueDate), 'MMM d, yyyy', { locale: dateFnsLocale })}</span>
+                    <span>{format(new Date(task.dueDate), 'MMM d, yyyy HH:mm', { locale: dateFnsLocale })}</span>
                   )}
                 </div>
               )}
@@ -558,7 +598,7 @@ export function TaskDetailDialog({
                   <Separator />
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <Check className="h-4 w-4" />
-                    {t('completedOn')} {format(new Date(task.completedAt), 'MMM d, yyyy', { locale: dateFnsLocale })}
+                    {t('completedOn')} {format(parseISO(task.completedAt), 'MMM d, yyyy', { locale: dateFnsLocale })}
                   </div>
                 </>
               )}

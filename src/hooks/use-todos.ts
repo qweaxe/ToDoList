@@ -3,14 +3,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { CreateTodoInput, UpdateTodoInput } from '@/types/api';
+import { mutationManager, isAbortError } from '@/lib/mutation-manager';
 
 interface Todo {
   id: string;
   title: string;
   description: string | null;
   status: string;
-  startDate: string;
-  dueDate: string;
+  startDate: string; // ISO 8601 datetime string from API
+  dueDate: string;   // ISO 8601 datetime string from API
   completedAt: string | null;
   subTasks: string | null;
   isCycleTask: boolean;
@@ -46,12 +47,12 @@ interface RecurrenceRule {
   interval: number;
   byDay: string | null;
   cronExpr: string | null;
-  startDate: string;
+  startDate: string; // ISO 8601 datetime string from API
   endDate: string | null;
   isActive: boolean;
 }
 
-// Get task list
+// 获取任务列表
 export function useTodos(params?: {
   status?: string;
   categoryId?: string;
@@ -82,7 +83,7 @@ export function useTodos(params?: {
   });
 }
 
-// Get daily tasks
+// 获取每日任务
 export function useDailyTodos(date?: string) {
   const params = date ? `?date=${date}` : '';
 
@@ -108,7 +109,7 @@ export function useDailyTodos(date?: string) {
   });
 }
 
-// Get monthly tasks
+// 获取月度任务
 export function useMonthlyTodos(year: number, month: number) {
   return useQuery<{
     success: boolean;
@@ -132,7 +133,7 @@ export function useMonthlyTodos(year: number, month: number) {
   });
 }
 
-// Get single task
+// 获取单个任务
 export function useTodo(id: string | null) {
   return useQuery<{
     success: boolean;
@@ -148,7 +149,7 @@ export function useTodo(id: string | null) {
   });
 }
 
-// Create task
+// 创建任务
 export function useCreateTodo() {
   const queryClient = useQueryClient();
 
@@ -175,7 +176,7 @@ export function useCreateTodo() {
   });
 }
 
-// Update task
+// 更新任务
 export function useUpdateTodo() {
   const queryClient = useQueryClient();
 
@@ -202,34 +203,110 @@ export function useUpdateTodo() {
   });
 }
 
-// Toggle task status
+// 切换任务状态（乐观更新 + 请求取消）
 export function useToggleTodo() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // 创建 AbortController，自动取消之前的请求
+      const controller = mutationManager.createController(`toggle-${id}`);
+
       const res = await fetch('/api/todos/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
+        signal: controller.signal,
       });
+
+      // 清理 controller
+      mutationManager.clear(`toggle-${id}`);
+
+      // 检查是否被取消
+      if (controller.signal.aborted) {
+        return { cancelled: true };
+      }
+
       return res.json();
     },
+    onMutate: async (id: string) => {
+      // 取消所有进行中的查询，防止乐观更新被覆盖
+      await queryClient.cancelQueries({ queryKey: ['todos'] });
+
+      // 获取所有 todos 相关的查询
+      const queries = queryClient.getQueriesData({ queryKey: ['todos'] });
+
+      // 保存旧数据用于回滚
+      const previousData = new Map(queries);
+
+      // 更新每个查询中的任务状态
+      queries.forEach(([queryKey, data]) => {
+        if (!data) return;
+
+        // 递归更新数据中的任务
+        const updateTodoInData = (obj: unknown): unknown => {
+          if (!obj || typeof obj !== 'object') return obj;
+
+          if (Array.isArray(obj)) {
+            return obj.map(item => updateTodoInData(item));
+          }
+
+          const record = obj as Record<string, unknown>;
+
+          // 如果是 todo 对象且 id 匹配
+          if (record.id === id && typeof record.status === 'string') {
+            const newStatus = record.status === 'completed' ? 'pending' : 'completed';
+            const today = new Date().toISOString().split('T')[0];
+            return {
+              ...record,
+              status: newStatus,
+              completedAt: newStatus === 'completed' ? today : null,
+            };
+          }
+
+          // 递归处理嵌套对象
+          const result: Record<string, unknown> = {};
+          for (const key in record) {
+            result[key] = updateTodoInData(record[key]);
+          }
+          return result;
+        };
+
+        queryClient.setQueryData(queryKey, updateTodoInData(data));
+      });
+
+      return { previousData };
+    },
+    onError: (error, _id, context) => {
+      // 如果是取消错误，不处理
+      if (isAbortError(error)) return;
+
+      // 回滚到之前的数据
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      toast.error('Failed to toggle status');
+    },
+    onSettled: () => {
+      // 重新获取数据确保同步
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
     onSuccess: (result) => {
+      // 如果是被取消的请求，不处理
+      if (result?.cancelled) return;
+
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ['todos'] });
         toast.success(result.data?.status === 'completed' ? 'Task completed' : 'Task restored');
       } else {
         toast.error(result.error || 'Operation failed');
       }
     },
-    onError: () => {
-      toast.error('Failed to toggle status');
-    },
   });
 }
 
-// Get weekly tasks
+// 获取周任务
 export function useWeeklyTodos(date?: string) {
   const params = date ? `?date=${date}` : '';
 
@@ -264,7 +341,7 @@ export function useWeeklyTodos(date?: string) {
   });
 }
 
-// Get quarterly data
+// 获取季度数据
 export function useQuarterlyTodos(date?: string) {
   const params = date ? `?date=${date}` : '';
 
@@ -312,7 +389,7 @@ export function useQuarterlyTodos(date?: string) {
   });
 }
 
-// Get yearly stats
+// 获取年度统计
 export function useYearlyStats(year: number) {
   return useQuery<{
     success: boolean;
@@ -355,7 +432,7 @@ export function useYearlyStats(year: number) {
   });
 }
 
-// Update completion date
+// 更新完成日期
 export function useUpdateCompletedAt() {
   const queryClient = useQueryClient();
 
@@ -382,7 +459,7 @@ export function useUpdateCompletedAt() {
   });
 }
 
-// Delete task
+// 删除任务
 export function useDeleteTodo() {
   const queryClient = useQueryClient();
 
@@ -407,7 +484,7 @@ export function useDeleteTodo() {
   });
 }
 
-// Batch delete tasks
+// 批量删除任务
 export function useBatchDeleteTodos() {
   const queryClient = useQueryClient();
 
@@ -434,7 +511,7 @@ export function useBatchDeleteTodos() {
   });
 }
 
-// Batch update tasks
+// 批量更新任务
 export function useBatchUpdateTodos() {
   const queryClient = useQueryClient();
 
@@ -461,33 +538,109 @@ export function useBatchUpdateTodos() {
   });
 }
 
-// Update subtask status
+// 更新子任务状态（乐观更新 + 请求取消）
 export function useUpdateSubTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ taskId, subTaskId, isDone }: { taskId: string; subTaskId: string; isDone: boolean }) => {
+      // 创建 AbortController，自动取消之前的请求
+      const controller = mutationManager.createController(`subtask-${taskId}-${subTaskId}`);
+
       const res = await fetch(`/api/todos/${taskId}/subtask`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subTaskId, isDone }),
+        signal: controller.signal,
       });
+
+      // 清理 controller
+      mutationManager.clear(`subtask-${taskId}-${subTaskId}`);
+
+      // 检查是否被取消
+      if (controller.signal.aborted) {
+        return { cancelled: true };
+      }
+
       return res.json();
     },
+    onMutate: async ({ taskId, subTaskId, isDone }) => {
+      // 取消进行中的查询
+      await queryClient.cancelQueries({ queryKey: ['todos'] });
+
+      // 获取所有 todos 相关的查询
+      const queries = queryClient.getQueriesData({ queryKey: ['todos'] });
+      const previousData = new Map(queries);
+
+      // 更新每个查询中的子任务状态
+      queries.forEach(([queryKey, data]) => {
+        if (!data) return;
+
+        const updateSubTaskInData = (obj: unknown): unknown => {
+          if (!obj || typeof obj !== 'object') return obj;
+
+          if (Array.isArray(obj)) {
+            return obj.map(item => updateSubTaskInData(item));
+          }
+
+          const record = obj as Record<string, unknown>;
+
+          // 如果是任务对象且 id 匹配，更新其子任务
+          if (record.id === taskId && typeof record.subTasks === 'string') {
+            try {
+              const subTasks = JSON.parse(record.subTasks as string);
+              const updatedSubTasks = subTasks.map((st: { id: string; isDone: boolean }) =>
+                st.id === subTaskId ? { ...st, isDone } : st
+              );
+              return {
+                ...record,
+                subTasks: JSON.stringify(updatedSubTasks),
+              };
+            } catch {
+              return record;
+            }
+          }
+
+          // 递归处理嵌套对象
+          const result: Record<string, unknown> = {};
+          for (const key in record) {
+            result[key] = updateSubTaskInData(record[key]);
+          }
+          return result;
+        };
+
+        queryClient.setQueryData(queryKey, updateSubTaskInData(data));
+      });
+
+      return { previousData };
+    },
+    onError: (error, _vars, context) => {
+      // 如果是取消错误，不处理
+      if (isAbortError(error)) return;
+
+      // 回滚
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      toast.error('Failed to update subtask');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
     onSuccess: (result) => {
-      if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ['todos'] });
-      } else {
+      // 如果是被取消的请求，不处理
+      if (result?.cancelled) return;
+
+      if (!result.success) {
         toast.error(result.error || 'Failed to update subtask');
       }
-    },
-    onError: () => {
-      toast.error('Failed to update subtask');
     },
   });
 }
 
-// Get filtered task list (by category or level)
+// 获取筛选后的任务列表（按分类或等级）
 export function useFilteredTodos(type: 'category' | 'level', id: string, year: number) {
   return useQuery<{
     success: boolean;

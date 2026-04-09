@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import { TaskForm } from '@/components/task/TaskForm';
 import { useWeeklyTodos, useToggleTodo, useDeleteTodo, useUpdateTodo, useUpdateCompletedAt } from '@/hooks/use-todos';
 import { useViewStore } from '@/hooks/use-view-store';
@@ -58,10 +59,11 @@ interface TaskItem {
 interface DraggableTaskCardProps {
   task: TaskItem;
   onEdit: (task: TaskItem) => void;
+  onToggle: (id: string) => void;
   isDragging?: boolean;
 }
 
-function DraggableTaskCard({ task, onEdit, isDragging }: DraggableTaskCardProps) {
+function DraggableTaskCard({ task, onEdit, onToggle, isDragging }: DraggableTaskCardProps) {
   const {
     attributes,
     listeners,
@@ -77,6 +79,8 @@ function DraggableTaskCard({ task, onEdit, isDragging }: DraggableTaskCardProps)
     opacity: isSortableDragging ? 0.5 : 1,
   };
 
+  const isCompleted = task.status === 'completed';
+
   return (
     <div
       ref={setNodeRef}
@@ -84,14 +88,26 @@ function DraggableTaskCard({ task, onEdit, isDragging }: DraggableTaskCardProps)
       className={cn(
         'text-xs p-1.5 rounded cursor-pointer transition-colors group relative',
         'hover:bg-muted/80',
-        task.status === 'completed'
-          ? 'bg-muted/30 text-muted-foreground line-through'
+        isCompleted
+          ? 'bg-muted/30 text-muted-foreground'
           : 'bg-muted/50',
         isSortableDragging && 'ring-2 ring-primary shadow-lg'
       )}
-      onClick={() => !isSortableDragging && onEdit(task)}
     >
       <div className="flex items-center gap-1">
+        {/* Checkbox */}
+        <div
+          className="flex-shrink-0 -ml-0.5 p-0.5 rounded hover:bg-accent/50 transition-colors cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(task.id);
+          }}
+        >
+          <Checkbox
+            checked={isCompleted}
+            className="h-3 w-3 pointer-events-none"
+          />
+        </div>
         {/* 拖拽手柄 */}
         <div
           {...attributes}
@@ -112,7 +128,7 @@ function DraggableTaskCard({ task, onEdit, isDragging }: DraggableTaskCardProps)
             )}
           />
         )}
-        <span className="truncate flex-1">{task.title}</span>
+        <span className={cn('truncate flex-1', isCompleted && 'line-through')}>{task.title}</span>
       </div>
     </div>
   );
@@ -132,6 +148,7 @@ interface DateColumnProps {
   onDateClick: (date: string) => void;
   onCreateTask: (date: string) => void;
   onEditTask: (task: TaskItem) => void;
+  onToggleTask: (id: string) => void;
   today: string;
   addTaskText: string;
   dropHereText: string;
@@ -144,6 +161,7 @@ function DateColumn({
   onDateClick,
   onCreateTask,
   onEditTask,
+  onToggleTask,
   today,
   addTaskText,
   dropHereText,
@@ -214,6 +232,7 @@ function DateColumn({
                 key={task.id}
                 task={task}
                 onEdit={onEditTask}
+                onToggle={onToggleTask}
               />
             ))}
           </SortableContext>
@@ -230,17 +249,23 @@ function DateColumn({
 
 // 拖拽覆盖层中的任务卡片
 function OverlayTaskCard({ task }: { task: TaskItem }) {
+  const isCompleted = task.status === 'completed';
+
   return (
     <div
       className={cn(
         'text-xs p-1.5 rounded cursor-grabbing shadow-lg',
         'bg-background border-2 border-primary',
-        task.status === 'completed'
-          ? 'bg-muted/30 text-muted-foreground line-through'
+        isCompleted
+          ? 'bg-muted/30 text-muted-foreground'
           : 'bg-muted/50'
       )}
     >
       <div className="flex items-center gap-1">
+        <Checkbox
+          checked={isCompleted}
+          className="h-3 w-3 pointer-events-none"
+        />
         {task.level && (
           <span
             className={cn(
@@ -253,7 +278,7 @@ function OverlayTaskCard({ task }: { task: TaskItem }) {
             )}
           />
         )}
-        <span className="truncate">{task.title}</span>
+        <span className={cn('truncate', isCompleted && 'line-through')}>{task.title}</span>
       </div>
     </div>
   );
@@ -270,7 +295,7 @@ export function WeekView() {
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
 
-  // Day names from translations
+  // 从翻译获取星期名称
   const DAY_NAMES = [
     t('weekday.monShort'),
     t('weekday.tueShort'),
@@ -338,6 +363,11 @@ export function WeekView() {
     setIsFormOpen(true);
   };
 
+  // 切换任务状态
+  const handleToggle = (id: string) => {
+    toggleMutation.mutate(id);
+  };
+
   // 新建任务
   const handleCreateTask = (date?: string) => {
     setSelectedDateForForm(date || null);
@@ -371,15 +401,27 @@ export function WeekView() {
       // 如果是跨天任务，只更新 dueDate
       const allTasks = Object.values(data?.data.tasksByDate || {}).flat();
       const task = allTasks.find((t: TaskItem) => t.id === taskId);
-      
+
       if (task) {
-        const isSameDay = task.startDate === task.dueDate;
+        // 比较日期部分（不含时间）
+        const taskStartDate = task.startDate.split('T')[0];
+        const taskDueDate = task.dueDate.split('T')[0];
+        const isSameDay = taskStartDate === taskDueDate;
+
+        // 提取时间部分
+        const dueTime = task.dueDate.includes('T') ? task.dueDate.split('T')[1] : '23:59:59.000Z';
+        const startTime = task.startDate.includes('T') ? task.startDate.split('T')[1] : '00:00:00.000Z';
+
+        // 构建新的日期时间
+        const newDueDate = task.dueDate.includes('T') ? `${newDate}T${dueTime}` : newDate;
+        const newStartDate = isSameDay ? (task.startDate.includes('T') ? `${newDate}T${startTime}` : newDate) : task.startDate;
+
         updateMutation.mutate({
           id: taskId,
           data: {
-            dueDate: newDate,
+            dueDate: newDueDate,
             // 如果是单天任务，同时更新 startDate
-            ...(isSameDay && { startDate: newDate }),
+            ...(isSameDay && { startDate: newStartDate }),
           },
         });
       }
@@ -531,6 +573,7 @@ export function WeekView() {
                 onDateClick={handleDateClick}
                 onCreateTask={handleCreateTask}
                 onEditTask={handleEdit}
+                onToggleTask={handleToggle}
                 today={today}
                 addTaskText={t('view.addTask')}
                 dropHereText={t('view.dropHere')}

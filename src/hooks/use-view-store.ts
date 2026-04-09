@@ -6,7 +6,7 @@ import { getTodayString } from '@/lib/date-utils';
 export type ViewType = 'day' | 'calendar' | 'week' | 'quarter' | 'year' | 'settings' | 'overdue' | 'task-list';
 
 // 设置子页面类型
-export type SettingsTab = 'categories' | 'levels' | 'account';
+export type SettingsTab = 'categories' | 'levels' | 'account' | 'api';
 
 // 任务列表筛选类型
 export type TaskListFilterType = 'category' | 'level';
@@ -154,9 +154,10 @@ export const useViewStore = create<ViewState>()(
       name: 'todo-list-view-storage',
       partialize: (state) => ({
         currentView: state.currentView,
-        selectedDate: state.selectedDate,
-        calendarYear: state.calendarYear,
-        calendarMonth: state.calendarMonth,
+        // 不持久化日期相关状态，每次访问都从今天开始
+        // selectedDate: state.selectedDate,
+        // calendarYear: state.calendarYear,
+        // calendarMonth: state.calendarMonth,
       }),
     }
   )

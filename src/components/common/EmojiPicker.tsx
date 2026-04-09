@@ -40,7 +40,7 @@ function getRecentEmojis(): string[] {
       return JSON.parse(saved);
     }
   } catch {
-    // ignore
+    // 忽略
   }
   return [];
 }

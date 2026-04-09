@@ -1,8 +1,8 @@
-# LifeNexus - 待办事项管理应用架构文档
+# To Do List - 待办事项管理应用架构文档
 
 ## 1. 项目概述
 
-**LifeNexus** 是一个极简、直观且具有高度交互性的待办事项管理应用，支持按天管理任务，并提供月度日历视图进行宏观规划和数据统计。
+**To Do List** 是一个极简、直观且具有高度交互性的待办事项管理应用，支持按天管理任务，并提供月度日历视图进行宏观规划和数据统计。
 
 ---
 
@@ -78,6 +78,7 @@ src/
 │       ├── todos/                # 任务相关 API
 │       │   ├── route.ts          # GET(列表) / POST(创建)
 │       │   ├── [id]/route.ts     # GET/PUT/DELETE 单个任务
+│       │   ├── [id]/subtask/route.ts # 子任务操作
 │       │   ├── batch/route.ts    # 批量操作
 │       │   ├── daily/route.ts    # 当日视图数据
 │       │   ├── weekly/route.ts   # 周视图数据
@@ -142,6 +143,7 @@ src/
 │   ├── use-view-store.ts         # 视图状态 Store
 │   ├── use-holidays.ts           # 节假日数据 Hook
 │   ├── use-batch-selection.ts    # 批量选择 Hook
+│   ├── use-mobile.ts             # 移动端检测 Hook
 │   └── use-toast.ts              # Toast 提示 Hook
 │
 ├── lib/
@@ -256,6 +258,9 @@ model RecurrenceRule {
   cronExpr  String?  // 自定义 cron 表达式
   startDate String   // 开始日期
   endDate   String?  // 结束日期（可选）
+  isActive  Boolean  @default(true) // 是否激活
+  userId    String   // 用户级数据隔离
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   todos     Todo[]
@@ -303,7 +308,10 @@ model Holiday {
 | GET | `/api/todos/:id` | 获取单个任务 |
 | PUT | `/api/todos/:id` | 更新任务 |
 | DELETE | `/api/todos/:id` | 删除任务 |
+| PUT | `/api/todos/:id/subtask` | 更新子任务 |
 | POST | `/api/todos/batch` | 批量操作（删除、状态切换） |
+| POST | `/api/todos/toggle` | 切换任务完成状态 |
+| GET | `/api/todos/filter` | 按分类/等级筛选任务 |
 
 ### 5.2 分类 API
 
@@ -381,8 +389,9 @@ model User {
   securityAnswerLockedAt  DateTime? // 锁定时间
 
   // 关联数据
-  categories Category[]
-  todos      Todo[]
+  categories       Category[]
+  todos            Todo[]
+  recurrenceRules  RecurrenceRule[]
 }
 ```
 
@@ -671,3 +680,126 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 ## 13. 开发阶段规划
 
 详见 `TODO_PLAN.md`
+
+---
+
+## 14. 乐观更新架构设计
+
+### 14.1 设计决策
+
+**选择乐观更新的原因**：
+- 任务切换是高频操作，等待服务器响应会影响用户体验
+- 任务状态切换的成功率极高（>99%），乐观假设合理
+- TanStack Query 提供了完善的乐观更新支持
+
+**适用场景**：
+- ✅ 任务状态切换（toggle）
+- ✅ 子任务状态切换
+- ❌ 删除操作（风险高，等待服务器确认）
+- ❌ 批量操作（影响范围大）
+
+### 14.2 实现模式
+
+```typescript
+export function useToggleTodo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => { /* API 调用 */ },
+
+    // 1. 立即更新 UI
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['todos'] });
+      const previousData = queryClient.getQueriesData({ queryKey: ['todos'] });
+      // 递归更新缓存中的任务状态
+      return { previousData };
+    },
+
+    // 2. 失败时回滚
+    onError: (err, id, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+    },
+
+    // 3. 最终同步服务器状态
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
+  });
+}
+```
+
+### 14.3 已知风险与应对措施
+
+| 风险 | 可能性 | 影响 | 当前状态 | 应对措施 |
+|------|--------|------|----------|----------|
+| 竞态条件（快速点击） | 中 | 高 | ⚠️ 部分 | 已有 `cancelQueries`，需加 mutation 取消 |
+| 多设备同时编辑 | 低 | 中 | ❌ 未处理 | 需要版本号校验（后端配合） |
+| 网络错误导致回滚失败 | 低 | 高 | ✅ 已处理 | 有完整的 previousData 回滚 |
+| 缓存更新遗漏 | 低 | 中 | ⚠️ 部分 | 递归遍历所有查询，可能误伤 |
+| 请求成功但被误判失败 | 低 | 高 | ✅ 已处理 | onSettled 总是会 invalidate |
+
+### 14.4 改进优先级
+
+1. **高优先级**：添加 mutation 取消，防止快速点击竞态
+2. **中优先级**：精确缓存更新，只更新相关查询
+3. **低优先级**：版本号校验（需要后端配合）
+
+### 14.5 未来优化方向
+
+```typescript
+// 方案 1：请求去重
+const mutation = useMutation({
+  mutationFn: async (id) => {
+    // 使用 AbortController 取消之前的请求
+    if (abortController) abortController.abort();
+    abortController = new AbortController();
+    return fetch('/api/todos/toggle', { signal: abortController.signal });
+  }
+});
+
+// 方案 2：版本号校验
+interface Todo {
+  id: string;
+  status: string;
+  version: number;  // 每次更新 +1
+}
+// 服务端检查版本，冲突返回 409
+
+// 方案 3：操作限频
+const throttledToggle = throttle(toggleMutation.mutate, 300);
+```
+
+---
+
+## 15. 风险评估清单
+
+### 15.1 乐观更新相关
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| 是否处理了竞态条件？ | ⚠️ | 有 cancelQueries，缺少 mutation 取消 |
+| 是否有完整的回滚逻辑？ | ✅ | previousData 保存完整 |
+| 是否区分了错误类型？ | ❌ | 统一 toast 提示 |
+| 是否限制了操作频率？ | ❌ | 无 throttle/debounce |
+| 是否更新了架构文档？ | ✅ | 本文档 |
+
+### 15.2 API 调用相关
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| 是否处理了网络错误？ | ✅ | onError 回调 |
+| 是否处理了服务器错误？ | ✅ | result.success 判断 |
+| 是否处理了认证过期？ | ✅ | NextAuth 自动处理 |
+| 是否有请求超时处理？ | ❌ | 使用默认超时 |
+
+### 15.3 数据一致性相关
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| 是否有数据版本控制？ | ❌ | 无 version 字段 |
+| 是否有冲突检测机制？ | ❌ | 无乐观锁 |
+| 是否有数据校验？ | ✅ | Zod schema 验证 |

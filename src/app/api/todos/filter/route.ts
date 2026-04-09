@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
     }
 
     const yearNum = parseInt(year, 10);
-    const yearStart = `${yearNum}-01-01`;
-    const yearEnd = `${yearNum}-12-31`;
+    const yearStart = new Date(yearNum, 0, 1);
+    const yearEnd = new Date(yearNum, 11, 31);
 
     let todos;
 

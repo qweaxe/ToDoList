@@ -15,7 +15,7 @@ interface Category {
   todoCount: number;
 }
 
-// Get all categories
+// 获取所有分类
 export function useCategories() {
   return useQuery<{
     success: boolean;
@@ -29,7 +29,7 @@ export function useCategories() {
   });
 }
 
-// Create category
+// 创建分类
 export function useCreateCategory() {
   const queryClient = useQueryClient();
 
@@ -56,7 +56,7 @@ export function useCreateCategory() {
   });
 }
 
-// Update category
+// 更新分类
 export function useUpdateCategory() {
   const queryClient = useQueryClient();
 
@@ -83,7 +83,7 @@ export function useUpdateCategory() {
   });
 }
 
-// Delete category
+// 删除分类
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
 

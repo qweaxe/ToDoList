@@ -32,12 +32,15 @@ export async function GET(request: NextRequest) {
 
     // 获取当日任务（用户选择的日期）
     // 条件: startDate <= date <= dueDate
+    const targetDateObj = parseDateString(date);
+    const todayDateObj = parseDateString(today);
+
     const todayTasks = await db.todo.findMany({
       where: {
         userId,
         AND: [
-          { startDate: { lte: date } },
-          { dueDate: { gte: date } },
+          { startDate: { lte: targetDateObj } },
+          { dueDate: { gte: targetDateObj } },
         ],
       },
       orderBy: [
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
       where: {
         userId,
         AND: [
-          { dueDate: { lt: today } },
+          { dueDate: { lt: todayDateObj } },
           { status: { not: 'completed' } },
         ],
       },

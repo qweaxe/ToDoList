@@ -28,6 +28,7 @@ model User {
   categories      Category[]
   todos           Todo[]
   recurrenceRules RecurrenceRule[]
+  apiKeys         ApiKey[]
 
   @@map("users")
 }
@@ -72,10 +73,10 @@ model Todo {
   description String?
   status      String   @default("pending") // pending, in_progress, completed
 
-  // 时间维度
-  startDate    String   // ISO格式: YYYY-MM-DD
-  dueDate      String   // ISO格式: YYYY-MM-DD
-  completedAt  String?  // 完成日期 ISO格式: YYYY-MM-DD（仅status=completed时有值）
+  // 时间维度（精确到秒，支持提醒功能）
+  startDate   DateTime  // 开始时间
+  dueDate     DateTime  // 截止时间
+  completedAt DateTime? // 完成时间（仅status=completed时有值）
 
   // 多步骤任务 - 使用 JSON 存储
   subTasks    String?  // JSON 字符串: [{id, text, isDone}]
@@ -102,6 +103,9 @@ model Todo {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // 关联
+  reminders Reminder[]
+
   @@index([userId])
   @@index([startDate])
   @@index([dueDate])
@@ -118,8 +122,8 @@ model RecurrenceRule {
   interval  Int      @default(1) // 间隔
   byDay     String?  // JSON 数组: [0,1,2,3,4,5,6] 表示周日到周六
   cronExpr  String?  // 自定义 cron 表达式
-  startDate String   // 开始日期
-  endDate   String?  // 结束日期（可选）
+  startDate DateTime // 开始时间
+  endDate   DateTime? // 结束时间（可选）
   isActive  Boolean  @default(true) // 是否激活
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -145,4 +149,38 @@ model Holiday {
 
   @@index([year])
   @@map("holidays")
+}
+
+// API 密钥（用于外部程序访问）
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String    // 密钥名称（如 "Obsidian Plugin"）
+  key         String    @unique // 加密存储的 Token（前缀 + 随机字符串）
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime? // 最后使用时间
+  expiresAt   DateTime? // 可选：过期时间
+
+  @@index([userId])
+  @@index([key])
+  @@map("api_keys")
+}
+
+// 任务提醒
+model Reminder {
+  id        String   @id @default(cuid())
+  todoId    String
+  todo      Todo     @relation(fields: [todoId], references: [id], onDelete: Cascade)
+
+  remindAt  DateTime // 提醒时间点
+  type      String   // "before_due" = 到期前提醒, "custom" = 自定义时间
+  offset    Int?     // 提前分钟数（如 120 = 提前2小时，仅 type="before_due" 时有效）
+  sent      Boolean  @default(false) // 是否已发送
+
+  createdAt DateTime @default(now())
+
+  @@index([remindAt, sent]) // 查询待发送提醒
+  @@index([todoId])
+  @@map("reminders")
 }

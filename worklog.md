@@ -1,4 +1,4 @@
-# LifeNexus Todo App - Work Log
+# To Do List  - Work Log
 
 ## 项目完成状态检查报告
 
@@ -768,3 +768,609 @@ Stage Summary:
 - ✅ 移动端保持原有交互体验
 
 ---
+Task ID: 22
+Agent: Main Agent
+Task: 子任务自动完成主任务功能
+Date: 2026.03.30
+
+Work Log:
+1. 问题分析
+   - 用户反馈：当所有子任务完成时，主任务应自动完成
+   - 检查 `/api/todos/[id]/subtask` API，发现更新子任务时只更新了 subTasks 字段
+   - 没有检查所有子任务是否完成，也没有更新主任务状态
+
+2. 修复实施
+   - 在更新子任务后检查所有子任务是否已完成
+   - 如果全部完成，自动将主任务状态设为 'completed'
+   - 同时设置 completedAt 为当前日期
+
+3. 代码修改
+   - 添加 `format` 函数导入（来自 date-fns）
+   - 计算 `allSubTasksDone` 布尔值
+   - 构建动态 `updateData` 对象
+   - 当所有子任务完成时，自动更新 status 和 completedAt
+
+Stage Summary:
+- ✅ 当所有子任务完成时，主任务自动标记为已完成
+- ✅ 自动设置完成日期为当前日期
+- ✅ 保持原子性操作，一次 API 调用完成所有更新
+
+---
+Task ID: 23
+Agent: Main Agent
+Task: 修复移动端侧边栏被Header遮挡问题
+Date: 2026.03.30
+
+Work Log:
+1. 问题分析
+   - 用户反馈：移动端打开侧边栏时，顶部的 Header 会遮挡部分内容
+   - 检查 z-index 层级关系：
+     - Header: z-50
+     - Sidebar 遮罩层: z-40
+     - Sidebar: z-50
+   - 问题原因：Header 和 Sidebar 的 z-index 相同（都是 z-50），导致 Header 挡住了侧边栏顶部
+
+2. 修复实施
+   - 提高 Sidebar 遮罩层 z-index: z-40 → z-[55]
+   - 提高 Sidebar z-index: z-50 → z-[60]
+   - 确保 Sidebar 在移动端打开时层级高于 Header
+
+3. 层级关系（修复后）
+   - Header: z-50（固定）
+   - Sidebar 遮罩层: z-[55]（移动端，覆盖Header）
+   - Sidebar: z-[60]（移动端，最高层级）
+   - 桌面端 Sidebar: z-auto（正常文档流）
+
+Stage Summary:
+- ✅ 移动端侧边栏不再被 Header 遮挡
+- ✅ 保持桌面端布局不变
+- ✅ 修复 z-index 层级冲突问题
+
+---
+
+Task ID: 24
+Agent: Main Agent
+Task: 修复首页日期显示问题和代码注释中文化
+Date: 2026.03.31
+
+Work Log:
+1. 首页日期显示问题修复
+   - 问题：每次访问首页返回的是上一次登录的日期，而非当天日期
+   - 原因：use-view-store.ts 使用 Zustand persist 将 selectedDate 持久化到 localStorage
+   - 修复：从 partialize 中移除 selectedDate，每次访问都从今天开始
+
+2. 代码注释中文化
+   - 将项目中所有英文注释翻译为中文
+   - 涉及文件：
+     - 配置文件：middleware.ts, i18n/request.ts, lib/api-utils.ts
+     - Hooks：use-categories.ts, use-todos.ts, use-toast.ts, use-levels.ts
+     - 组件：CalendarCell.tsx, CalendarGrid.tsx, EmojiPicker.tsx, LevelManager.tsx, TaskCard.tsx, CalendarView.tsx, TaskListView.tsx, WeekView.tsx, YearlyView.tsx
+     - UI组件：chart.tsx, sidebar.tsx
+     - API路由：seed/route.ts, todos/[id]/subtask/route.ts, todos/quarterly/route.ts
+     - 页面：page.tsx, [locale]/layout.tsx
+
+Stage Summary:
+- ✅ 修复首页日期显示问题，每次访问都显示当天日期
+- ✅ 代码注释统一为中文，提高可读性
+- ✅ 涉及 20+ 个文件的注释更新
+
+---
+Task ID: 25
+Agent: Main Agent
+Task: 完善日期持久化修复 - 移除 calendarYear/calendarMonth 持久化
+Date: 2026.04.01
+
+Work Log:
+1. 问题分析
+   - 远程已修复 selectedDate 持久化问题（Task ID: 24）
+   - 但 calendarYear 和 calendarMonth 仍然被持久化
+   - 这会导致日历视图也停留在旧月份
+
+2. 修复实施
+   - 合并远程 dev/vercel 分支（包含 4 个新提交）
+   - 进一步移除 calendarYear 和 calendarMonth 的持久化
+   - 只保留 currentView 的持久化（用户偏好的视图类型）
+
+Stage Summary:
+- ✅ 合并远程分支（移动端侧边栏修复、首页日期修复、代码注释中文化）
+- ✅ 完善日期持久化修复，所有日期状态都不再持久化
+- ✅ 每次访问网站，日视图和日历视图都从当前日期开始
+
+---
+Task ID: 26
+Agent: Main Agent
+Task: 历史待办界面功能增强
+Date: 2026.04.01
+
+Work Log:
+1. 问题分析
+   - 原设计：点击任务卡片跳转到任务设置的那一天
+   - 用户需求：
+     - 能直接在界面上完成任务
+     - 能展开任务显示子任务并设置完成
+     - 能编辑单个任务的属性
+     - 仍能跳转到任务日期
+
+2. 修复实施
+   - 移除任务卡片的点击跳转逻辑
+   - 使用完整模式 TaskCard（compact=false）替代紧凑模式
+   - 添加 onSubTaskToggle 回调支持子任务状态切换
+   - 添加 TaskForm 编辑表单，支持编辑任务属性
+   - 添加 ExternalLink 按钮，悬停时显示，点击跳转到任务日期
+   - 更新中英文翻译文件，添加 jumpToDate 翻译键
+
+3. UI 变化
+   - 任务卡片显示完整信息（分类、等级、描述、子任务进度）
+   - 子任务可展开并切换完成状态
+   - 右侧悬停显示跳转按钮（ExternalLink 图标）
+   - 下拉菜单可编辑和删除任务
+
+Stage Summary:
+- ✅ 历史待办界面可直接完成任务（点击复选框）
+- ✅ 可展开子任务并切换完成状态
+- ✅ 可编辑任务属性（标题、描述、日期、分类、等级等）
+- ✅ 可跳转到任务日期（悬停显示跳转按钮）
+- ✅ UI 变动最小，保持原有布局风格
+
+---
+Task ID: 27
+Agent: Main Agent
+Task: 实现 API Token 机制和数据导出接口
+Date: 2026.04.02
+
+Work Log:
+1. 功能设计
+   - 采用方案一：完整实现 API Token + 数据导出
+   - 新建分支 feat/api-token 进行开发
+   - 数据库只新增表，不修改现有表结构
+
+2. 数据库层
+   - 新增 ApiKey 模型（prisma/schema.prisma）
+   - 字段：id, name, key(哈希存储), userId, createdAt, lastUsedAt, expiresAt
+   - 手动创建迁移文件 prisma/migrations/3_add_api_key_table/migration.sql
+
+3. 认证中间件
+   - 新建 src/lib/api-auth.ts
+   - 实现 Bearer Token 提取和验证
+   - 实现 generateApiToken() 生成 tdl_ 前缀的 Token
+   - 实现 hashToken() 对 Token 进行 SHA256 哈希存储
+   - 实现 getApiSession() 支持双重认证（Token + Session）
+
+4. API Key 管理接口
+   - 新建 src/app/api/api-keys/route.ts（GET 获取列表, POST 创建）
+   - 新建 src/app/api/api-keys/[id]/route.ts（DELETE 撤销）
+   - 支持设置过期时间（可选）
+   - 创建时返回原始 Token（仅此一次）
+
+5. 数据导出接口
+   - 新建 src/app/api/export/todos/route.ts（支持筛选，支持 JSON/CSV）
+   - 新建 src/app/api/export/backup/route.ts（完整备份）
+   - 支持 Bearer Token 和 Session 双重认证
+
+6. 前端设置页面
+   - 新建 src/components/settings/ApiKeyManager.tsx
+   - 支持创建、查看、撤销 API Key
+   - 显示创建时间、最后使用时间、过期状态
+   - 创建后显示原始 Token 并支持复制
+   - 修改 SettingsView.tsx 添加 API 密钥标签页
+   - 修改 use-view-store.ts 添加 'api' 类型
+
+7. 国际化
+   - 更新 messages/zh.json 添加中文翻译
+   - 更新 messages/en.json 添加英文翻译
+
+Stage Summary:
+- ✅ 新分支 feat/api-token 开发
+- ✅ 数据库模型新增 ApiKey 表（不影响现有数据）
+- ✅ 支持 Bearer Token 认证
+- ✅ API Key 管理接口（创建、查看、撤销）
+- ✅ 数据导出接口（JSON/CSV）
+- ✅ 前端设置页面集成
+- ✅ 中英文国际化支持
+- ⏳ 待推送代码，Vercel 构建时自动迁移数据库
+
+---
+Task ID: 28
+Agent: Main Agent
+Task: 实现外部应用写入接口和增量同步
+Date: 2026.04.02
+
+Work Log:
+1. 功能设计
+   - 基于 feat/api-token 分支创建 feat/api-write 分支
+   - 支持外部应用通过 API Token 进行写入操作
+   - 实现增量同步接口
+
+2. 认证改造
+   - 将所有 CRUD API 从 getAuthSession() 改为 getApiSession(request)
+   - 支持双重认证：Bearer Token 和 Session Cookie
+   - 涉及文件：
+     - src/app/api/todos/route.ts（GET 获取列表, POST 创建）
+     - src/app/api/todos/[id]/route.ts（GET 获取详情, PUT 更新, DELETE 删除）
+     - src/app/api/todos/toggle/route.ts（切换任务状态）
+     - src/app/api/todos/batch/route.ts（批量操作）
+
+3. 增量同步接口
+   - 新建 src/app/api/sync/route.ts
+   - 支持 since 参数（ISO 8601 时间戳）
+   - 返回新创建和更新的任务/分类
+   - 区分 new 和 updated 数据（根据 createdAt 和 since 比较）
+   - 默认同步最近 7 天数据
+
+4. API 文档更新
+   - 更新 docs/API.md
+   - 新增任务写入接口文档（创建、更新、删除、切换状态、批量操作）
+   - 新增增量同步接口文档
+   - 更新 Obsidian 插件示例代码
+   - 更新版本历史
+
+Stage Summary:
+- ✅ 现有 CRUD API 全部支持 Bearer Token 认证
+- ✅ 外部应用可通过 API Token 创建、更新、删除任务
+- ✅ 增量同步接口实现（基于时间戳）
+- ✅ API 文档完整更新
+- ⏳ 待推送代码到远程仓库
+
+---
+Task ID: 29
+Agent: Main Agent
+Task: 任务完成交互优化 - Checkbox点击区域、动画效果、乐观更新
+Date: 2026.04.04
+
+Work Log:
+1. Checkbox 点击区域扩大
+   - 修改 TaskCard.tsx，为 checkbox 添加 p-2 padding 的可点击区域
+   - 使用 pointer-events-none 防止 checkbox 本身捕获事件
+   - hover 时显示背景色反馈
+
+2. WeekView checkbox 统一
+   - 修改 WeekView.tsx，DraggableTaskCard 添加 checkbox 和 onToggle prop
+   - DateColumn 传递 onToggleTask 回调
+   - 保持拖拽功能（需要移动 8px 才触发）
+   - OverlayTaskCard 也显示 checkbox
+
+3. TaskListView checkbox 统一
+   - 修改 TaskListView.tsx，将自定义 CheckCircle2/Circle 图标替换为标准 Checkbox 组件
+
+4. 完成动画效果
+   - 修改 checkbox.tsx，使用 Framer Motion 添加勾选动画
+   - 弹簧效果：scale 0→1 + opacity 0→1
+   - 修改 TaskCard.tsx，添加划线动画
+   - 完成时文字从左到右出现删除线
+
+5. 乐观更新实现
+   - 修改 use-todos.ts 的 useToggleTodo hook
+   - onMutate: 立即更新所有缓存中的任务状态
+   - onError: 失败时回滚到之前的数据
+   - onSettled: 最终重新获取数据确保同步
+   - 递归更新嵌套数据结构中的任务
+
+Stage Summary:
+- ✅ Checkbox 点击区域扩大，更易点击
+- ✅ WeekView 和 TaskListView 统一使用 Checkbox 组件
+- ✅ 添加勾选动画和划线动画效果
+- ✅ 实现乐观更新，UI 立即响应无需等待服务器
+- ✅ 开发服务器启动正常，所有改动已生效
+
+---
+Task ID: 30
+Agent: Main Agent
+Task: 修复子任务 checkbox 无法点击问题 + 乐观更新
+Date: 2026.04.04
+
+Work Log:
+1. 子任务 checkbox 点击问题修复
+   - 用户反馈：任务项的子任务勾选框没有反应
+   - 原因：子任务 checkbox 没有使用和主任务相同的交互模式
+   - 为子任务 checkbox 添加外层 div 包裹 + pointer-events-none
+   - 添加 p-0.5 padding 扩大点击区域
+
+2. 子任务乐观更新实现
+   - 修改 useUpdateSubTask hook
+   - onMutate: 立即更新缓存中的子任务状态
+   - 递归查找并更新 JSON.parse(subTasks) 中的对应子任务
+   - onError: 失败时回滚
+   - onSettled: 最终重新获取数据确保同步
+
+Stage Summary:
+- ✅ 子任务 checkbox 可正常点击切换状态
+- ✅ 子任务切换使用乐观更新，UI 立即响应
+- ✅ 与主任务保持一致的交互体验
+
+---
+Task ID: 31
+Agent: Main Agent
+Task: 补充架构文档和风险评估
+Date: 2026.04.04
+
+Work Log:
+1. 架构文档补全 (ARCHITECTURE.md)
+   - 新增第14章：乐观更新架构设计
+   - 记录设计决策、实现模式、已知风险
+   - 新增第15章：风险评估清单
+   - 包含乐观更新、API调用、数据一致性检查项
+
+2. 开发流程约束添加
+   - CLAUDE.md：新增"开发流程约束"章节
+   - 定义5步开发流程：需求分析→架构评估→实现→风险检查→文档更新
+   - 强制要求架构决策记录 (ADR)
+
+3. 全局 Memory 更新
+   - 新增开发流程约束（与 CLAUDE.md 同步）
+   - 新增功能实现检查清单
+   - 包含乐观更新、API调用、数据一致性检查项
+
+4. 现有风险评估
+   - 检查所有 useMutation 实现
+   - 识别乐观更新操作：useToggleTodo、useUpdateSubTask
+   - 风险可控，建议后续添加 mutation 取消机制
+
+Stage Summary:
+- ✅ 架构文档补全，记录乐观更新设计决策和风险
+- ✅ 开发流程约束添加到 CLAUDE.md 和全局 Memory
+- ✅ 现有风险评估完成，风险可控
+- ⏳ 后续可添加 mutation 取消机制进一步降低风险
+
+---
+Task ID: 32
+Agent: Main Agent
+Task: 实施阶段1 - Mutation 取消机制
+Date: 2026.04.04
+
+Work Log:
+1. 创建 MutationManager
+   - 新建 src/lib/mutation-manager.ts
+   - 实现 AbortController 管理：createController、abort、clear
+   - 提供 isAbortError 辅助函数判断取消错误
+
+2. 修改 useToggleTodo
+   - 集成 mutationManager，使用 `toggle-${id}` 作为 key
+   - mutationFn 中创建 AbortController 并传递 signal
+   - onSuccess/onError 中检查 cancelled/AbortError 跳过处理
+
+3. 修改 useUpdateSubTask
+   - 同样集成 mutationManager，使用 `subtask-${taskId}-${subTaskId}` 作为 key
+   - 处理逻辑与 useToggleTodo 一致
+
+Stage Summary:
+- ✅ Mutation 取消机制实现完成
+- ✅ 解决快速点击导致的竞态条件问题
+- ✅ 被取消的请求不会触发错误提示和回滚
+- ⏳ 待测试验证
+
+---
+Task ID: 33
+Agent: Main Agent
+Task: 实施浏览器通知提醒 - 数据模型和迁移
+Date: 2026.04.04
+
+Work Log:
+1. Prisma Schema 修改
+   - Todo 模型：startDate/dueDate/completedAt 从 String 改为 DateTime
+   - RecurrenceRule 模型：startDate/endDate 从 String 改为 DateTime
+   - 新增 Reminder 模型：todoId、remindAt、type、offset、sent
+
+2. 数据库迁移文件
+   - 创建 4_datetime_and_reminder/migration.sql
+   - 自动将现有日期字符串转换为 DateTime（时间设为 00:00:00）
+   - 创建 reminders 表及索引
+
+3. 日期工具函数更新 (date-utils.ts)
+   - 新增 DateInput 类型：Date | string | number
+   - 新增 toDate() 统一转换函数
+   - 新增 formatDateTime()、formatTime()、toISOString()
+   - 新增时间操作：addHoursToDate、addMinutesToDate、setTime
+   - 新增提醒相关：calculateReminderTime、shouldSendReminder
+
+Stage Summary:
+- ✅ 数据模型已更新为 DateTime
+- ✅ 迁移脚本自动转换现有数据
+- ✅ 日期工具函数已更新
+- ⏳ 待更新前端组件日期处理
+- ⏳ 待实现提醒服务
+
+---
+Task ID: 34
+Agent: Main Agent
+Task: 实施浏览器通知提醒 - 前端组件和提醒服务
+Date: 2026.04.04
+
+Work Log:
+1. 类型定义更新
+   - src/types/api.ts：Zod schema 支持 ISO 8601 datetime 格式
+   - src/types/index.ts：Todo/RecurrenceRule 接口改为 Date 类型
+
+2. API 路由更新（全部改用 Date 对象查询）
+   - src/app/api/todos/route.ts
+   - src/app/api/todos/[id]/route.ts
+   - src/app/api/todos/daily/route.ts
+   - src/app/api/todos/toggle/route.ts
+   - src/app/api/todos/weekly/route.ts
+   - src/app/api/todos/monthly/route.ts
+   - src/app/api/todos/quarterly/route.ts
+   - src/app/api/todos/yearly/route.ts
+   - src/app/api/todos/filter/route.ts
+
+3. 服务层更新
+   - src/services/recurrence-service.ts：更新接口和查询逻辑
+
+4. 提醒服务实现
+   - 新建 src/services/reminder-service.ts
+   - 创建、查询、删除提醒
+   - 预设提醒配置（提前5/15/30分钟、1/2小时、1天）
+   - 待发送提醒处理
+
+5. 提醒 Hooks
+   - 新建 src/hooks/use-reminders.ts
+   - useTodoReminders、useCreateReminder、useDeleteReminder
+   - usePendingReminders（每分钟轮询）
+
+6. 浏览器通知 Hook
+   - 新建 src/hooks/use-notifications.ts
+   - 请求通知权限
+   - 发送通知
+   - 自动处理待发送提醒
+
+7. 提醒组件
+   - 新建 src/components/reminder/NotificationPermissionPrompt.tsx
+   - 新建 src/components/reminder/ReminderManager.tsx
+   - 预设提醒按钮、自定义时间选择
+
+8. 提醒 API 路由
+   - 新建 src/app/api/reminders/pending/route.ts
+   - 新建 src/app/api/reminders/[id]/route.ts
+   - 新建 src/app/api/reminders/[id]/sent/route.ts
+   - 新建 src/app/api/todos/[id]/reminders/route.ts
+
+Stage Summary:
+- ✅ 前端组件 DateTime 处理完成
+- ✅ 提醒服务实现完成
+- ✅ 浏览器通知 Hook 实现
+- ✅ 提醒管理组件实现
+- ✅ API 路由完整
+- ⏳ 待集成到任务表单
+- ⏳ 待测试迁移和通知功能
+
+---
+
+## 2026-04-05: 添加任务时间选择和显示功能
+
+### 改动内容
+- 在任务表单中添加时间选择器，支持设置开始时间和截止时间
+- 默认开始时间为 00:00，默认截止时间为 23:59
+- 任务卡片和详情对话框始终显示时间部分（包括 00:00）
+- 修复历史待办按日期分组逻辑，正确处理带时间的 ISO 字符串
+- 修复周视图拖拽任务时保留时间部分
+
+### 技术细节
+- 新增 `startTime` 和 `dueTime` 状态管理时间选择
+- 新增 `extractTimeFromISO` 函数从 ISO 字符串提取时间
+- 新增 `combineDateAndTime` 函数合并日期和时间为 ISO 字符串
+- 修改日期显示格式为 `MM/dd HH:mm` 和 `MMM d, yyyy HH:mm`
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 添加时间选择器，修改提交逻辑合并日期时间
+- `src/components/task/TaskCard.tsx` - 日期显示改为日期时间显示
+- `src/components/task/TaskDetailDialog.tsx` - 添加时间选择器，修改保存逻辑
+- `src/components/views/DayView.tsx` - 修复历史待办分组逻辑
+- `src/components/views/OverdueView.tsx` - 修复历史待办分组逻辑
+- `src/components/views/WeekView.tsx` - 修复拖拽时保留时间部分
+
+---
+
+## 2026-04-06: 优化日期时间选择器布局
+
+### 改动内容
+- 优化日期时间选择器响应式布局，移动端单列、桌面端双列
+- 设置日期按钮最小宽度 140px，确保完整显示 yyyy-MM-dd 格式
+- 时间输入框固定宽度 80px，足够显示 HH:mm 格式
+- 移除不必要的 truncate 和 flex-shrink 类，简化代码
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 优化日期时间选择区域布局
+- `src/components/task/TaskDetailDialog.tsx` - 优化日期时间编辑区域布局
+
+---
+
+## 2026-04-06: 扩大任务表单对话框宽度以完整显示时间
+
+### 改动内容
+- 将任务表单对话框宽度从 max-w-2xl 扩大到 max-w-3xl
+- 将任务详情对话框宽度从 max-w-lg 扩大到 max-w-3xl
+- 将时间输入框宽度从 w-20 (80px) 扩大到 w-28 (112px)
+- 确保日期和时间都能完整显示
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 对话框宽度 max-w-3xl，时间输入 w-28
+- `src/components/task/TaskDetailDialog.tsx` - 对话框宽度 max-w-3xl，时间输入 w-28
+
+---
+
+## 2026-04-07: 优化日期时间选择器布局对齐方式
+
+### 改动内容
+- 改变日期时间选择器布局策略，使用 `justify-between` 让开始日期组和截止日期组分布在两侧
+- 日期和时间输入框之间保持原有的 `gap-2` 小间距
+- 实现框的左侧与右侧和其他元素对齐的效果
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 调整日期时间选择区域布局结构
+
+---
+
+## 2026-04-07: 修复日期时间选择器单行布局
+
+### 改动内容
+- 简化布局结构，移除多余的嵌套层级
+- 使用 `flex justify-between` 让开始日期和截止日期在同一行占据两端
+- 保持日期和时间输入框之间的 `gap-2` 小间距
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 简化日期时间选择区域布局
+
+---
+
+## 2026-04-07: 修复对话框宽度被基础样式覆盖问题
+
+### 改动内容
+- 将 `max-w-3xl` 改为 `sm:max-w-3xl` 以正确覆盖 DialogContent 基础样式中的 `sm:max-w-lg`
+- 确保对话框在桌面端有足够的宽度显示所有内容
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 修复对话框宽度响应式类名
+
+---
+
+## 2026-04-07: 修复 completedAt 格式导致的 PrismaClientValidationError
+
+### 问题描述
+- 子任务全部完成时自动完成主任务，报错 PrismaClientValidationError
+- 批量标记任务完成时也出现相同错误
+- 原因：completedAt 使用 "yyyy-MM-dd" 格式，但 Prisma DateTime 字段需要 ISO-8601 格式
+
+### 改动内容
+- 修复子任务自动完成主任务的 completedAt 格式
+- 修复批量标记完成的 completedAt 格式
+- 使用本地时间生成 ISO-8601 格式：`${localDate}T${localTime}.000Z`
+- 不进行时区转换，使用用户浏览器所在时区的时间
+
+### 修改的文件
+- `src/app/api/todos/[id]/subtask/route.ts` - 修复子任务自动完成的 completedAt 格式
+- `src/components/task/BatchActionsToolbar.tsx` - 修复批量完成的 completedAt 格式
+
+---
+
+## 2026-04-08: 修复任务创建时时区转换导致跨天显示问题
+
+### 问题描述
+- 用户创建 4月8日 00:00 - 23:59 的任务，但日视图显示为跨天任务（4月7日和4月8日）
+- 原因：`combineDateAndTime` 函数使用 `toISOString()` 进行时区转换
+- 中国用户（UTC+8）输入 2026-04-08 00:00，转换后变成 2026-04-07T16:00:00.000Z
+
+### 改动内容
+- 修改 `combineDateAndTime` 函数，不进行时区转换
+- 直接拼接日期和时间字符串：`${dateStr}T${timeStr}:00.000Z`
+- 用户输入什么时间就存储什么时间，不做时区偏移
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 修复 combineDateAndTime 函数
+
+---
+
+## 2026-04-09: 修复 completedAt 完成时间时区转换问题
+
+### 问题描述
+- `completedAt` 在多处使用 `new Date()` 解析 ISO 字符串，导致时区转换
+- 用户编辑完成日期时，日期会因时区偏移而显示错误
+- 例如：UTC+8 用户看到 4月8日，实际存储为 4月7日
+
+### 改动内容
+- 所有 `completedAt` 显示使用 `parseISO` 替代 `new Date()`，避免时区转换
+- TaskForm 提交时将完成日期转换为 ISO 格式：`${completedAt}T00:00:00.000Z`
+- 与 startDate/dueDate 保持一致的时间处理方式
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 使用 parseISO 解析日期，提交时转换为 ISO 格式
+- `src/components/task/TaskCard.tsx` - 使用 parseISO 解析 completedAt 显示
+- `src/components/task/TaskDetailDialog.tsx` - 使用 parseISO 解析 completedAt 显示
+- `src/app/api/todos/toggle/route.ts` - 修复任务切换时 completedAt 使用本地时间格式
