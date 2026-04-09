@@ -4,4 +4,4 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
 [vars]
-NEXTAUTH_URL = "https://todolist-72d.pages.dev"
+NEXTAUTH_URL = "https://todolist-cf.pages.dev"
