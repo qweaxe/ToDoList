@@ -1423,3 +1423,14 @@ Stage Summary:
 
 ### 修改的文件
 - `wrangler.toml` - 添加 `compatibility_flags = ["nodejs_compat"]`
+
+## 2026-04-09: 修复 edge runtime webpack 编译错误
+
+### 改动内容
+- next.config.ts 添加 webpack 配置，为 edge runtime 提供 crypto/stream polyfill
+- package.json 添加 crypto-browserify 和 stream-browserify 依赖
+- next-auth v4 依赖 Node.js crypto，需要通过 crypto-browserify 在 edge 环境下编译
+
+### 修改的文件
+- `next.config.ts` - 添加 webpack edge runtime fallback 配置
+- `package.json` - 新增 crypto-browserify、stream-browserify 依赖

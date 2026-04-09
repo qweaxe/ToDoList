@@ -20,6 +20,23 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  webpack: (config, { nextRuntime }) => {
+    if (nextRuntime === 'edge') {
+      // next-auth v4 依赖 Node.js 内置模块，为 edge runtime 提供 polyfill
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        crypto: require.resolve('crypto-browserify'),
+        stream: require.resolve('stream-browserify'),
+        // oauth 包使用了 http/https，但我们只用 CredentialsProvider，设为 false 跳过
+        http: false,
+        https: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default withNextIntl(nextConfig);
