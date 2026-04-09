@@ -39,12 +39,16 @@ export async function POST(request: NextRequest) {
     // 切换状态
     const newStatus = existing.status === 'completed' ? 'pending' : 'completed';
 
+    // 使用本地时间格式（与 startDate/dueDate 保持一致）
+    const now = new Date();
+    const localCompletedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.000Z`;
+
     const todo = await db.todo.update({
       where: { id },
       data: {
         status: newStatus,
         // 完成时记录完成日期时间，未完成时清空
-        completedAt: newStatus === 'completed' ? new Date() : null,
+        completedAt: newStatus === 'completed' ? new Date(localCompletedAt) : null,
       },
       include: {
         category: true,

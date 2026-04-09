@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
 import { CalendarIcon, Plus, Trash2, Repeat, Flag, CalendarCheck } from 'lucide-react';
@@ -237,8 +237,9 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
 
     // 只有已完成的任务才发送完成日期字段
     // 未完成的任务不发送 completedAt 字段（而不是发送 null）
-    if (isCompleted) {
-      submitData.completedAt = completedAt;
+    if (isCompleted && completedAt) {
+      // 将完成日期转换为 ISO 格式（与 startDate/dueDate 保持一致，不进行时区转换）
+      submitData.completedAt = `${completedAt}T00:00:00.000Z`;
     }
 
     if (initialData) {
@@ -376,7 +377,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           </div>
 
           {/* 分类和等级 */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex justify-between gap-4">
             <div className="space-y-2">
               <Label>{t('task.category')}</Label>
               <Select
@@ -440,13 +441,13 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {completedAt ? format(new Date(completedAt), 'PPP', { locale: dateLocale }) : t('task.selectCompletionDate')}
+                    {completedAt ? format(parseISO(completedAt), 'PPP', { locale: dateLocale }) : t('task.selectCompletionDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={completedAt ? new Date(completedAt) : undefined}
+                    selected={completedAt ? parseISO(completedAt) : undefined}
                     onSelect={(date) => {
                       if (date) {
                         setCompletedAt(format(date, 'yyyy-MM-dd'));

@@ -1354,3 +1354,23 @@ Stage Summary:
 
 ### 修改的文件
 - `src/components/task/TaskForm.tsx` - 修复 combineDateAndTime 函数
+
+---
+
+## 2026-04-09: 修复 completedAt 完成时间时区转换问题
+
+### 问题描述
+- `completedAt` 在多处使用 `new Date()` 解析 ISO 字符串，导致时区转换
+- 用户编辑完成日期时，日期会因时区偏移而显示错误
+- 例如：UTC+8 用户看到 4月8日，实际存储为 4月7日
+
+### 改动内容
+- 所有 `completedAt` 显示使用 `parseISO` 替代 `new Date()`，避免时区转换
+- TaskForm 提交时将完成日期转换为 ISO 格式：`${completedAt}T00:00:00.000Z`
+- 与 startDate/dueDate 保持一致的时间处理方式
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 使用 parseISO 解析日期，提交时转换为 ISO 格式
+- `src/components/task/TaskCard.tsx` - 使用 parseISO 解析 completedAt 显示
+- `src/components/task/TaskDetailDialog.tsx` - 使用 parseISO 解析 completedAt 显示
+- `src/app/api/todos/toggle/route.ts` - 修复任务切换时 completedAt 使用本地时间格式

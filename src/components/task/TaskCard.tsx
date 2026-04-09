@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -361,7 +361,7 @@ export function TaskCard({
                 <PopoverTrigger asChild>
                   <button className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs text-green-600 hover:text-green-700 hover:bg-green-50 px-1 sm:px-1.5 py-0.5 rounded transition-colors">
                     <CalendarCheck className="h-3 w-3" />
-                    <span>{format(new Date(task.completedAt), 'MMM d', { locale: dateFnsLocale })} {t('taskCard.completed')}</span>
+                    <span>{format(parseISO(task.completedAt), 'MMM d', { locale: dateFnsLocale })} {t('taskCard.completed')}</span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -370,13 +370,12 @@ export function TaskCard({
                   </div>
                   <Calendar
                     mode="single"
-                    selected={task.completedAt ? new Date(task.completedAt) : undefined}
+                    selected={task.completedAt ? parseISO(task.completedAt) : undefined}
                     onSelect={(date) => {
                       if (date && onCompletedAtChange) {
                         onCompletedAtChange(task.id, format(date, 'yyyy-MM-dd'));
                       }
                     }}
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>

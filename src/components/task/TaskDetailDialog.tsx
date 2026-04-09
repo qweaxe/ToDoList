@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
 import {
@@ -598,7 +598,7 @@ export function TaskDetailDialog({
                   <Separator />
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <Check className="h-4 w-4" />
-                    {t('completedOn')} {format(new Date(task.completedAt), 'MMM d, yyyy', { locale: dateFnsLocale })}
+                    {t('completedOn')} {format(parseISO(task.completedAt), 'MMM d, yyyy', { locale: dateFnsLocale })}
                   </div>
                 </>
               )}
