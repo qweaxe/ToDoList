@@ -3,31 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/password";
 import { getDb } from "@/lib/db";
 
-// 获取 NEXTAUTH_SECRET，兼容 Cloudflare Workers 环境
-export async function getSecret(): Promise<string | undefined> {
-  // 优先使用 process.env（本地开发或已注入的环境变量）
-  if (process.env.NEXTAUTH_SECRET) {
-    return process.env.NEXTAUTH_SECRET;
-  }
-
-  // Cloudflare Workers 环境下，通过 getRequestContext 获取 env
-  try {
-    const { getRequestContext } = await import('@cloudflare/next-on-pages');
-    const { env } = getRequestContext();
-    // @ts-ignore - Cloudflare env 扩展
-    if (env.NEXTAUTH_SECRET) {
-      // @ts-ignore
-      return env.NEXTAUTH_SECRET as string;
-    }
-  } catch {
-    // getRequestContext 不可用，忽略
-  }
-
-  return undefined;
-}
-
-// 创建 NextAuth 配置
-export function createAuthConfig(secret: string | undefined) {
+// NextAuth 配置
+function getAuthConfig(secret: string | undefined) {
   return {
     secret,
     session: {
@@ -95,10 +72,15 @@ export function createAuthConfig(secret: string | undefined) {
   };
 }
 
-// 开发环境：使用静态配置（secret 从 process.env 获取）
-const devAuth = NextAuth(createAuthConfig(process.env.NEXTAUTH_SECRET));
+// 开发环境：使用静态配置
+const devAuth = NextAuth(getAuthConfig(process.env.NEXTAUTH_SECRET));
 
-// 导出开发环境的 auth、signIn、signOut
+// 导出 handlers（开发环境使用）
+export const handlers = devAuth.handlers;
+
+// 导出 auth 函数
 export const auth = devAuth.auth;
+
+// 导出 signIn 和 signOut（客户端使用）
 export const signIn = devAuth.signIn;
 export const signOut = devAuth.signOut;

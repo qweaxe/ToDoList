@@ -28,15 +28,15 @@ async function getSecret(): Promise<string | undefined> {
   return undefined;
 }
 
-// 创建 NextAuth handlers（每次请求时创建以获取最新的 secret）
-async function createHandlers() {
+// 使用 next-auth v5 的 lazy initialization 模式
+export const { handlers, auth } = NextAuth(async () => {
   const secret = await getSecret();
 
-  return NextAuth({
+  return {
     secret,
     session: {
       strategy: "jwt" as const,
-      maxAge: 7 * 24 * 60 * 60, // 7 days
+      maxAge: 7 * 24 * 60 * 60,
     },
     pages: {
       signIn: "/",
@@ -96,15 +96,7 @@ async function createHandlers() {
         return session;
       },
     },
-  }).handlers;
-}
+  };
+});
 
-export async function GET(request: Request) {
-  const { handlers } = await createHandlers();
-  return handlers.GET(request);
-}
-
-export async function POST(request: Request) {
-  const { handlers } = await createHandlers();
-  return handlers.POST(request);
-}
+export const { GET, POST } = handlers;
