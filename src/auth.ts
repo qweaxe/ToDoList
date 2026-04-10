@@ -18,7 +18,7 @@ function getSecret(): string | undefined {
   return undefined;
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuthResult = NextAuth({
   secret: getSecret(),
   trustHost: true,
   session: {
@@ -83,4 +83,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-}));
+});
+
+export const { handlers, auth, signIn, signOut } = nextAuthResult;
