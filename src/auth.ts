@@ -3,8 +3,23 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/password";
 import { getDb } from "@/lib/db";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET,
+// 获取 NEXTAUTH_SECRET，兼容 Cloudflare Workers 环境
+async function getSecret(): Promise<string | undefined> {
+  if (process.env.NEXTAUTH_SECRET) {
+    return process.env.NEXTAUTH_SECRET;
+  }
+  // Cloudflare Workers 环境
+  try {
+    const { getRequestContext } = await import("@cloudflare/next-on-pages");
+    const { env } = getRequestContext();
+    return env.NEXTAUTH_SECRET;
+  } catch {
+    return undefined;
+  }
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth(async () => ({
+  secret: await getSecret(),
   trustHost: true,
   session: {
     strategy: "jwt",
@@ -68,4 +83,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-});
+}));
