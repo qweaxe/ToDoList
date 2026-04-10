@@ -4,22 +4,22 @@ import { verifyPassword } from "@/lib/password";
 import { getDb } from "@/lib/db";
 
 // 获取 NEXTAUTH_SECRET，兼容 Cloudflare Workers 环境
-async function getSecret(): Promise<string | undefined> {
+function getSecret(): string | undefined {
+  // 优先使用 process.env（本地开发或已注入的环境变量）
   if (process.env.NEXTAUTH_SECRET) {
     return process.env.NEXTAUTH_SECRET;
   }
-  // Cloudflare Workers 环境
-  try {
-    const { getRequestContext } = await import("@cloudflare/next-on-pages");
-    const { env } = getRequestContext();
-    return env.NEXTAUTH_SECRET;
-  } catch {
-    return undefined;
+  // Cloudflare Workers 环境下，secrets 会注入到全局 env
+  // @ts-ignore - Cloudflare Workers 全局变量
+  if (typeof globalThis !== 'undefined' && (globalThis as any).NEXTAUTH_SECRET) {
+    // @ts-ignore
+    return (globalThis as any).NEXTAUTH_SECRET;
   }
+  return undefined;
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth(async () => ({
-  secret: await getSecret(),
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: getSecret(),
   trustHost: true,
   session: {
     strategy: "jwt",

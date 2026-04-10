@@ -5,6 +5,7 @@ pages_build_output_dir = ".vercel/output/static"
 
 [vars]
 NEXTAUTH_URL = "https://todolist-cf.pages.dev"
+# NEXTAUTH_SECRET 需要通过 wrangler pages secret put 设置
 
 # D1 数据库绑定
 [[d1_databases]]
