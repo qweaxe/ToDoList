@@ -5,7 +5,9 @@ pages_build_output_dir = ".vercel/output/static"
 
 [vars]
 NEXTAUTH_URL = "https://todolist-cf.pages.dev"
-# NEXTAUTH_SECRET 需要通过 wrangler pages secret put 设置
+# Secrets (NEXTAUTH_SECRET) 需要通过 Cloudflare Dashboard 设置:
+# Pages -> todolist-cf -> Settings -> Environment variables -> Add variable
+# 类型选择 "Secret"，名称为 NEXTAUTH_SECRET
 
 # D1 数据库绑定
 [[d1_databases]]

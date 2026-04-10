@@ -7,30 +7,56 @@ import { getDb } from "@/lib/db";
 
 // 获取 NEXTAUTH_SECRET，兼容 Cloudflare Workers 环境
 async function getSecret(): Promise<string | undefined> {
+  console.log('[auth] Getting secret...');
+  console.log('[auth] process.env.NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'defined' : 'undefined');
+  console.log('[auth] process.env.AUTH_SECRET:', process.env.AUTH_SECRET ? 'defined' : 'undefined');
+  console.log('[auth] process.env.NODE_ENV:', process.env.NODE_ENV);
+
   // 优先使用 process.env（本地开发或已注入的环境变量）
   if (process.env.NEXTAUTH_SECRET) {
+    console.log('[auth] Using NEXTAUTH_SECRET from process.env');
     return process.env.NEXTAUTH_SECRET;
+  }
+
+  if (process.env.AUTH_SECRET) {
+    console.log('[auth] Using AUTH_SECRET from process.env');
+    return process.env.AUTH_SECRET;
   }
 
   // Cloudflare Workers 环境下，通过 getRequestContext 获取 env
   try {
     const { getRequestContext } = await import('@cloudflare/next-on-pages');
-    const { env } = getRequestContext();
-    // @ts-ignore - Cloudflare env 扩展
+    const ctx = getRequestContext();
+    console.log('[auth] Got request context');
+    console.log('[auth] env keys:', Object.keys(ctx.env || {}));
+
+    const { env } = ctx;
+    // @ts-ignore
     if (env.NEXTAUTH_SECRET) {
+      console.log('[auth] Found NEXTAUTH_SECRET in env');
       // @ts-ignore
       return env.NEXTAUTH_SECRET as string;
     }
-  } catch {
-    // getRequestContext 不可用，忽略
+    // @ts-ignore
+    if (env.AUTH_SECRET) {
+      console.log('[auth] Found AUTH_SECRET in env');
+      // @ts-ignore
+      return env.AUTH_SECRET as string;
+    }
+    console.log('[auth] No secret found in env');
+  } catch (e) {
+    console.log('[auth] getRequestContext error:', e);
   }
 
+  console.log('[auth] No secret found anywhere!');
   return undefined;
 }
 
 // 使用 next-auth v5 的 lazy initialization 模式
-export const { handlers, auth } = NextAuth(async () => {
+export const { handlers, auth } = NextAuth(async (req) => {
+  console.log('[auth] Lazy init called, req:', req ? 'defined' : 'undefined');
   const secret = await getSecret();
+  console.log('[auth] Secret result:', secret ? 'defined' : 'undefined');
 
   return {
     secret,
