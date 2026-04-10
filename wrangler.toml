@@ -5,3 +5,9 @@ pages_build_output_dir = ".vercel/output/static"
 
 [vars]
 NEXTAUTH_URL = "https://todolist-cf.pages.dev"
+
+# D1 数据库绑定
+[[d1_databases]]
+binding = "DB"
+database_name = "todolist-db"
+database_id = "eada62d6-8ce6-4d22-85de-c2f38961fb82"

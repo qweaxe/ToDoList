@@ -7,7 +7,7 @@ export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,6 +15,7 @@ interface RouteParams {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(

@@ -4,7 +4,7 @@
  * 管理任务提醒的创建、查询、发送
  */
 
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { addMinutesToDate, formatDate, formatDateTime } from '@/lib/date-utils';
 
 // ==================== 类型定义 ====================
@@ -40,6 +40,7 @@ export interface ReminderWithTodo {
  * 创建提醒
  */
 export async function createReminder(input: CreateReminderInput) {
+  const db = await getDb();
   const reminder = await db.reminder.create({
     data: {
       todoId: input.todoId,
@@ -66,6 +67,7 @@ export async function createReminder(input: CreateReminderInput) {
  * 批量创建提醒
  */
 export async function createReminders(inputs: CreateReminderInput[]) {
+  const db = await getDb();
   const reminders = await db.reminder.createMany({
     data: inputs.map(input => ({
       todoId: input.todoId,
@@ -82,6 +84,7 @@ export async function createReminders(inputs: CreateReminderInput[]) {
  * 获取任务的提醒列表
  */
 export async function getTodoReminders(todoId: string) {
+  const db = await getDb();
   const reminders = await db.reminder.findMany({
     where: { todoId },
     orderBy: { remindAt: 'asc' },
@@ -95,6 +98,7 @@ export async function getTodoReminders(todoId: string) {
  */
 export async function getPendingReminders(userId: string): Promise<ReminderWithTodo[]> {
   const now = new Date();
+  const db = await getDb();
 
   const reminders = await db.reminder.findMany({
     where: {
@@ -126,6 +130,7 @@ export async function getPendingReminders(userId: string): Promise<ReminderWithT
  * 标记提醒为已发送
  */
 export async function markReminderSent(reminderId: string) {
+  const db = await getDb();
   await db.reminder.update({
     where: { id: reminderId },
     data: { sent: true },
@@ -136,6 +141,7 @@ export async function markReminderSent(reminderId: string) {
  * 删除提醒
  */
 export async function deleteReminder(reminderId: string) {
+  const db = await getDb();
   await db.reminder.delete({
     where: { id: reminderId },
   });
@@ -145,6 +151,7 @@ export async function deleteReminder(reminderId: string) {
  * 删除任务的所有提醒
  */
 export async function deleteTodoReminders(todoId: string) {
+  const db = await getDb();
   await db.reminder.deleteMany({
     where: { todoId },
   });

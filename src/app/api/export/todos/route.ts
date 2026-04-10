@@ -8,10 +8,11 @@ export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/api-auth';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
+    const db = await getDb();
     // 支持 Bearer Token 和 Session 双重认证
     const authResult = await getApiSession(request);
     if (!authResult.success || !authResult.userId) {

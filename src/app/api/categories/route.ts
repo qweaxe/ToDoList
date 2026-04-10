@@ -1,13 +1,14 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { createCategorySchema } from '@/types/api';
 import { getAuthSession } from '@/lib/auth';
 
 // GET /api/categories - 获取所有分类
 export async function GET() {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
 
     if (!session?.user?.id) {
@@ -49,6 +50,7 @@ export async function GET() {
 // POST /api/categories - 创建分类
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
 
     if (!session?.user?.id) {

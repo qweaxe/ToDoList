@@ -1,12 +1,13 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getApiSession } from '@/lib/api-auth';
 
 // POST /api/todos/toggle - 切换任务状态
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const authResult = await getApiSession(request);
 
     if (!authResult.success || !authResult.userId) {

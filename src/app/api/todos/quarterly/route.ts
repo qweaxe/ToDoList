@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { getQuarterStart, getQuarterEnd, formatDate, extractQuarter } from '@/lib/date-utils';
 import { format, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns';
@@ -9,6 +9,7 @@ import { format, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns'
 // GET /api/todos/quarterly?date=YYYY-MM-DD - 获取季度数据
 export async function GET(request: NextRequest) {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
 
     if (!session?.user?.id) {

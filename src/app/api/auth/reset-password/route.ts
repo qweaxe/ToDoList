@@ -3,7 +3,7 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword, hashPassword } from '@/lib/password';
 import { z } from 'zod';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 const resetPasswordSchema = z.object({
   username: z.string().min(1),
@@ -17,6 +17,7 @@ const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 分钟
 // POST /api/auth/reset-password - 验证答案并重置密码
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const body = await request.json();
     const validated = resetPasswordSchema.parse(body);
 

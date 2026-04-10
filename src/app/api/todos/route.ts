@@ -1,13 +1,14 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { createTodoSchema } from '@/types/api';
 import { getApiSession } from '@/lib/api-auth';
 
 // GET /api/todos - 获取任务列表
 export async function GET(request: NextRequest) {
   try {
+    const db = await getDb();
     const authResult = await getApiSession(request);
 
     if (!authResult.success || !authResult.userId) {
@@ -102,6 +103,7 @@ export async function GET(request: NextRequest) {
 // POST /api/todos - 创建任务
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const authResult = await getApiSession(request);
 
     if (!authResult.success || !authResult.userId) {

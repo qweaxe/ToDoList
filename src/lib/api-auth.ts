@@ -1,12 +1,12 @@
 /**
  * API Token 认证辅助函数
  * 支持 Bearer Token 和 Session 双重认证
+ * 使用 Web Crypto API 兼容 Edge Runtime
  */
 
 import { NextRequest } from 'next/server';
 import { getAuthSession } from './auth';
-import { db } from './db';
-import crypto from 'crypto';
+import { getDb } from './db';
 
 // API Token 前缀
 export const API_TOKEN_PREFIX = 'tdl_';
@@ -35,9 +35,14 @@ export function extractBearerToken(request: NextRequest): string | null {
 
 /**
  * 对 Token 进行哈希处理（用于数据库存储和比较）
+ * 使用 Web Crypto API (SHA-256)
  */
-export function hashToken(token: string): string {
-  return crypto.createHash('sha256').update(token).digest('hex');
+export async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -45,8 +50,12 @@ export function hashToken(token: string): string {
  * 格式: tdl_<32位随机字符串>
  */
 export function generateApiToken(): string {
-  const randomBytes = crypto.randomBytes(24).toString('base64url');
-  return `${API_TOKEN_PREFIX}${randomBytes}`;
+  const randomBytes = crypto.getRandomValues(new Uint8Array(24));
+  const base64 = btoa(String.fromCharCode(...randomBytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+  return `${API_TOKEN_PREFIX}${base64}`;
 }
 
 /**
@@ -64,7 +73,8 @@ export async function verifyApiToken(token: string): Promise<ApiAuthResult> {
     return { success: false, error: '无效的 Token 格式' };
   }
 
-  const hashedToken = hashToken(token);
+  const hashedToken = await hashToken(token);
+  const db = await getDb();
 
   const apiKey = await db.apiKey.findUnique({
     where: { key: hashedToken },
@@ -85,14 +95,14 @@ export async function verifyApiToken(token: string): Promise<ApiAuthResult> {
   }
 
   // 更新最后使用时间（异步执行，不阻塞请求）
-  db.apiKey
-    .update({
+  getDb().then(async (db) => {
+    await db.apiKey.update({
       where: { id: apiKey.id },
       data: { lastUsedAt: new Date() },
-    })
-    .catch(() => {
-      // 忽略更新失败
     });
+  }).catch(() => {
+    // 忽略更新失败
+  });
 
   return { success: true, userId: apiKey.userId };
 }

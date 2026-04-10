@@ -1,4 +1,4 @@
-import { db } from './db';
+import { getDb } from './db';
 import { extractYear } from './date-utils';
 import { getStaticHolidaysForYear } from './static-holidays';
 
@@ -94,6 +94,7 @@ async function fetchYearHolidaysFromApi(year: number): Promise<Array<{ date: str
  */
 export async function getHolidayInfo(date: string): Promise<{ isHoliday: boolean; name: string } | null> {
   const year = extractYear(date);
+  const db = await getDb();
 
   // 先从数据库缓存查找
   const cached = await db.holiday.findUnique({
@@ -134,6 +135,7 @@ export async function getHolidayInfo(date: string): Promise<{ isHoliday: boolean
  */
 export async function getYearHolidays(year: number): Promise<Map<string, { isHoliday: boolean; name: string }>> {
   const result = new Map<string, { isHoliday: boolean; name: string }>();
+  const db = await getDb();
 
   // 先从数据库缓存查找
   const cached = await db.holiday.findMany({

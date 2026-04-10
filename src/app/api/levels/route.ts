@@ -1,11 +1,12 @@
 export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 // GET /api/levels - 获取所有等级（固定返回高、中、低）
 export async function GET() {
   try {
+    const db = await getDb();
     const levels = await db.level.findMany({
       orderBy: { value: 'desc' },
       include: {

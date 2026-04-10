@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 
 // POST /api/reminders/[id]/sent - 标记提醒为已发送
@@ -10,6 +10,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
 
     if (!session?.user?.id) {

@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getTodayString, parseDateString } from '@/lib/date-utils';
 import { syncDate } from '@/services/recurrence-service';
 import { getAuthSession } from '@/lib/auth';
@@ -9,6 +9,7 @@ import { getAuthSession } from '@/lib/auth';
 // GET /api/todos/daily - 获取当日任务和历史待办
 export async function GET(request: NextRequest) {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
 
     if (!session?.user?.id) {

@@ -8,7 +8,7 @@ export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { generateApiToken, hashToken } from '@/lib/api-auth';
 import { z } from 'zod';
 
@@ -21,6 +21,7 @@ const createApiKeySchema = z.object({
 // 获取所有 API Key（不返回实际的 key 值）
 export async function GET() {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -61,6 +62,7 @@ export async function GET() {
 // 创建新的 API Key
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     // 生成 Token
     const rawToken = generateApiToken();
-    const hashedToken = hashToken(rawToken);
+    const hashedToken = await hashToken(rawToken);
 
     // 计算过期时间
     let expiresAt: Date | null = null;

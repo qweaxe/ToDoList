@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword, hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { getAuthSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
@@ -14,6 +14,7 @@ const changePasswordSchema = z.object({
 // POST /api/auth/change-password - 修改密码
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     // 验证用户已登录
     const session = await getAuthSession();
     if (!session?.user?.id) {

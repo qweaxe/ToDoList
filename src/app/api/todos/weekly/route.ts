@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getWeekStart, getWeekEnd, formatDate, getWeekDates, extractWeekNumber } from '@/lib/date-utils';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -11,6 +11,7 @@ import { getAuthSession } from '@/lib/auth';
 // GET /api/todos/weekly?date=YYYY-MM-DD - 获取一周的任务数据
 export async function GET(request: NextRequest) {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
 
     if (!session?.user?.id) {

@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { z } from 'zod';
 import { getApiSession } from '@/lib/api-auth';
 
@@ -21,6 +21,7 @@ const batchUpdateSchema = z.object({
 // POST /api/todos/batch - 批量操作
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const authResult = await getApiSession(request);
 
     if (!authResult.success || !authResult.userId) {

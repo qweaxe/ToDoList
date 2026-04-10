@@ -1,6 +1,6 @@
 export const runtime = 'edge';
 
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
@@ -22,6 +22,7 @@ const defaultLevels = [
 
 export async function GET() {
   try {
+    const db = await getDb();
     // 需要认证
     const session = await getAuthSession();
 

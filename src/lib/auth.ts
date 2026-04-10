@@ -1,85 +1,9 @@
-import type { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { verifyPassword } from '@/lib/password';
-import { db } from '@/lib/db';
+// Re-export auth function for server components
+// In next-auth v5, call: const session = await auth()
+export { auth, signIn, signOut } from "@/auth";
 
-export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
-  trustHost: true, // Vercel/HTTPS 环境必须启用
-  session: {
-    strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 天
-  },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
-  providers: [
-    CredentialsProvider({
-      name: 'credentials',
-      credentials: {
-        username: { label: '用户名', type: 'text' },
-        password: { label: '密码', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) {
-          throw new Error('请输入用户名和密码');
-        }
-
-        const user = await db.user.findUnique({
-          where: { username: credentials.username },
-        });
-
-        if (!user) {
-          throw new Error('用户名或密码错误');
-        }
-
-        const isPasswordValid = await verifyPassword(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          throw new Error('用户名或密码错误');
-        }
-
-        return {
-          id: user.id,
-          name: user.name || user.username,
-          username: user.username,
-        };
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.username = user.username;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.username = token.username as string;
-      }
-      return session;
-    },
-  },
-  events: {
-    async signIn({ user }) {
-      console.log(`用户登录: ${user.username || user.name}`);
-    },
-    async signOut({ token }) {
-      console.log(`用户登出: ${token?.username}`);
-    },
-  },
-  debug: process.env.NODE_ENV === 'development',
+// Helper function for getting session (deprecated, use auth() directly)
+export const getAuthSession = async () => {
+  const { auth } = await import("@/auth");
+  return auth();
 };
-
-// 获取服务端会话的辅助函数
-export async function getAuthSession() {
-  const { getServerSession } = await import('next-auth');
-  return getServerSession(authOptions);
-}

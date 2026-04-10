@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { updateTodoSchema } from '@/types/api';
 import { getApiSession } from '@/lib/api-auth';
 
@@ -11,6 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const db = await getDb();
     const authResult = await getApiSession(request);
 
     if (!authResult.success || !authResult.userId) {
@@ -58,6 +59,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const db = await getDb();
     const authResult = await getApiSession(request);
 
     if (!authResult.success || !authResult.userId) {
@@ -156,6 +158,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const db = await getDb();
     const authResult = await getApiSession(request);
 
     if (!authResult.success || !authResult.userId) {

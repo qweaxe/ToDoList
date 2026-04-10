@@ -3,7 +3,7 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { hashPassword } from '@/lib/password';
 import { z } from 'zod';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 const registerSchema = z.object({
   username: z
@@ -18,6 +18,7 @@ const registerSchema = z.object({
 // POST /api/auth/register - 用户注册
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const body = await request.json();
     const validated = registerSchema.parse(body);
 

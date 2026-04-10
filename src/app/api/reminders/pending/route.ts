@@ -1,12 +1,13 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 
 // GET /api/reminders/pending - 获取待发送的提醒
 export async function GET(request: NextRequest) {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
 
     if (!session?.user?.id) {

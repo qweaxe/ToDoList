@@ -1,10 +1,10 @@
 /**
  * 周期任务同步服务
- * 
+ *
  * 根据 RecurrenceRule 自动生成周期任务实例
  */
 
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { calculateOccurrenceDates } from '@/lib/cron-utils';
 import { formatDate } from '@/lib/date-utils';
 import { parseDateString } from '@/lib/date-utils';
@@ -48,6 +48,7 @@ export async function syncRecurringTasks(
   const result = { created: 0, skipped: 0 };
 
   try {
+    const db = await getDb();
     // 获取该用户所有激活的周期规则及其模板任务
     const activeRules = await db.recurrenceRule.findMany({
       where: {

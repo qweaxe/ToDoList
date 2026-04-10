@@ -2,7 +2,7 @@ export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 const forgotPasswordSchema = z.object({
   username: z.string().min(1),
@@ -11,6 +11,7 @@ const forgotPasswordSchema = z.object({
 // POST /api/auth/forgot-password - 根据用户名获取安全问题
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const body = await request.json();
     const validated = forgotPasswordSchema.parse(body);
 

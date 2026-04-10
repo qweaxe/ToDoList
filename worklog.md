@@ -1434,3 +1434,56 @@ Stage Summary:
 ### 修改的文件
 - `next.config.ts` - 添加 webpack edge runtime fallback 配置
 - `package.json` - 新增 crypto-browserify、stream-browserify 依赖
+
+---
+
+## 2026-04-10: Cloudflare D1 数据库迁移 (Plan B)
+
+### 改动内容
+
+1. **升级 next-auth v4 → v5**
+   - 更新 `package.json`: next-auth ^4.24.11 → ^5.0.0-beta.28
+   - 替换 `@next-auth/prisma-adapter` 为 `@auth/prisma-adapter`
+   - 创建 `src/auth.ts` 新配置入口（v5 API）
+   - 重写 `src/app/api/auth/[...nextauth]/route.ts` 使用 handlers
+   - 更新 `src/lib/auth.ts` 导出 auth 函数
+   - 移除 crypto-browserify/stream-browserify polyfill（v5 原生支持 edge）
+
+2. **切换到 Cloudflare D1 数据库**
+   - 更新 `prisma/schema.prisma`: PostgreSQL → SQLite
+   - 安装 `@prisma/adapter-d1` 依赖
+   - 重写 `src/lib/db.ts`:
+     - 开发环境：使用本地 SQLite 文件
+     - 生产环境：使用 D1 binding（通过 getRequestContext()）
+   - 配置 `wrangler.toml` D1 数据库绑定
+
+3. **修改所有 API 路由**
+   - 将 `import { db }` 改为 `import { getDb }`
+   - 在每个函数开头添加 `const db = await getDb()`
+   - 涉及 30+ API 路由文件
+   - 更新服务层文件：api-auth.ts、holiday-service.ts、recurrence-service.ts、reminder-service.ts
+   - 更新 src/auth.ts 的 authorize 回调
+
+4. **更新 api-auth.ts**
+   - hashToken 函数改为 async，使用 Web Crypto API SHA-256
+   - generateApiToken 使用 crypto.getRandomValues
+   - 移除 Node.js crypto 依赖
+
+### 技术说明
+
+- **D1 是 SQLite 数据库**：Cloudflare D1 使用 SQLite 引擎，适合 edge 分布式架构
+- **数据迁移待执行**：需要从 Supabase 导出数据并导入 D1
+- **本地开发**：使用本地 SQLite 文件，无需 D1 binding
+
+### 修改的文件
+- `package.json` - 依赖更新
+- `prisma/schema.prisma` - PostgreSQL → SQLite
+- `src/auth.ts` - 新增 next-auth v5 配置
+- `src/lib/auth.ts` - 导出 auth 函数
+- `src/lib/db.ts` - D1 adapter 支持
+- `src/lib/api-auth.ts` - Web Crypto API 替代 Node.js crypto
+- `src/app/api/auth/[...nextauth]/route.ts` - v5 handlers
+- `src/app/api/**/route.ts` - 所有 API 路由使用 getDb()
+- `src/services/*.ts` - 服务层使用 getDb()
+- `wrangler.toml` - D1 数据库配置
+- `next.config.ts` - 移除 webpack polyfill 配置

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { getAuthSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 const setSecurityQuestionSchema = z.object({
   question: z.string().min(1).max(100),
@@ -14,6 +14,7 @@ const setSecurityQuestionSchema = z.object({
 // GET /api/auth/security-question - 获取当前用户的安全问题状态
 export async function GET() {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -46,6 +47,7 @@ export async function GET() {
 // POST /api/auth/security-question - 设置/修改安全问题
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -93,6 +95,7 @@ export async function POST(request: NextRequest) {
 // DELETE /api/auth/security-question - 删除安全问题
 export async function DELETE() {
   try {
+    const db = await getDb();
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(
