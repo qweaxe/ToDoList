@@ -47,5 +47,10 @@ test
 prompt
 
 server.log
+
+# D1 database migration files (contain sensitive data)
+d1-schema.sql
+d1-data.sql
+
 # Skills directory
 /skills/
