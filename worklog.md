@@ -1583,3 +1583,30 @@ wrangler d1 execute todolist-db --remote --file=./d1-data.sql
 ### 修改的文件
 - `src/app/api/auth/[...nextauth]/route.ts` - 增强调试日志（后续可清理）
 
+
+## 2026-04-10: 用原生 D1 替换 Prisma 解决 CPU 超限问题
+
+### 改动内容
+- 创建 `src/lib/d1.ts`：轻量级 D1 客户端，绕过 Prisma 初始化开销
+- 修复 `src/lib/db.ts`：生产环境不再在模块加载时创建 PrismaClient
+- 重写 4 个高频路由使用原生 D1 SQL（生产走 D1，开发仍走 Prisma）：
+  - `/api/levels` - LEFT JOIN COUNT 查询
+  - `/api/categories` - GET/POST 均重写
+  - `/api/auth/[...nextauth]` - 登录用户查询 + 清理调试日志
+  - `/api/auth/security-question` - GET/POST/DELETE 均重写
+  - `/api/todos/daily` - 复杂 JOIN 查询 + 并行执行两个查询
+
+### 技术方案
+- 生产/开发分支用 `IS_EDGE = process.env.NODE_ENV !== 'development'` 区分
+- D1 路径：原生 SQL + LEFT JOIN，结果通过 reshapeTodo() 重组为嵌套对象
+- 两个 todos 查询改为 Promise.all 并行执行，进一步降低 wall time
+
+### 修改的文件
+- `src/lib/d1.ts` - 新增：D1Client 类 + getD1Client()
+- `src/lib/db.ts` - 修复模块加载时的 Prisma 初始化
+- `src/app/api/levels/route.ts` - D1 重写
+- `src/app/api/categories/route.ts` - D1 重写
+- `src/app/api/auth/[...nextauth]/route.ts` - D1 重写 + 日志清理
+- `src/app/api/auth/security-question/route.ts` - D1 重写
+- `src/app/api/todos/daily/route.ts` - D1 重写
+

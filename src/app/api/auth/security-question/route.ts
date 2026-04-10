@@ -5,6 +5,7 @@ import { hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { getAuthSession } from '@/lib/auth';
 import { getDb } from '@/lib/db';
+import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 const setSecurityQuestionSchema = z.object({
   question: z.string().min(1).max(100),
@@ -14,7 +15,6 @@ const setSecurityQuestionSchema = z.object({
 // GET /api/auth/security-question - 获取当前用户的安全问题状态
 export async function GET() {
   try {
-    const db = await getDb();
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -23,16 +23,29 @@ export async function GET() {
       );
     }
 
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { securityQuestion: true },
-    });
+    let securityQuestion: string | null = null;
+
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      const user = await d1.first<{ securityQuestion: string | null }>(
+        'SELECT securityQuestion FROM users WHERE id = ?',
+        session.user.id
+      );
+      securityQuestion = user?.securityQuestion ?? null;
+    } else {
+      const db = await getDb();
+      const user = await db.user.findUnique({
+        where: { id: session.user.id },
+        select: { securityQuestion: true },
+      });
+      securityQuestion = user?.securityQuestion ?? null;
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        hasSecurityQuestion: !!user?.securityQuestion,
-        question: user?.securityQuestion || null,
+        hasSecurityQuestion: !!securityQuestion,
+        question: securityQuestion,
       },
     });
   } catch (error) {
@@ -47,7 +60,6 @@ export async function GET() {
 // POST /api/auth/security-question - 设置/修改安全问题
 export async function POST(request: NextRequest) {
   try {
-    const db = await getDb();
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -61,16 +73,29 @@ export async function POST(request: NextRequest) {
 
     // 加密答案（存储时忽略大小写差异）
     const hashedAnswer = await hashPassword(validated.answer.toLowerCase().trim());
+    const now = new Date().toISOString();
 
-    await db.user.update({
-      where: { id: session.user.id },
-      data: {
-        securityQuestion: validated.question.trim(),
-        securityAnswer: hashedAnswer,
-        securityAnswerAttempts: 0,
-        securityAnswerLockedAt: null,
-      },
-    });
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      await d1.run(
+        `UPDATE users
+         SET securityQuestion = ?, securityAnswer = ?,
+             securityAnswerAttempts = 0, securityAnswerLockedAt = NULL, updatedAt = ?
+         WHERE id = ?`,
+        validated.question.trim(), hashedAnswer, now, session.user.id
+      );
+    } else {
+      const db = await getDb();
+      await db.user.update({
+        where: { id: session.user.id },
+        data: {
+          securityQuestion: validated.question.trim(),
+          securityAnswer: hashedAnswer,
+          securityAnswerAttempts: 0,
+          securityAnswerLockedAt: null,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -95,7 +120,6 @@ export async function POST(request: NextRequest) {
 // DELETE /api/auth/security-question - 删除安全问题
 export async function DELETE() {
   try {
-    const db = await getDb();
     const session = await getAuthSession();
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -104,15 +128,29 @@ export async function DELETE() {
       );
     }
 
-    await db.user.update({
-      where: { id: session.user.id },
-      data: {
-        securityQuestion: null,
-        securityAnswer: null,
-        securityAnswerAttempts: 0,
-        securityAnswerLockedAt: null,
-      },
-    });
+    const now = new Date().toISOString();
+
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      await d1.run(
+        `UPDATE users
+         SET securityQuestion = NULL, securityAnswer = NULL,
+             securityAnswerAttempts = 0, securityAnswerLockedAt = NULL, updatedAt = ?
+         WHERE id = ?`,
+        now, session.user.id
+      );
+    } else {
+      const db = await getDb();
+      await db.user.update({
+        where: { id: session.user.id },
+        data: {
+          securityQuestion: null,
+          securityAnswer: null,
+          securityAnswerAttempts: 0,
+          securityAnswerLockedAt: null,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

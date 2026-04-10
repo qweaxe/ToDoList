@@ -42,4 +42,5 @@ export async function getDb(): Promise<PrismaClient> {
 }
 
 // Export for convenience (development only)
-export const db = getDevDb();
+// 生产环境不在模块加载时初始化 PrismaClient，避免浪费 CPU
+export const db = process.env.NODE_ENV === 'development' ? getDevDb() : (null as unknown as PrismaClient);

@@ -4,68 +4,29 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/password";
 import { getDb } from "@/lib/db";
+import { getD1Client, IS_EDGE } from "@/lib/d1";
 
 // 获取 NEXTAUTH_SECRET，兼容 Cloudflare Workers 环境
 async function getSecret(): Promise<string | undefined> {
-  console.log('[auth] Getting secret...');
-  console.log('[auth] process.env.NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'defined' : 'undefined');
-  console.log('[auth] process.env.AUTH_SECRET:', process.env.AUTH_SECRET ? 'defined' : 'undefined');
-  console.log('[auth] process.env.NODE_ENV:', process.env.NODE_ENV);
-
-  // 优先使用 process.env（本地开发或已注入的环境变量）
   if (process.env.NEXTAUTH_SECRET) {
-    console.log('[auth] Using NEXTAUTH_SECRET from process.env');
     return process.env.NEXTAUTH_SECRET;
   }
-
   if (process.env.AUTH_SECRET) {
-    console.log('[auth] Using AUTH_SECRET from process.env');
     return process.env.AUTH_SECRET;
   }
-
-  // Cloudflare Workers 环境下，通过 getRequestContext 获取 env
   try {
     const { getRequestContext } = await import('@cloudflare/next-on-pages');
-    const ctx = getRequestContext();
-    console.log('[auth] Got request context');
-    console.log('[auth] env keys:', Object.keys(ctx.env || {}));
-
-    const env = ctx.env as Record<string, unknown>;
-
-    // 详细调试：查看实际类型和值
-    const rawSecret = env['NEXTAUTH_SECRET'];
-    const rawAuthSecret = env['AUTH_SECRET'];
-    console.log('[auth] NEXTAUTH_SECRET type:', typeof rawSecret);
-    console.log('[auth] AUTH_SECRET type:', typeof rawAuthSecret);
-
-    // 尝试 String() 强制转换（处理空字符串、null、undefined 等情况）
-    const secretStr = rawSecret != null ? String(rawSecret) : '';
-    const authSecretStr = rawAuthSecret != null ? String(rawAuthSecret) : '';
-    console.log('[auth] NEXTAUTH_SECRET length:', secretStr.length);
-    console.log('[auth] AUTH_SECRET length:', authSecretStr.length);
-
-    if (secretStr.length > 0) {
-      console.log('[auth] Found NEXTAUTH_SECRET in env');
-      return secretStr;
-    }
-    if (authSecretStr.length > 0) {
-      console.log('[auth] Found AUTH_SECRET in env');
-      return authSecretStr;
-    }
-    console.log('[auth] No secret found in env');
-  } catch (e) {
-    console.log('[auth] getRequestContext error:', e);
-  }
-
-  console.log('[auth] No secret found anywhere!');
+    const env = getRequestContext().env as Record<string, unknown>;
+    const secret = env['NEXTAUTH_SECRET'] ?? env['AUTH_SECRET'];
+    const secretStr = secret != null ? String(secret) : '';
+    if (secretStr.length > 0) return secretStr;
+  } catch {}
   return undefined;
 }
 
 // 使用 next-auth v5 的 lazy initialization 模式
-export const { handlers, auth } = NextAuth(async (req) => {
-  console.log('[auth] Lazy init called, req:', req ? 'defined' : 'undefined');
+export const { handlers, auth } = NextAuth(async () => {
   const secret = await getSecret();
-  console.log('[auth] Secret result:', secret ? 'defined' : 'undefined');
 
   return {
     secret,
@@ -89,10 +50,20 @@ export const { handlers, auth } = NextAuth(async (req) => {
             throw new Error("请输入用户名和密码");
           }
 
-          const db = await getDb();
-          const user = await db.user.findUnique({
-            where: { username: credentials.username as string },
-          });
+          let user: { id: string; username: string; name: string | null; password: string } | null = null;
+
+          if (IS_EDGE) {
+            const d1 = await getD1Client();
+            user = await d1.first<any>(
+              'SELECT id, username, name, password FROM users WHERE username = ?',
+              credentials.username as string
+            );
+          } else {
+            const db = await getDb();
+            user = await db.user.findUnique({
+              where: { username: credentials.username as string },
+            });
+          }
 
           if (!user) {
             throw new Error("用户名或密码错误");
