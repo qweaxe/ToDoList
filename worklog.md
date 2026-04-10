@@ -1487,3 +1487,67 @@ Stage Summary:
 - `src/services/*.ts` - 服务层使用 getDb()
 - `wrangler.toml` - D1 数据库配置
 - `next.config.ts` - 移除 webpack polyfill 配置
+
+---
+
+## 2026-04-10: 修复 Edge Runtime 配置问题
+
+### 改动内容
+1. **为所有页面和布局添加 edge runtime**
+   - 所有 `page.tsx` 和 `layout.tsx` 文件添加 `export const runtime = 'edge'`
+   - 确保 Cloudflare Workers 环境兼容
+   - 涉及 `src/app/[locale]/**/page.tsx` 和 `src/app/[locale]/**/layout.tsx`
+
+2. **修复 'use client' 指令顺序**
+   - 将 `'use client'` 指令移到 `export const runtime = 'edge'` 之前
+   - React 要求 `'use client'` 必须在文件最顶部（除注释外）
+   - 修复构建错误：Invalid next.config.js options detected
+
+### 修改的文件
+- `src/app/[locale]/layout.tsx` - 添加 edge runtime，修复 'use client' 顺序
+- `src/app/[locale]/page.tsx` - 添加 edge runtime
+- `src/app/[locale]/forgot-password/page.tsx` - 添加 edge runtime
+- `src/app/layout.tsx` - 添加 edge runtime
+- `src/app/page.tsx` - 添加 edge runtime
+
+---
+
+## 2026-04-10: D1 数据库数据迁移
+
+### 改动内容
+1. **创建 D1 数据库 Schema**
+   - 从 Prisma schema 转换为 SQLite 兼容的 SQL
+   - 创建 `d1-schema.sql` 包含所有表结构和索引
+   - 适配 SQLite 语法：TEXT 替代 DateTime，INTEGER 替代 Boolean
+
+2. **导出 Supabase 数据**
+   - 从 Supabase PostgreSQL 导出现有数据
+   - 转换为 SQLite 兼容的 INSERT 语句
+   - 创建 `d1-data.sql` 包含所有数据
+
+3. **解决外键约束错误**
+   - 问题：旧 schema 包含错误的 level ID（level_high 等）
+   - 解决：删除旧 schema 中的默认 level 插入，使用 d1-data.sql 中的正确数据
+   - 重建数据库：删除所有表 → 执行 schema → 执行 data
+
+4. **数据迁移结果**
+   - users: 4 条记录
+   - todos: 33 条记录
+   - levels: 3 条记录（高/中/低）
+   - categories: 若干条记录
+   - 其他关联数据完整迁移
+
+### 修改的文件
+- `d1-schema.sql` - 新增 D1 数据库 Schema
+- `d1-data.sql` - 新增数据迁移 SQL
+- `.gitignore` - 添加 d1-schema.sql 和 d1-data.sql 排除（含敏感数据）
+
+### 部署命令
+```bash
+# 重建数据库
+wrangler d1 execute todolist-db --remote --command "DROP TABLE IF EXISTS todos; ..."
+wrangler d1 execute todolist-db --remote --file=./d1-schema.sql
+wrangler d1 execute todolist-db --remote --file=./d1-data.sql
+```
+
+---
