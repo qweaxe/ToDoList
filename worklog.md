@@ -1563,3 +1563,23 @@ wrangler d1 execute todolist-db --remote --file=./d1-data.sql
 ### 修改的文件
 - `src/app/api/auth/[...nextauth]/route.ts` - 改进 env 读取逻辑和调试日志
 
+
+## 2026-04-10: 修复 Cloudflare 部署登录问题（完结）
+
+### 问题根因
+1. **NEXTAUTH_SECRET 为空字符串**：Cloudflare Pages Dashboard 里变量存在但值为空，导致 auth 报 MissingSecret
+2. **密码格式不兼容**：D1 数据库迁移的密码是 bcrypt 格式（`$2b$...`），但新代码改用 PBKDF2 格式（`salt:hash`），两种格式不兼容导致验证永远失败
+
+### 解决步骤
+1. 在 Cloudflare Dashboard → Pages → todolist-cf → Settings → Environment variables 中重新设置 `NEXTAUTH_SECRET` 为有效值（使用 `openssl rand -base64 32` 生成）
+2. 在 Cloudflare D1 Console 中直接用 SQL 更新用户密码为 PBKDF2 格式的哈希值
+
+### PBKDF2 哈希参数（verifyPassword 兼容格式）
+- 算法：PBKDF2-SHA256
+- 迭代次数：100,000
+- Key 长度：256 bits
+- 存储格式：`base64(salt):base64(hash)`（盐值 16 bytes）
+
+### 修改的文件
+- `src/app/api/auth/[...nextauth]/route.ts` - 增强调试日志（后续可清理）
+
