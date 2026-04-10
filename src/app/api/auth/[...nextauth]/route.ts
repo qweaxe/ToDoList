@@ -30,18 +30,27 @@ async function getSecret(): Promise<string | undefined> {
     console.log('[auth] Got request context');
     console.log('[auth] env keys:', Object.keys(ctx.env || {}));
 
-    const { env } = ctx;
-    // @ts-ignore
-    if (env.NEXTAUTH_SECRET) {
+    const env = ctx.env as Record<string, unknown>;
+
+    // 详细调试：查看实际类型和值
+    const rawSecret = env['NEXTAUTH_SECRET'];
+    const rawAuthSecret = env['AUTH_SECRET'];
+    console.log('[auth] NEXTAUTH_SECRET type:', typeof rawSecret);
+    console.log('[auth] AUTH_SECRET type:', typeof rawAuthSecret);
+
+    // 尝试 String() 强制转换（处理空字符串、null、undefined 等情况）
+    const secretStr = rawSecret != null ? String(rawSecret) : '';
+    const authSecretStr = rawAuthSecret != null ? String(rawAuthSecret) : '';
+    console.log('[auth] NEXTAUTH_SECRET length:', secretStr.length);
+    console.log('[auth] AUTH_SECRET length:', authSecretStr.length);
+
+    if (secretStr.length > 0) {
       console.log('[auth] Found NEXTAUTH_SECRET in env');
-      // @ts-ignore
-      return env.NEXTAUTH_SECRET as string;
+      return secretStr;
     }
-    // @ts-ignore
-    if (env.AUTH_SECRET) {
+    if (authSecretStr.length > 0) {
       console.log('[auth] Found AUTH_SECRET in env');
-      // @ts-ignore
-      return env.AUTH_SECRET as string;
+      return authSecretStr;
     }
     console.log('[auth] No secret found in env');
   } catch (e) {

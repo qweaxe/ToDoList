@@ -1551,3 +1551,15 @@ wrangler d1 execute todolist-db --remote --file=./d1-data.sql
 ```
 
 ---
+
+## 2026-04-10: 修复 Cloudflare 登录认证失败问题（调试阶段）
+
+### 改动内容
+- 增强 auth 路由的调试日志，精确定位 NEXTAUTH_SECRET 读取失败原因
+- 日志显示 env keys 存在 NEXTAUTH_SECRET，但值为 falsy
+- 改用 String() 强制转换 + length 检查，兼容空字符串、null 等情况
+- 新增详细的类型和长度日志，便于定位实际值是 "" 还是 undefined
+
+### 修改的文件
+- `src/app/api/auth/[...nextauth]/route.ts` - 改进 env 读取逻辑和调试日志
+
