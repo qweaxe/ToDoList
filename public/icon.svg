@@ -1,21 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#2a2a2a"/>
-      <stop offset="100%" style="stop-color:#181818"/>
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#f0f0f0"/>
     </linearGradient>
     <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#4ade80"/>
-      <stop offset="100%" style="stop-color:#22c55e"/>
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#16a34a"/>
     </linearGradient>
   </defs>
 
-  <!-- 主背景 -->
+  <!-- 浅色背景 -->
   <rect width="32" height="32" rx="8" fill="url(#bgGrad)"/>
 
-  <!-- 装饰性圆环 - 灰色 -->
-  <circle cx="16" cy="16" r="11" fill="none" stroke="#888" stroke-width="1.5"/>
-  <circle cx="16" cy="16" r="8" fill="none" stroke="#999" stroke-width="1"/>
+  <!-- 边框 -->
+  <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="none" stroke="#ddd" stroke-width="1"/>
+
+  <!-- 装饰性圆环 - 深灰色 -->
+  <circle cx="16" cy="16" r="11" fill="none" stroke="#444" stroke-width="1.5"/>
+  <circle cx="16" cy="16" r="8" fill="none" stroke="#666" stroke-width="1"/>
 
   <!-- 中心勾选符号 - 绿色 -->
   <path d="M10 16 L14 20 L22 11"
@@ -25,9 +28,9 @@
         stroke-linejoin="round"
         fill="none"/>
 
-  <!-- 角落装饰点 - 纯白色 -->
-  <circle cx="7" cy="7" r="1.5" fill="white"/>
-  <circle cx="25" cy="7" r="1.5" fill="white"/>
-  <circle cx="7" cy="25" r="1.5" fill="white"/>
-  <circle cx="25" cy="25" r="1.5" fill="white"/>
+  <!-- 角落装饰点 - 深色 -->
+  <circle cx="7" cy="7" r="1.5" fill="#333"/>
+  <circle cx="25" cy="7" r="1.5" fill="#333"/>
+  <circle cx="7" cy="25" r="1.5" fill="#333"/>
+  <circle cx="25" cy="25" r="1.5" fill="#333"/>
 </svg>
