@@ -14,6 +14,10 @@ export const metadata: Metadata = {
   description: "A minimalist, intuitive and highly interactive todo management app with daily task management and monthly calendar view for macro planning and statistics.",
   keywords: ["Todo", "Task Management", "Calendar", "To Do List", "Next.js", "Productivity"],
   authors: [{ name: "To Do List Team" }],
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
