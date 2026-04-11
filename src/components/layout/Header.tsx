@@ -86,9 +86,9 @@ export function Header() {
             ))}
           </nav>
 
-          {/* 日期导航（仅日历视图显示） */}
+          {/* 日期导航（仅日历视图显示，移动端隐藏） */}
           {currentView === 'calendar' && (
-            <div className="flex items-center gap-1 ml-4">
+            <div className="hidden md:flex items-center gap-1 ml-4">
               <Button
                 variant="ghost"
                 size="icon"

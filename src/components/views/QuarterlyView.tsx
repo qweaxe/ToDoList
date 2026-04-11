@@ -1,9 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { format } from 'date-fns';
-import { zhCN, enUS } from 'date-fns/locale';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Flag, Target, TrendingUp, Calendar, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,12 +10,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useQuarterlyTodos } from '@/hooks/use-todos';
 import { useViewStore } from '@/hooks/use-view-store';
-import { formatDate, addMonthsToDate, getTodayString } from '@/lib/date-utils';
+import { formatDate, addMonthsToDate, getTodayString, formatDateDisplay } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
 export function QuarterlyView() {
   const t = useTranslations();
-  const locale = useLocale();
   const { selectedDate, setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
 
   const { data, isLoading, error } = useQuarterlyTodos(selectedDate);
@@ -249,7 +245,7 @@ export function QuarterlyView() {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm truncate">{milestone.title}</h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {milestone.dueDate}
+                          {milestone.dueDate ? formatDateDisplay(milestone.dueDate, 'yyyy-MM-dd') : ''}
                         </p>
                         {milestone.category && (
                           <Badge variant="secondary" className="text-xs mt-2">

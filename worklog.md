@@ -1662,3 +1662,28 @@ wrangler d1 execute todolist-db --remote --file=./d1-data.sql
 - `messages/en.json` - 添加 swipeToView 翻译
 - `messages/zh.json` - 添加 swipeToView 翻译
 
+---
+
+## 2026-04-11: 移动端界面细节修复
+
+### 改动内容
+
+1. **Header 标题溢出修复**
+   - 移动端日历视图下，隐藏日期导航选择器（月份切换）
+   - 避免与左侧 "To Do List" 标题挤压导致文字竖向溢出
+   - 日期导航仅在桌面端显示（`hidden md:flex`）
+
+2. **日历视图滑动空白修复**
+   - 移除 CalendarGrid 的 `min-w-[500px] sm:min-w-0` 设置
+   - 让日历网格自适应容器宽度，消除右侧空白
+
+3. **季度视图里程碑时间格式修复**
+   - 将 ISO 时间格式改为易读的 `yyyy-MM-dd` 格式
+   - 使用 `formatDateDisplay` 函数格式化 `dueDate`
+   - 清理未使用的 import
+
+### 修改的文件
+- `src/components/layout/Header.tsx` - 移动端隐藏日期导航
+- `src/components/calendar/CalendarGrid.tsx` - 移除固定最小宽度
+- `src/components/views/QuarterlyView.tsx` - 里程碑时间格式化、清理 import
+
