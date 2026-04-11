@@ -1,7 +1,16 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/password";
 import { getDb } from "@/lib/db";
+
+// 自定义登录错误类，用于向客户端传递错误信息
+class InvalidLoginError extends CredentialsSignin {
+  code = "用户名或密码错误";
+}
+
+class MissingCredentialsError extends CredentialsSignin {
+  code = "请输入用户名和密码";
+}
 
 // NextAuth 配置
 function getAuthConfig(secret: string | undefined) {
@@ -24,7 +33,7 @@ function getAuthConfig(secret: string | undefined) {
         },
         async authorize(credentials) {
           if (!credentials?.username || !credentials?.password) {
-            throw new Error("请输入用户名和密码");
+            throw new MissingCredentialsError();
           }
 
           const db = await getDb();
@@ -33,7 +42,7 @@ function getAuthConfig(secret: string | undefined) {
           });
 
           if (!user) {
-            throw new Error("用户名或密码错误");
+            throw new InvalidLoginError();
           }
 
           const isValid = await verifyPassword(
@@ -42,7 +51,7 @@ function getAuthConfig(secret: string | undefined) {
           );
 
           if (!isValid) {
-            throw new Error("用户名或密码错误");
+            throw new InvalidLoginError();
           }
 
           return {

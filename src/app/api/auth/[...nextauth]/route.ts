@@ -1,10 +1,19 @@
 export const runtime = 'edge';
 
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/password";
 import { getDb } from "@/lib/db";
 import { getD1Client, IS_EDGE } from "@/lib/d1";
+
+// 自定义登录错误类，用于向客户端传递错误信息
+class InvalidLoginError extends CredentialsSignin {
+  code = "用户名或密码错误";
+}
+
+class MissingCredentialsError extends CredentialsSignin {
+  code = "请输入用户名和密码";
+}
 
 // 获取 NEXTAUTH_SECRET，兼容 Cloudflare Workers 环境
 async function getSecret(): Promise<string | undefined> {
@@ -47,7 +56,7 @@ export const { handlers, auth } = NextAuth(async () => {
         },
         async authorize(credentials) {
           if (!credentials?.username || !credentials?.password) {
-            throw new Error("请输入用户名和密码");
+            throw new MissingCredentialsError();
           }
 
           let user: { id: string; username: string; name: string | null; password: string } | null = null;
@@ -66,7 +75,7 @@ export const { handlers, auth } = NextAuth(async () => {
           }
 
           if (!user) {
-            throw new Error("用户名或密码错误");
+            throw new InvalidLoginError();
           }
 
           const isValid = await verifyPassword(
@@ -75,7 +84,7 @@ export const { handlers, auth } = NextAuth(async () => {
           );
 
           if (!isValid) {
-            throw new Error("用户名或密码错误");
+            throw new InvalidLoginError();
           }
 
           return {

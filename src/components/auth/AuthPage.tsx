@@ -67,7 +67,8 @@ export function AuthPage({ callbackUrl }: AuthPageProps) {
         router.push(callbackUrl || '/');
         router.refresh();
       } else {
-        toast.error(result?.error || t('loginFailed'));
+        // 优先使用 code（自定义错误消息），其次使用 error，最后使用默认消息
+        toast.error(result?.code || result?.error || t('loginFailed'));
       }
     } catch {
       toast.error(t('loginFailed'));
