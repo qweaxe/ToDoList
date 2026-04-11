@@ -133,41 +133,41 @@ export function QuarterlyView() {
       </div>
 
       {/* 统计概览 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
         <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs sm:text-sm text-muted-foreground">{t('task.total')}</span>
+              <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">{t('task.total')}</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.total}</div>
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1">{stats.total}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">{t('task.completed')}</span>
+              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
+              <span className="text-xs text-muted-foreground">{t('task.completed')}</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1 text-green-500">{stats.completed}</div>
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1 text-green-500">{stats.completed}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
-              <Flag className="h-4 w-4 text-orange-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">{t('task.milestone')}</span>
+              <Flag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
+              <span className="text-xs text-muted-foreground">{t('task.milestone')}</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1">
               {stats.completedMilestones}/{stats.milestoneCount}
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
-            <div className="text-xs sm:text-sm text-muted-foreground">{t('stats.completionRate')}</div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.completionRate}%</div>
-            <Progress value={stats.completionRate} className="mt-2 h-2" />
+          <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
+            <div className="text-xs text-muted-foreground">{t('stats.completionRate')}</div>
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1">{stats.completionRate}%</div>
+            <Progress value={stats.completionRate} className="mt-1.5 sm:mt-2 h-1.5 sm:h-2" />
           </CardContent>
         </Card>
       </div>

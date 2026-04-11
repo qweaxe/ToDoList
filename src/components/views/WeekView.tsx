@@ -177,7 +177,7 @@ function DateColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'min-h-[200px] sm:min-h-[300px] border rounded-lg overflow-hidden transition-colors',
+        'min-h-[160px] sm:min-h-[200px] md:min-h-[300px] border rounded-lg overflow-hidden transition-colors',
         'bg-card',
         isToday && 'ring-2 ring-primary',
         isWeekendDay && 'bg-red-50/30 dark:bg-red-950/10',
@@ -544,42 +544,44 @@ export function WeekView() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* 周视图网格 */}
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {/* 星期头部 */}
-          {DAY_NAMES.map((day, index) => (
-            <div
-              key={day}
-              className={cn(
-                'text-center text-xs sm:text-sm font-medium py-2',
-                index >= 5 ? 'text-red-500' : 'text-muted-foreground'
-              )}
-            >
-              {day}
-            </div>
-          ))}
+        {/* 周视图网格 - 移动端支持横向滚动 */}
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[560px] sm:min-w-0">
+            {/* 星期头部 */}
+            {DAY_NAMES.map((day, index) => (
+              <div
+                key={day}
+                className={cn(
+                  'text-center text-xs sm:text-sm font-medium py-2',
+                  index >= 5 ? 'text-red-500' : 'text-muted-foreground'
+                )}
+              >
+                {day}
+              </div>
+            ))}
 
-          {/* 日期列 */}
-          {data?.data.dates.map((dateInfo) => {
-            const dayTasks = (data.data.tasksByDate[dateInfo.date] || []) as TaskItem[];
-            const isToday = dateInfo.date === today;
+            {/* 日期列 */}
+            {data?.data.dates.map((dateInfo) => {
+              const dayTasks = (data.data.tasksByDate[dateInfo.date] || []) as TaskItem[];
+              const isToday = dateInfo.date === today;
 
-            return (
-              <DateColumn
-                key={dateInfo.date}
-                dateInfo={dateInfo}
-                tasks={dayTasks}
-                isToday={isToday}
-                onDateClick={handleDateClick}
-                onCreateTask={handleCreateTask}
-                onEditTask={handleEdit}
-                onToggleTask={handleToggle}
-                today={today}
-                addTaskText={t('view.addTask')}
-                dropHereText={t('view.dropHere')}
-              />
-            );
-          })}
+              return (
+                <DateColumn
+                  key={dateInfo.date}
+                  dateInfo={dateInfo}
+                  tasks={dayTasks}
+                  isToday={isToday}
+                  onDateClick={handleDateClick}
+                  onCreateTask={handleCreateTask}
+                  onEditTask={handleEdit}
+                  onToggleTask={handleToggle}
+                  today={today}
+                  addTaskText={t('view.addTask')}
+                  dropHereText={t('view.dropHere')}
+                />
+              );
+            })}
+          </div>
         </div>
 
         {/* 拖拽覆盖层 */}

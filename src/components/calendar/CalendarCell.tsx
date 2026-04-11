@@ -69,8 +69,10 @@ export function CalendarCell({
     });
   }, [tasks]);
 
-  const visibleTasks = sortedTasks.slice(0, maxVisibleTasks);
-  const hiddenCount = sortedTasks.length - maxVisibleTasks;
+  // 移动端最多显示 2 个任务，桌面端显示 3 个
+  const actualMaxVisible = maxVisibleTasks;
+  const visibleTasks = sortedTasks.slice(0, actualMaxVisible);
+  const hiddenCount = sortedTasks.length - actualMaxVisible;
 
   return (
     <div

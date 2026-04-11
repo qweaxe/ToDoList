@@ -163,7 +163,7 @@ export function TaskCard({
         )}
         {!selectMode && (
           <div
-            className="flex-shrink-0 -ml-1 -mt-1 p-1 rounded hover:bg-accent/50 transition-colors cursor-pointer"
+            className="flex-shrink-0 p-2 -m-1 rounded hover:bg-accent/50 transition-colors cursor-pointer touch-manipulation"
             onClick={(e) => {
               e.stopPropagation();
               onToggle(task.id);
@@ -315,7 +315,7 @@ export function TaskCard({
         {/* 完成状态复选框 - 非选择模式下显示 */}
         {!selectMode && (
           <div
-            className="flex-shrink-0 -ml-2 -mt-1 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
+            className="flex-shrink-0 p-2 -m-1 rounded-md hover:bg-accent/50 transition-colors cursor-pointer touch-manipulation"
             onClick={(e) => {
               e.stopPropagation();
               onToggle(task.id);
@@ -430,7 +430,7 @@ export function TaskCard({
                   className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
                 >
                   <div
-                    className="flex-shrink-0 -ml-0.5 p-0.5 rounded hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="flex-shrink-0 p-1.5 -m-1 rounded hover:bg-accent/50 transition-colors cursor-pointer touch-manipulation"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSubTaskToggle(st.id);
@@ -454,8 +454,8 @@ export function TaskCard({
           )}
         </div>
 
-        {/* 操作按钮 */}
-        <div className="flex items-center gap-0.5 sm:gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        {/* 操作按钮 - 移动端始终可见 */}
+        <div className="flex items-center gap-0.5 sm:gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
           {/* 展开/收起子任务 */}
           {subTasks.length > 0 && (
             <Button

@@ -27,6 +27,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -39,6 +46,7 @@ import { useCategories } from '@/hooks/use-categories';
 import { useLevels } from '@/hooks/use-levels';
 import { useCreateTodo, useUpdateTodo } from '@/hooks/use-todos';
 import { getTodayString } from '@/lib/date-utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SubTask {
   id: string;
@@ -262,6 +270,347 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     { value: 'YEARLY', label: t('frequency.yearly') },
   ];
 
+  // 表单内容组件
+  const formContent = (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* 标题 */}
+      <div className="space-y-2">
+        <Label htmlFor="title">{t('task.titleRequired')}</Label>
+        <Input
+          id="title"
+          placeholder={t('task.titlePlaceholder')}
+          {...register('title')}
+          className={errors.title ? 'border-destructive' : ''}
+        />
+        {errors.title && (
+          <p className="text-sm text-destructive">{errors.title.message}</p>
+        )}
+      </div>
+
+      {/* 描述 */}
+      <div className="space-y-2">
+        <Label htmlFor="description">{t('task.description')}</Label>
+        <Textarea
+          id="description"
+          placeholder={t('task.descriptionPlaceholder')}
+          rows={3}
+          {...register('description')}
+        />
+      </div>
+
+      {/* 日期时间选择 - 移动端垂直布局 */}
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+        {/* 开始日期时间 */}
+        <div className="space-y-2 flex-1">
+          <Label>{t('task.startDate')}</Label>
+          <div className="flex gap-2 items-center">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    'min-w-[120px] sm:min-w-[140px] justify-start text-left font-normal',
+                    !startDate && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={startDate ? new Date(startDate) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      setValue('startDate', format(date, 'yyyy-MM-dd'));
+                    }
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+            <Input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="w-24 sm:w-28"
+            />
+          </div>
+        </div>
+
+        {/* 截止日期时间 */}
+        <div className="space-y-2 flex-1">
+          <Label>{t('task.dueDate')}</Label>
+          <div className="flex gap-2 items-center">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    'min-w-[120px] sm:min-w-[140px] justify-start text-left font-normal',
+                    !dueDate && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dueDate ? new Date(dueDate) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      setValue('dueDate', format(date, 'yyyy-MM-dd'));
+                    }
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+            <Input
+              type="time"
+              value={dueTime}
+              onChange={(e) => setDueTime(e.target.value)}
+              className="w-24 sm:w-28"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 分类和等级 - 移动端垂直布局 */}
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+        <div className="space-y-2 flex-1">
+          <Label>{t('task.category')}</Label>
+          <Select
+            value={watch('categoryId') || '__none__'}
+            onValueChange={(value) => setValue('categoryId', value === '__none__' ? '' : value, { shouldValidate: true, shouldDirty: true })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('task.selectCategory')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">{t('task.noCategory')}</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.emoji} {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2 flex-1">
+          <Label>{t('task.priority')}</Label>
+          <Select
+            value={watch('levelId') || '__none__'}
+            onValueChange={(value) => setValue('levelId', value === '__none__' ? '' : value, { shouldValidate: true, shouldDirty: true })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('task.selectPriority')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">{t('task.noPriority')}</SelectItem>
+              {levels.map((level) => (
+                <SelectItem key={level.id} value={level.id}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      Lv.{level.value}
+                    </span>
+                    {level.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* 完成日期 - 仅已完成的任务可编辑 */}
+      {isCompleted && (
+        <div className="space-y-2 p-4 border rounded-lg bg-green-50/50 border-green-200">
+          <Label className="flex items-center gap-2 text-green-700">
+            <CalendarCheck className="h-4 w-4" />
+            {t('task.completionDate')}
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  'w-full justify-start text-left font-normal',
+                  !completedAt && 'text-muted-foreground'
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {completedAt ? format(parseISO(completedAt), 'PPP', { locale: dateLocale }) : t('task.selectCompletionDate')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={completedAt ? parseISO(completedAt) : undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    setCompletedAt(format(date, 'yyyy-MM-dd'));
+                  }
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+          <p className="text-xs text-muted-foreground">
+            {t('task.completedTaskHint')}
+          </p>
+        </div>
+      )}
+
+      {/* 子任务 */}
+      <div className="space-y-2">
+        <Label>{t('task.subtasks')}</Label>
+        <div className="flex gap-2">
+          <Input
+            placeholder={t('task.subtaskPlaceholder')}
+            value={newSubTask}
+            onChange={(e) => setNewSubTask(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addSubTask();
+              }
+            }}
+          />
+          <Button type="button" variant="outline" onClick={addSubTask}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {subTasks.length > 0 && (
+          <div className="mt-2 space-y-2">
+            {subTasks.map((st) => (
+              <div
+                key={st.id}
+                className="flex items-center gap-2 p-2 bg-muted rounded-md"
+              >
+                <Checkbox
+                  checked={st.isDone}
+                  onCheckedChange={(checked) => {
+                    setSubTasks(
+                      subTasks.map((s) =>
+                        s.id === st.id ? { ...s, isDone: !!checked } : s
+                      )
+                    );
+                  }}
+                />
+                <span className="flex-1">{st.text}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeSubTask(st.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 周期任务 */}
+      <div className="space-y-3 p-4 border rounded-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Repeat className="h-4 w-4" />
+            <Label>{t('task.recurring')}</Label>
+          </div>
+          <Switch
+            checked={isCycleTask}
+            onCheckedChange={setIsCycleTask}
+          />
+        </div>
+
+        {isCycleTask && (
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="space-y-2">
+              <Label>{t('task.frequency')}</Label>
+              <Select
+                value={cycleFrequency}
+                onValueChange={(v) => setCycleFrequency(v as typeof cycleFrequency)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {frequencyOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('task.interval')}</Label>
+              <Input
+                type="number"
+                min={1}
+                value={cycleInterval}
+                onChange={(e) => setCycleInterval(parseInt(e.target.value) || 1)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 里程碑 */}
+      <div className="flex items-center gap-2">
+        <Flag className="h-4 w-4" />
+        <Label className="flex-1">{t('task.markAsMilestone')}</Label>
+        <Switch
+          checked={watch('isMilestone')}
+          onCheckedChange={(checked) => setValue('isMilestone', checked)}
+        />
+      </div>
+    </form>
+  );
+
+  // 移动端使用 Sheet，桌面端使用 Dialog
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={onClose}>
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto px-4 pb-4">
+          {/* 拖拽手柄指示 */}
+          <div className="flex justify-center mb-2 -mt-2">
+            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
+          </div>
+          <SheetHeader className="pb-4">
+            <SheetTitle>
+              {initialData ? t('task.editTask') : t('task.createTask')}
+            </SheetTitle>
+          </SheetHeader>
+
+          {formContent}
+
+          <SheetFooter className="flex-row gap-2 mt-4 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="button"
+              disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
+              onClick={handleSubmit(onSubmit)}
+              className="flex-1"
+            >
+              {initialData ? t('common.save') : t('common.create')}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -271,319 +620,20 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* 标题 */}
-          <div className="space-y-2">
-            <Label htmlFor="title">{t('task.titleRequired')}</Label>
-            <Input
-              id="title"
-              placeholder={t('task.titlePlaceholder')}
-              {...register('title')}
-              className={errors.title ? 'border-destructive' : ''}
-            />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
-            )}
-          </div>
+        {formContent}
 
-          {/* 描述 */}
-          <div className="space-y-2">
-            <Label htmlFor="description">{t('task.description')}</Label>
-            <Textarea
-              id="description"
-              placeholder={t('task.descriptionPlaceholder')}
-              rows={3}
-              {...register('description')}
-            />
-          </div>
-
-          {/* 日期时间选择 */}
-          <div className="flex justify-between gap-4">
-            {/* 开始日期时间 */}
-            <div className="space-y-2">
-              <Label>{t('task.startDate')}</Label>
-              <div className="flex gap-2 items-center">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'min-w-[140px] justify-start text-left font-normal',
-                        !startDate && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : t('task.selectDate')}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate ? new Date(startDate) : undefined}
-                      onSelect={(date) => {
-                        if (date) {
-                          setValue('startDate', format(date, 'yyyy-MM-dd'));
-                        }
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <Input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-28"
-                />
-              </div>
-            </div>
-
-            {/* 截止日期时间 */}
-            <div className="space-y-2">
-              <Label>{t('task.dueDate')}</Label>
-              <div className="flex gap-2 items-center">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'min-w-[140px] justify-start text-left font-normal',
-                        !dueDate && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : t('task.selectDate')}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate ? new Date(dueDate) : undefined}
-                      onSelect={(date) => {
-                        if (date) {
-                          setValue('dueDate', format(date, 'yyyy-MM-dd'));
-                        }
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <Input
-                  type="time"
-                  value={dueTime}
-                  onChange={(e) => setDueTime(e.target.value)}
-                  className="w-28"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 分类和等级 */}
-          <div className="flex justify-between gap-4">
-            <div className="space-y-2">
-              <Label>{t('task.category')}</Label>
-              <Select
-                value={watch('categoryId') || '__none__'}
-                onValueChange={(value) => setValue('categoryId', value === '__none__' ? '' : value, { shouldValidate: true, shouldDirty: true })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('task.selectCategory')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">{t('task.noCategory')}</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.emoji} {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('task.priority')}</Label>
-              <Select
-                value={watch('levelId') || '__none__'}
-                onValueChange={(value) => setValue('levelId', value === '__none__' ? '' : value, { shouldValidate: true, shouldDirty: true })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('task.selectPriority')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">{t('task.noPriority')}</SelectItem>
-                  {levels.map((level) => (
-                    <SelectItem key={level.id} value={level.id}>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          Lv.{level.value}
-                        </span>
-                        {level.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* 完成日期 - 仅已完成的任务可编辑 */}
-          {isCompleted && (
-            <div className="space-y-2 p-4 border rounded-lg bg-green-50/50 border-green-200">
-              <Label className="flex items-center gap-2 text-green-700">
-                <CalendarCheck className="h-4 w-4" />
-                {t('task.completionDate')}
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !completedAt && 'text-muted-foreground'
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {completedAt ? format(parseISO(completedAt), 'PPP', { locale: dateLocale }) : t('task.selectCompletionDate')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={completedAt ? parseISO(completedAt) : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        setCompletedAt(format(date, 'yyyy-MM-dd'));
-                      }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground">
-                {t('task.completedTaskHint')}
-              </p>
-            </div>
-          )}
-
-          {/* 子任务 */}
-          <div className="space-y-2">
-            <Label>{t('task.subtasks')}</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder={t('task.subtaskPlaceholder')}
-                value={newSubTask}
-                onChange={(e) => setNewSubTask(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addSubTask();
-                  }
-                }}
-              />
-              <Button type="button" variant="outline" onClick={addSubTask}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {subTasks.length > 0 && (
-              <div className="mt-2 space-y-2">
-                {subTasks.map((st) => (
-                  <div
-                    key={st.id}
-                    className="flex items-center gap-2 p-2 bg-muted rounded-md"
-                  >
-                    <Checkbox
-                      checked={st.isDone}
-                      onCheckedChange={(checked) => {
-                        setSubTasks(
-                          subTasks.map((s) =>
-                            s.id === st.id ? { ...s, isDone: !!checked } : s
-                          )
-                        );
-                      }}
-                    />
-                    <span className="flex-1">{st.text}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeSubTask(st.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* 周期任务 */}
-          <div className="space-y-3 p-4 border rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Repeat className="h-4 w-4" />
-                <Label>{t('task.recurring')}</Label>
-              </div>
-              <Switch
-                checked={isCycleTask}
-                onCheckedChange={setIsCycleTask}
-              />
-            </div>
-
-            {isCycleTask && (
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="space-y-2">
-                  <Label>{t('task.frequency')}</Label>
-                  <Select
-                    value={cycleFrequency}
-                    onValueChange={(v) => setCycleFrequency(v as typeof cycleFrequency)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {frequencyOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{t('task.interval')}</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={cycleInterval}
-                    onChange={(e) => setCycleInterval(parseInt(e.target.value) || 1)}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 里程碑 */}
-          <div className="flex items-center gap-2">
-            <Flag className="h-4 w-4" />
-            <Label className="flex-1">{t('task.markAsMilestone')}</Label>
-            <Switch
-              checked={watch('isMilestone')}
-              onCheckedChange={(checked) => setValue('isMilestone', checked)}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-            >
-              {initialData ? t('common.save') : t('common.create')}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
+            onClick={handleSubmit(onSubmit)}
+          >
+            {initialData ? t('common.save') : t('common.create')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

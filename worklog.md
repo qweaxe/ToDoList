@@ -1610,3 +1610,55 @@ wrangler d1 execute todolist-db --remote --file=./d1-data.sql
 - `src/app/api/auth/security-question/route.ts` - D1 重写
 - `src/app/api/todos/daily/route.ts` - D1 重写
 
+---
+
+## 2026-04-11: 移动端界面适配优化
+
+### 改动内容
+
+1. **WeekView 周视图优化**
+   - 添加横向滚动支持（`overflow-x-auto`）
+   - 移动端设置最小宽度 560px，桌面端自适应
+   - 日期列高度响应式调整（`min-h-[160px] sm:min-h-[200px] md:min-h-[300px]`）
+
+2. **触摸目标优化**
+   - 复选框点击区域增大（`p-2` 确保至少 44x44px）
+   - 添加 `touch-manipulation` 优化触摸响应
+   - 操作按钮在移动端始终可见（`opacity-100 sm:opacity-0 sm:group-hover:opacity-100`）
+
+3. **CalendarView 日历视图优化**
+   - 日历网格支持横向滚动
+   - 移动端隐藏侧边统计栏（`hidden lg:block`）
+   - 星期头部字体响应式调整
+
+4. **TaskForm 任务表单优化**
+   - 移动端使用 Sheet 底部弹出，桌面端保持 Dialog
+   - 日期时间选择器移动端垂直布局
+   - 添加拖拽手柄指示
+   - 按钮改为底部固定两列布局
+
+5. **统计卡片布局优化**
+   - QuarterlyView 和 YearlyView 统计卡片优化
+   - 移动端 2 列，桌面端 4 列
+   - 字体和间距响应式调整
+
+6. **YearlyView 年度视图优化**
+   - 热力图添加横向滚动支持
+   - 移动端添加滑动提示文字
+   - 统计卡片布局优化
+
+7. **国际化**
+   - 添加 `common.swipeToView` 翻译（中/英文）
+
+### 修改的文件
+- `src/components/views/WeekView.tsx` - 横向滚动、日期列高度响应式
+- `src/components/task/TaskCard.tsx` - 触摸目标、移动端操作按钮可见
+- `src/components/calendar/CalendarCell.tsx` - 任务显示优化
+- `src/components/calendar/CalendarGrid.tsx` - 横向滚动、响应式字体
+- `src/components/views/CalendarView.tsx` - 移动端隐藏侧边栏
+- `src/components/task/TaskForm.tsx` - Sheet 底部弹出、响应式布局
+- `src/components/views/QuarterlyView.tsx` - 统计卡片响应式
+- `src/components/views/YearlyView.tsx` - 热力图滚动、统计卡片响应式
+- `messages/en.json` - 添加 swipeToView 翻译
+- `messages/zh.json` - 添加 swipeToView 翻译
+

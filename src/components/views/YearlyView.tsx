@@ -160,56 +160,61 @@ export function YearlyView() {
       </div>
 
       {/* 统计卡片 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
         <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-yellow-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">{t('task.completed')}</span>
+              <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-500" />
+              <span className="text-xs text-muted-foreground">{t('task.completed')}</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">{summary.totalCompleted}</div>
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1">{summary.totalCompleted}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-blue-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">{t('year.activeDays')}</span>
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
+              <span className="text-xs text-muted-foreground">{t('year.activeDays')}</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">{summary.activeDays}</div>
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1">{summary.activeDays}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
-              <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">{t('year.longestStreak')}</span>
+              <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
+              <span className="text-xs text-muted-foreground">{t('year.longestStreak')}</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">{summary.longestStreak}{t('year.days')}</div>
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1">{summary.longestStreak}{t('year.days')}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-green-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">{t('year.avgPerDay')}</span>
+              <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
+              <span className="text-xs text-muted-foreground">{t('year.avgPerDay')}</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold mt-1">{summary.avgPerDay}</div>
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1">{summary.avgPerDay}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* 热力图 */}
-      <Card className="mb-6 overflow-x-auto">
-        <CardHeader>
+      {/* 热力图 - 移动端支持横向滚动 */}
+      <Card className="mb-6">
+        <CardHeader className="pb-2">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <Award className="h-5 w-5" />
             {t('year.contributionGraph')}
           </CardTitle>
+          {/* 移动端滚动提示 */}
+          <p className="text-xs text-muted-foreground sm:hidden">
+            ← {t('common.swipeToView')} →
+          </p>
         </CardHeader>
         <CardContent>
           <TooltipProvider>
-            <div className="min-w-[700px]">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2 sm:pb-0">
+              <div className="min-w-[600px] sm:min-w-[700px]">
               {/* 月份标签 */}
               <div className="flex mb-2 pl-8">
                 {MONTH_LABELS.map((monthKey, i) => (
@@ -280,6 +285,7 @@ export function YearlyView() {
                   />
                 ))}
                 <span>{t('year.more')}</span>
+              </div>
               </div>
             </div>
           </TooltipProvider>

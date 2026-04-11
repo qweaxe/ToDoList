@@ -100,7 +100,7 @@ export function CalendarGrid({
         {/* 日历骨架 */}
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: 42 }).map((_, i) => (
-            <Skeleton key={i} className="h-[80px] sm:h-[100px]" />
+            <Skeleton key={i} className="h-[60px] sm:h-[80px] lg:h-[100px]" />
           ))}
         </div>
       </div>
@@ -114,7 +114,7 @@ export function CalendarGrid({
         {WEEKDAYS.map((day, index) => (
           <div
             key={day}
-            className={`text-center text-sm font-medium py-2 ${
+            className={`text-center text-xs sm:text-sm font-medium py-1.5 sm:py-2 ${
               index >= 5 ? 'text-red-500' : 'text-muted-foreground'
             }`}
           >
@@ -123,26 +123,28 @@ export function CalendarGrid({
         ))}
       </div>
 
-      {/* 日历网格 */}
-      <div className="grid grid-cols-7 gap-1">
-        {calendarDates.map((date, index) => {
-          const dateStr = formatDate(date);
-          const dayTasks = tasks[dateStr] || [];
-          const holiday = holidays?.[dateStr];
+      {/* 日历网格 - 移动端支持横向滚动 */}
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2">
+        <div className="grid grid-cols-7 gap-1 min-w-[500px] sm:min-w-0">
+          {calendarDates.map((date, index) => {
+            const dateStr = formatDate(date);
+            const dayTasks = tasks[dateStr] || [];
+            const holiday = holidays?.[dateStr];
 
-          return (
-            <CalendarCell
-              key={index}
-              date={date}
-              isCurrentMonth={isInCurrentMonth(date)}
-              tasks={dayTasks}
-              holiday={holiday}
-              maxVisibleTasks={maxVisibleTasks}
-              onClick={() => onDateClick?.(dateStr)}
-              onTaskClick={onTaskClick}
-            />
-          );
-        })}
+            return (
+              <CalendarCell
+                key={index}
+                date={date}
+                isCurrentMonth={isInCurrentMonth(date)}
+                tasks={dayTasks}
+                holiday={holiday}
+                maxVisibleTasks={maxVisibleTasks}
+                onClick={() => onDateClick?.(dateStr)}
+                onTaskClick={onTaskClick}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );

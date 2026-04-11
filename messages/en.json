@@ -16,7 +16,8 @@
     "success": "Success",
     "error": "Error",
     "warning": "Warning",
-    "info": "Info"
+    "info": "Info",
+    "swipeToView": "Swipe to view more"
   },
   "nav": {
     "today": "Today",
