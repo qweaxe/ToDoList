@@ -62,7 +62,11 @@ export function AuthPage({ callbackUrl }: AuthPageProps) {
         redirect: false,
       });
 
-      if (result?.ok) {
+      // next-auth v5 beta 可能返回 ok: true 但同时有 error/code
+      // 需要检查是否有错误字段来判断真正的登录状态
+      const hasError = result?.error || result?.code;
+
+      if (result?.ok && !hasError) {
         toast.success(t('loginSuccess'));
         router.push(callbackUrl || '/');
         router.refresh();
