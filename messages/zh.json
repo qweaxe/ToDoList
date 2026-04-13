@@ -209,7 +209,48 @@
     "expiresAt": "过期时间",
     "lastUsed": "最后使用",
     "expired": "已过期",
-    "loadFailed": "加载失败"
+    "loadFailed": "加载失败",
+    "admin": "系统维护"
+  },
+  "admin": {
+    "system": {
+      "title": "系统信息",
+      "description": "当前系统运行状态",
+      "version": "版本",
+      "environment": "运行环境",
+      "buildTime": "构建时间"
+    },
+    "holidays": {
+      "title": "节假日数据",
+      "description": "管理节假日缓存数据，手动刷新或预加载",
+      "cacheStatus": "缓存状态",
+      "entries": "条",
+      "noCache": "暂无缓存数据",
+      "refreshCurrent": "刷新 {year} 年",
+      "refreshNext": "刷新 {year} 年",
+      "preloadNext": "预加载下一年",
+      "refreshSuccess": "刷新成功",
+      "refreshSuccessDesc": "已从 {source} 获取 {count} 条数据",
+      "refreshError": "刷新失败",
+      "preloadSuccess": "预加载成功",
+      "preloadSuccessDesc": "已加载 {year} 年节假日数据",
+      "preloadSkipped": "跳过预加载",
+      "preloadSkippedDesc": "下一年数据已存在",
+      "preloadNotTime": "不在预加载期间",
+      "preloadNotTimeDesc": "每年 10-12 月才会自动检查下一年数据",
+      "preloadError": "预加载失败"
+    },
+    "cache": {
+      "title": "缓存管理",
+      "description": "清理本地缓存数据",
+      "localStorage": "本地存储",
+      "localStorageDesc": "清理浏览器本地存储的视图状态和查询缓存",
+      "clear": "清理",
+      "clearSuccess": "缓存已清理",
+      "clearSuccessDesc": "已清理 {count} 个缓存项，页面将刷新",
+      "clearError": "清理失败",
+      "note": "清理缓存后页面会自动刷新，请确保已保存所有未完成的操作。"
+    }
   },
   "frequency": {
     "daily": "每天",

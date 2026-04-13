@@ -209,7 +209,48 @@
     "expiresAt": "Expires",
     "lastUsed": "Last used",
     "expired": "Expired",
-    "loadFailed": "Load failed"
+    "loadFailed": "Load failed",
+    "admin": "System Maintenance"
+  },
+  "admin": {
+    "system": {
+      "title": "System Information",
+      "description": "Current system runtime status",
+      "version": "Version",
+      "environment": "Environment",
+      "buildTime": "Build Time"
+    },
+    "holidays": {
+      "title": "Holiday Data",
+      "description": "Manage holiday cache data, refresh or preload manually",
+      "cacheStatus": "Cache Status",
+      "entries": "entries",
+      "noCache": "No cached data",
+      "refreshCurrent": "Refresh {year}",
+      "refreshNext": "Refresh {year}",
+      "preloadNext": "Preload Next Year",
+      "refreshSuccess": "Refresh Successful",
+      "refreshSuccessDesc": "Fetched {count} entries from {source}",
+      "refreshError": "Refresh Failed",
+      "preloadSuccess": "Preload Successful",
+      "preloadSuccessDesc": "Loaded holiday data for {year}",
+      "preloadSkipped": "Preload Skipped",
+      "preloadSkippedDesc": "Next year data already exists",
+      "preloadNotTime": "Not in Preload Period",
+      "preloadNotTimeDesc": "Auto-check for next year data runs during Oct-Dec only",
+      "preloadError": "Preload Failed"
+    },
+    "cache": {
+      "title": "Cache Management",
+      "description": "Clear local cache data",
+      "localStorage": "Local Storage",
+      "localStorageDesc": "Clear browser local storage for view state and query cache",
+      "clear": "Clear",
+      "clearSuccess": "Cache Cleared",
+      "clearSuccessDesc": "Cleared {count} cache items, page will refresh",
+      "clearError": "Clear Failed",
+      "note": "The page will refresh automatically after clearing cache. Make sure all pending operations are saved."
+    }
   },
   "frequency": {
     "daily": "Daily",

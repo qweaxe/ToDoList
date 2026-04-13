@@ -1790,3 +1790,48 @@ const dayEndISO = localDayEnd.toISOString();         // 转 UTC
 - `src/lib/holiday-service.ts` - 优化优先级，新增预加载和刷新功能
 - `src/app/api/holidays/route.ts` - 新增 action 参数支持
 
+---
+
+## 2026-04-13: 新增系统维护功能（管理员专属）
+
+### 改动内容
+
+1. **管理员权限控制**
+   - 新增 `src/lib/admin.ts`：通过环境变量 `ADMIN_USER_IDS` 控制管理员权限
+   - 新增 `/api/admin/check` API：检查当前用户是否为管理员
+
+2. **节假日数据管理**
+   - 新增 `/api/admin/holidays` API：获取缓存状态、手动刷新、预加载
+   - 新增 `HolidayManager` 组件：显示各年份数据量、刷新按钮、预加载按钮
+
+3. **缓存清理**
+   - 新增 `CacheManager` 组件：清理 localStorage 中的视图状态和查询缓存
+
+4. **系统信息**
+   - 新增 `SystemInfo` 组件：显示版本号、运行环境、构建时间
+
+5. **设置页面集成**
+   - 新增"系统维护" Tab，仅管理员可见
+   - 更新 `use-view-store.ts` 添加 'admin' 类型
+
+6. **国际化**
+   - 添加中英文翻译：admin.system、admin.holidays、admin.cache
+
+### 环境变量配置
+在 Cloudflare Dashboard 设置：
+```
+ADMIN_USER_IDS=用户ID1,用户ID2
+```
+
+### 修改的文件
+- `src/lib/admin.ts` - 新增管理员权限检查
+- `src/app/api/admin/check/route.ts` - 新增权限检查 API
+- `src/app/api/admin/holidays/route.ts` - 新增节假日管理 API
+- `src/components/settings/HolidayManager.tsx` - 新增节假日管理组件
+- `src/components/settings/CacheManager.tsx` - 新增缓存管理组件
+- `src/components/settings/SystemInfo.tsx` - 新增系统信息组件
+- `src/components/views/SettingsView.tsx` - 集成系统维护 Tab
+- `src/hooks/use-view-store.ts` - 添加 admin 类型
+- `messages/zh.json` - 添加中文翻译
+- `messages/en.json` - 添加英文翻译
+
