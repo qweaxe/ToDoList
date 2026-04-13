@@ -103,8 +103,15 @@ export async function GET(request: NextRequest) {
       console.error('Failed to sync recurring tasks:', syncError);
     }
 
-    const targetISO = parseDateString(date).toISOString();
-    const todayISO = parseDateString(today).toISOString();
+    // 计算查询边界：本地时间的当天 00:00 和 23:59:59，转换为 UTC
+    // 这样可以正确查询到用户在当天创建的任务（即使存储为 UTC）
+    const localDayStart = new Date(`${date}T00:00:00`);
+    const localDayEnd = new Date(`${date}T23:59:59`);
+    const dayStartISO = localDayStart.toISOString();
+    const dayEndISO = localDayEnd.toISOString();
+
+    // 同样计算今天的边界（用于历史待办查询）
+    const todayStartISO = new Date(`${today}T00:00:00`).toISOString();
 
     if (IS_EDGE) {
       const d1 = await getD1Client();
@@ -114,14 +121,14 @@ export async function GET(request: NextRequest) {
           `SELECT ${TODO_JOIN_FIELDS} ${TODO_JOIN_TABLES}
            WHERE t.userId = ? AND t.startDate <= ? AND t.dueDate >= ?
            ORDER BY l.value DESC, t.createdAt DESC`,
-          userId, targetISO, targetISO
+          userId, dayEndISO, dayStartISO
         ),
         d1.all<any>(
           `SELECT ${TODO_JOIN_FIELDS} ${TODO_JOIN_TABLES}
            WHERE t.userId = ? AND t.dueDate < ? AND t.status != 'completed'
            ORDER BY t.dueDate ASC, l.value DESC
            LIMIT 100`,
-          userId, todayISO
+          userId, todayStartISO
         ),
       ]);
 
@@ -147,15 +154,13 @@ export async function GET(request: NextRequest) {
     }
 
     const db = await getDb();
-    const targetDateObj = parseDateString(date);
-    const todayDateObj = parseDateString(today);
 
     const todayTasks = await db.todo.findMany({
       where: {
         userId,
         AND: [
-          { startDate: { lte: targetDateObj } },
-          { dueDate: { gte: targetDateObj } },
+          { startDate: { lte: localDayEnd } },
+          { dueDate: { gte: localDayStart } },
         ],
       },
       orderBy: [
@@ -173,7 +178,7 @@ export async function GET(request: NextRequest) {
       where: {
         userId,
         AND: [
-          { dueDate: { lt: todayDateObj } },
+          { dueDate: { lt: new Date(`${today}T00:00:00`) } },
           { status: { not: 'completed' } },
         ],
       },

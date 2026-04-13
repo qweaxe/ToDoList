@@ -32,6 +32,10 @@ export async function GET(request: NextRequest) {
     const quarterStartStr = formatDate(quarterStart);
     const quarterEndStr = formatDate(quarterEnd);
 
+    // 计算查询边界：本地时间的季度开始 00:00 和季度结束 23:59:59，转换为 UTC
+    const quarterStartBoundary = new Date(`${quarterStartStr}T00:00:00`);
+    const quarterEndBoundary = new Date(`${quarterEndStr}T23:59:59`);
+
     // 获取季度内的所有里程碑任务
     const milestones = await db.todo.findMany({
       where: {
@@ -40,20 +44,20 @@ export async function GET(request: NextRequest) {
         OR: [
           {
             startDate: {
-              gte: quarterStart,
-              lte: quarterEnd,
+              gte: quarterStartBoundary,
+              lte: quarterEndBoundary,
             },
           },
           {
             dueDate: {
-              gte: quarterStart,
-              lte: quarterEnd,
+              gte: quarterStartBoundary,
+              lte: quarterEndBoundary,
             },
           },
           {
             AND: [
-              { startDate: { lte: quarterStart } },
-              { dueDate: { gte: quarterStart } },
+              { startDate: { lte: quarterStartBoundary } },
+              { dueDate: { gte: quarterStartBoundary } },
             ],
           },
         ],
@@ -72,20 +76,20 @@ export async function GET(request: NextRequest) {
         OR: [
           {
             startDate: {
-              gte: quarterStart,
-              lte: quarterEnd,
+              gte: quarterStartBoundary,
+              lte: quarterEndBoundary,
             },
           },
           {
             dueDate: {
-              gte: quarterStart,
-              lte: quarterEnd,
+              gte: quarterStartBoundary,
+              lte: quarterEndBoundary,
             },
           },
           {
             AND: [
-              { startDate: { lte: quarterStart } },
-              { dueDate: { gte: quarterStart } },
+              { startDate: { lte: quarterStartBoundary } },
+              { dueDate: { gte: quarterStartBoundary } },
             ],
           },
         ],

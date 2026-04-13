@@ -1715,3 +1715,43 @@ wrangler d1 execute todolist-db --remote --file=./d1-data.sql
 - `src/components/task/TaskForm.tsx` - 修改 combineDateAndTime 函数
 - `src/components/task/TaskDetailDialog.tsx` - 修改 combineDateAndTime 函数
 
+---
+
+## 2026-04-13: 修复 API 日期查询时区边界问题
+
+### 问题描述
+- 修复时间存储后，新建任务在日视图和日历视图找不到
+- 原因：API 查询使用 `parseDateString(date).toISOString()` 把当天 00:00 转换为 UTC
+- 任务时间已经是 UTC 存储，导致查询边界不匹配
+
+### 示例分析
+```
+任务数据: startDate = 2026-04-13T02:00:00.000Z (UTC 02:00 = 北京时间 10:00)
+查询边界: targetISO = 2026-04-12T16:00:00.000Z (2026-04-13 00:00 北京时间转 UTC)
+
+查询条件: startDate <= 2026-04-12T16:00:00.000Z
+结果: 02:00 > 16:00 (前一天) → 不满足 → 查不到任务
+```
+
+### 解决方案
+修改所有 API 的日期查询逻辑：使用本地时间的日期边界（00:00 和 23:59:59），然后转换为 UTC
+
+```typescript
+// 修改前
+const targetISO = parseDateString(date).toISOString();  // 当天 00:00 本地 → UTC
+
+// 修改后
+const localDayStart = new Date(`${date}T00:00:00`);  // 本地时间 00:00
+const localDayEnd = new Date(`${date}T23:59:59`);    // 本地时间 23:59:59
+const dayStartISO = localDayStart.toISOString();     // 转 UTC
+const dayEndISO = localDayEnd.toISOString();         // 转 UTC
+```
+
+### 修改的文件
+- `src/app/api/todos/daily/route.ts` - 修复日视图查询边界
+- `src/app/api/todos/weekly/route.ts` - 修复周视图查询边界
+- `src/app/api/todos/monthly/route.ts` - 修复月视图查询边界
+- `src/app/api/todos/quarterly/route.ts` - 修复季度视图查询边界
+- `src/app/api/todos/yearly/route.ts` - 修复年度视图查询边界
+- `src/app/api/todos/filter/route.ts` - 修复筛选查询边界
+

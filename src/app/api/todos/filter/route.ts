@@ -30,8 +30,9 @@ export async function GET(request: NextRequest) {
     }
 
     const yearNum = parseInt(year, 10);
-    const yearStart = new Date(yearNum, 0, 1);
-    const yearEnd = new Date(yearNum, 11, 31);
+    // 计算查询边界：本地时间的年度开始 00:00 和年度结束 23:59:59，转换为 UTC
+    const yearStartBoundary = new Date(`${yearNum}-01-01T00:00:00`);
+    const yearEndBoundary = new Date(`${yearNum}-12-31T23:59:59`);
 
     let todos;
 
@@ -41,9 +42,9 @@ export async function GET(request: NextRequest) {
           userId,
           categoryId: id,
           OR: [
-            { startDate: { gte: yearStart, lte: yearEnd } },
-            { dueDate: { gte: yearStart, lte: yearEnd } },
-            { startDate: { lte: yearStart }, dueDate: { gte: yearEnd } },
+            { startDate: { gte: yearStartBoundary, lte: yearEndBoundary } },
+            { dueDate: { gte: yearStartBoundary, lte: yearEndBoundary } },
+            { startDate: { lte: yearStartBoundary }, dueDate: { gte: yearEndBoundary } },
           ],
         },
         include: {
@@ -60,9 +61,9 @@ export async function GET(request: NextRequest) {
           userId,
           levelId: id,
           OR: [
-            { startDate: { gte: yearStart, lte: yearEnd } },
-            { dueDate: { gte: yearStart, lte: yearEnd } },
-            { startDate: { lte: yearStart }, dueDate: { gte: yearEnd } },
+            { startDate: { gte: yearStartBoundary, lte: yearEndBoundary } },
+            { dueDate: { gte: yearStartBoundary, lte: yearEndBoundary } },
+            { startDate: { lte: yearStartBoundary }, dueDate: { gte: yearEndBoundary } },
           ],
         },
         include: {

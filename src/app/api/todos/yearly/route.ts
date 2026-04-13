@@ -24,6 +24,13 @@ export async function GET(request: NextRequest) {
     const yearParam = searchParams.get('year');
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
 
+    // 计算查询边界：本地时间的年度开始 00:00 和年度结束 23:59:59，转换为 UTC
+    const yearStartStr = `${year}-01-01`;
+    const yearEndStr = `${year}-12-31`;
+    const yearStartBoundary = new Date(`${yearStartStr}T00:00:00`);
+    const yearEndBoundary = new Date(`${yearEndStr}T23:59:59`);
+
+    // 用于生成日期序列（本地时间的年度边界）
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year, 11, 31);
 
@@ -33,8 +40,8 @@ export async function GET(request: NextRequest) {
         userId,
         status: 'completed',
         completedAt: {
-          gte: yearStart,
-          lte: yearEnd,
+          gte: yearStartBoundary,
+          lte: yearEndBoundary,
         },
       },
       select: {

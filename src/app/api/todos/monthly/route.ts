@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     calendarEndDate.setDate(lastDayOfMonth.getDate() + daysToSunday);
 
     // 格式化日期为字符串
-    const formatDateStr = (date: Date) => 
+    const formatDateStr = (date: Date) =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
     const calendarStartStr = formatDateStr(calendarStartDate);
@@ -50,6 +50,12 @@ export async function GET(request: NextRequest) {
     const monthStartStr = formatDateStr(firstDayOfMonth);
     const monthEndStr = formatDateStr(lastDayOfMonth);
 
+    // 计算查询边界：本地时间的日历开始 00:00 和日历结束 23:59:59，转换为 UTC
+    const calendarStartBoundary = new Date(`${calendarStartStr}T00:00:00`);
+    const calendarEndBoundary = new Date(`${calendarEndStr}T23:59:59`);
+    const monthStartBoundary = new Date(`${monthStartStr}T00:00:00`);
+    const monthEndBoundary = new Date(`${monthEndStr}T23:59:59`);
+
     // 获取日历范围内所有任务
     const tasks = await db.todo.findMany({
       where: {
@@ -58,22 +64,22 @@ export async function GET(request: NextRequest) {
           // 任务开始日期在日历范围内
           {
             startDate: {
-              gte: calendarStartDate,
-              lte: calendarEndDate,
+              gte: calendarStartBoundary,
+              lte: calendarEndBoundary,
             },
           },
           // 任务截止日期在日历范围内
           {
             dueDate: {
-              gte: calendarStartDate,
-              lte: calendarEndDate,
+              gte: calendarStartBoundary,
+              lte: calendarEndBoundary,
             },
           },
           // 任务跨越整个日历范围
           {
             AND: [
-              { startDate: { lte: calendarStartDate } },
-              { dueDate: { gte: calendarEndDate } },
+              { startDate: { lte: calendarStartBoundary } },
+              { dueDate: { gte: calendarEndBoundary } },
             ],
           },
         ],
@@ -113,9 +119,9 @@ export async function GET(request: NextRequest) {
       where: {
         userId,
         OR: [
-          { startDate: { gte: firstDayOfMonth, lte: lastDayOfMonth } },
-          { dueDate: { gte: firstDayOfMonth, lte: lastDayOfMonth } },
-          { AND: [{ startDate: { lte: firstDayOfMonth } }, { dueDate: { gte: lastDayOfMonth } }] },
+          { startDate: { gte: monthStartBoundary, lte: monthEndBoundary } },
+          { dueDate: { gte: monthStartBoundary, lte: monthEndBoundary } },
+          { AND: [{ startDate: { lte: monthStartBoundary } }, { dueDate: { gte: monthEndBoundary } }] },
         ],
       },
     });

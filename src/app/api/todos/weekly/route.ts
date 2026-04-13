@@ -41,6 +41,10 @@ export async function GET(request: NextRequest) {
       // 继续执行，不阻塞请求
     }
 
+    // 计算查询边界：本地时间的周开始 00:00 和周末结束 23:59:59，转换为 UTC
+    const weekStartBoundary = new Date(`${weekStartStr}T00:00:00`);
+    const weekEndBoundary = new Date(`${weekEndStr}T23:59:59`);
+
     // 获取这一周的所有任务
     const todos = await db.todo.findMany({
       where: {
@@ -49,22 +53,22 @@ export async function GET(request: NextRequest) {
           // 任务开始日期在这一周内
           {
             startDate: {
-              gte: weekStart,
-              lte: weekEnd,
+              gte: weekStartBoundary,
+              lte: weekEndBoundary,
             },
           },
           // 任务截止日期在这一周内
           {
             dueDate: {
-              gte: weekStart,
-              lte: weekEnd,
+              gte: weekStartBoundary,
+              lte: weekEndBoundary,
             },
           },
           // 跨天任务：开始日期在周开始之前，截止日期在周开始之后
           {
             AND: [
-              { startDate: { lte: weekStart } },
-              { dueDate: { gte: weekStart } },
+              { startDate: { lte: weekStartBoundary } },
+              { dueDate: { gte: weekStartBoundary } },
             ],
           },
         ],
