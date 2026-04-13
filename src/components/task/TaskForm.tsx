@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { TimePicker } from '@/components/ui/time-picker';
 import {
   Select,
   SelectContent,
@@ -311,7 +312,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                 <Button
                   variant="outline"
                   className={cn(
-                    'min-w-[120px] sm:min-w-[140px] justify-start text-left font-normal',
+                    'flex-1 justify-start text-left font-normal',
                     !startDate && 'text-muted-foreground'
                   )}
                 >
@@ -331,11 +332,10 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                 />
               </PopoverContent>
             </Popover>
-            <Input
-              type="time"
+            <TimePicker
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-24 sm:w-28"
+              onChange={setStartTime}
+              className="flex-1"
             />
           </div>
         </div>
@@ -349,7 +349,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                 <Button
                   variant="outline"
                   className={cn(
-                    'min-w-[120px] sm:min-w-[140px] justify-start text-left font-normal',
+                    'flex-1 justify-start text-left font-normal',
                     !dueDate && 'text-muted-foreground'
                   )}
                 >
@@ -369,11 +369,10 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                 />
               </PopoverContent>
             </Popover>
-            <Input
-              type="time"
+            <TimePicker
               value={dueTime}
-              onChange={(e) => setDueTime(e.target.value)}
-              className="w-24 sm:w-28"
+              onChange={setDueTime}
+              className="flex-1"
             />
           </div>
         </div>

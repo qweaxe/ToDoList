@@ -39,7 +39,7 @@ export function TimePicker({ value, onChange, className, disabled }: TimePickerP
         <Button
           variant="outline"
           className={cn(
-            "min-w-[100px] justify-start text-left font-normal",
+            "justify-start text-left font-normal",
             !value && "text-muted-foreground",
             className
           )}

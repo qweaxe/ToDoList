@@ -417,10 +417,10 @@ export function TaskDetailDialog({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('startDate')}</Label>
-                    <div className="flex gap-2 items-center justify-between">
+                    <div className="flex gap-2 items-center">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="justify-start">
+                          <Button variant="outline" className="flex-1 justify-start text-left font-normal">
                             <Calendar className="h-4 w-4 mr-2" />
                             {editStartDate ? format(new Date(editStartDate), 'yyyy-MM-dd') : ''}
                           </Button>
@@ -438,15 +438,16 @@ export function TaskDetailDialog({
                       <TimePicker
                         value={editStartTime}
                         onChange={setEditStartTime}
+                        className="flex-1"
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>{t('dueDate')}</Label>
-                    <div className="flex gap-2 items-center justify-between">
+                    <div className="flex gap-2 items-center">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="justify-start">
+                          <Button variant="outline" className="flex-1 justify-start text-left font-normal">
                             <Calendar className="h-4 w-4 mr-2" />
                             {editDueDate ? format(new Date(editDueDate), 'yyyy-MM-dd') : ''}
                           </Button>
@@ -464,6 +465,7 @@ export function TaskDetailDialog({
                       <TimePicker
                         value={editDueTime}
                         onChange={setEditDueTime}
+                        className="flex-1"
                       />
                     </div>
                   </div>
