@@ -134,10 +134,12 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     return isDueDate ? '23:59' : '00:00';
   };
 
-  // 合并日期和时间为 ISO 字符串（不进行时区转换）
+  // 合并日期和时间为 ISO 字符串（本地时间 → UTC）
   const combineDateAndTime = (dateStr: string, timeStr: string): string => {
-    // 直接拼接日期和时间，不进行时区转换
-    return `${dateStr}T${timeStr}:00.000Z`;
+    // 创建本地时间的 Date 对象，然后转换为 UTC ISO 字符串
+    // 不带时区后缀，让 new Date() 解析为本地时间
+    const localDate = new Date(`${dateStr}T${timeStr}:00`);
+    return localDate.toISOString();
   };
 
   // 使用 ref 跟踪已初始化的任务 ID，避免重复重置

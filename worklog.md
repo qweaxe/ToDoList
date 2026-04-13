@@ -1687,3 +1687,31 @@ wrangler d1 execute todolist-db --remote --file=./d1-data.sql
 - `src/components/calendar/CalendarGrid.tsx` - 移除固定最小宽度
 - `src/components/views/QuarterlyView.tsx` - 里程碑时间格式化、清理 import
 
+---
+
+## 2026-04-13: 修复时间处理时区转换问题
+
+### 问题描述
+- 用户创建任务时输入的时间（如 10:00 北京时间），保存后显示为不同时间（如 18:00）
+- 原因：`combineDateAndTime` 函数把用户输入的本地时间错误标记为 UTC 时间
+- 用户输入 `2026-04-13 10:00`（北京时间），生成 `2026-04-13T10:00:00.000Z`
+- 后端解析为 UTC 10:00，前端显示时转换为本地时区 (UTC+8)，变成 18:00
+
+### 解决方案
+采用业内最佳实践：**存储 UTC，显示本地时间**
+
+```
+用户输入:     2026-04-13 10:00 (北京时间 UTC+8)
+前端转换:     2026-04-13T02:00:00.000Z (UTC)
+后端存储:     2026-04-13T02:00:00.000Z
+前端显示:     2026-04-13 10:00 (自动转回本地时区)
+```
+
+### 改动内容
+- 修改 `combineDateAndTime` 函数：使用 `new Date()` 解析本地时间，然后调用 `toISOString()` 转换为 UTC
+- 用户输入什么时间，显示就是什么时间
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 修改 combineDateAndTime 函数
+- `src/components/task/TaskDetailDialog.tsx` - 修改 combineDateAndTime 函数
+

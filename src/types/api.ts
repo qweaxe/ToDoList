@@ -32,8 +32,32 @@ export const createTodoSchema = z.object({
 
 export type CreateTodoInput = z.infer<typeof createTodoSchema>;
 
-// 更新任务验证
-export const updateTodoSchema = createTodoSchema.partial();
+// 更新任务验证 - 日期字段需要允许 null
+export const updateTodoSchema = z.object({
+  title: z.string().min(1, '标题不能为空').max(100, '标题最多100个字符').optional(),
+  description: z.string().max(1000, '描述最多1000个字符').optional().nullable(),
+  startDate: z.string().regex(datetimeRegex, '日期时间格式无效').optional().nullable(),
+  dueDate: z.string().regex(datetimeRegex, '日期时间格式无效').optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+  levelId: z.string().optional().nullable(),
+  subTasks: z.array(z.object({
+    id: z.string(),
+    text: z.string(),
+    isDone: z.boolean(),
+  })).optional().nullable(),
+  isCycleTask: z.boolean().optional(),
+  recurrenceRule: z.object({
+    frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY', 'CUSTOM']),
+    interval: z.number().min(1).default(1),
+    byDay: z.array(z.number().min(0).max(6)).optional().nullable(),
+    cronExpr: z.string().optional().nullable(),
+    startDate: z.string().regex(datetimeRegex, '日期时间格式无效'),
+    endDate: z.string().regex(datetimeRegex, '日期时间格式无效').optional().nullable(),
+  }).optional().nullable(),
+  isMilestone: z.boolean().optional(),
+  priority: z.number().min(0).optional(),
+  completedAt: z.string().regex(datetimeRegex, '日期时间格式无效').optional().nullable(),
+});
 export type UpdateTodoInput = z.infer<typeof updateTodoSchema>;
 
 // 创建分类验证
