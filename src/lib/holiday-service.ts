@@ -13,16 +13,19 @@ interface HolidayApiResponse {
   };
 }
 
-interface YearHolidaysApiResponse {
-  code: number;
-  holidays: Array<{
-    date: string;
-    name: string;
-    holiday: boolean;
-  }>;
-}
-
 const HOLIDAY_API_BASE = 'https://timor.tech/api/holiday';
+
+/**
+ * 检查是否需要预加载下一年的节假日数据
+ * 国务院一般在 10 月下旬到 12 月上旬发布下一年的安排
+ */
+export function shouldPreloadNextYear(): boolean {
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-12
+
+  // 10月、11月、12月期间，预加载下一年的数据
+  return month >= 10 && month <= 12;
+}
 
 /**
  * 从 API 获取单日节假日信息
@@ -58,6 +61,7 @@ async function fetchHolidayFromApi(date: string): Promise<{ isHoliday: boolean; 
 
 /**
  * 从 API 获取整年节假日信息
+ * API 返回格式：{ code: 0, holiday: { "01-01": {...}, ... } }
  */
 async function fetchYearHolidaysFromApi(year: number): Promise<Array<{ date: string; name: string; isHoliday: boolean }>> {
   try {
@@ -72,14 +76,20 @@ async function fetchYearHolidaysFromApi(year: number): Promise<Array<{ date: str
       return [];
     }
 
-    const data: YearHolidaysApiResponse = await response.json();
+    const data = await response.json() as { code?: number; holiday?: Record<string, { holiday: boolean; name: string; date: string }> };
 
-    if (data.code === 0 && data.holidays) {
-      return data.holidays.map(h => ({
-        date: h.date,
-        name: h.name,
-        isHoliday: h.holiday,
-      }));
+    // API 返回格式：{ code: 0, holiday: { "01-01": {...}, ... } }
+    if (data.code === 0 && data.holiday) {
+      const holidays: Array<{ date: string; name: string; isHoliday: boolean }> = [];
+      for (const [, value] of Object.entries(data.holiday)) {
+        const h = value;
+        holidays.push({
+          date: h.date,
+          name: h.name,
+          isHoliday: h.holiday,
+        });
+      }
+      return holidays;
     }
 
     return [];
@@ -132,6 +142,9 @@ export async function getHolidayInfo(date: string): Promise<{ isHoliday: boolean
 
 /**
  * 批量获取指定年份的所有节假日信息
+ * 优先级：数据库缓存 → 外部 API → 静态数据（兜底）
+ *
+ * 同时会在 10-12 月期间自动检查下一年的数据是否可用
  */
 export async function getYearHolidays(year: number): Promise<Map<string, { isHoliday: boolean; name: string }>> {
   const result = new Map<string, { isHoliday: boolean; name: string }>();
@@ -149,38 +162,14 @@ export async function getYearHolidays(year: number): Promise<Map<string, { isHol
         name: h.name,
       });
     }
+
+    // 后台异步检查下一年的数据（不阻塞当前请求）
+    checkAndPreloadNextYear().catch(() => {});
+
     return result;
   }
 
-  // 优先使用静态节假日数据（确保有数据可用）
-  const staticData = getStaticHolidaysForYear(year);
-  if (staticData.length > 0) {
-    // 批量缓存到数据库
-    const createPromises = staticData.map(h =>
-      db.holiday.create({
-        data: {
-          date: h.date,
-          name: h.name,
-          isHoliday: h.isHoliday,
-          year,
-        },
-      }).catch(() => {
-        // 忽略重复键错误
-      })
-    );
-
-    await Promise.all(createPromises);
-
-    for (const h of staticData) {
-      result.set(h.date, {
-        isHoliday: h.isHoliday,
-        name: h.name,
-      });
-    }
-    return result;
-  }
-
-  // 如果静态数据也没有，尝试从 API 获取
+  // 数据库没有数据，尝试从外部 API 获取
   const apiData = await fetchYearHolidaysFromApi(year);
 
   if (apiData.length > 0) {
@@ -206,9 +195,154 @@ export async function getYearHolidays(year: number): Promise<Map<string, { isHol
         name: h.name,
       });
     }
+
+    // 后台异步检查下一年的数据
+    checkAndPreloadNextYear().catch(() => {});
+
+    return result;
+  }
+
+  // 如果 API 获取失败，使用静态数据作为兜底
+  const staticData = getStaticHolidaysForYear(year);
+  if (staticData.length > 0) {
+    // 批量缓存到数据库
+    const createPromises = staticData.map(h =>
+      db.holiday.create({
+        data: {
+          date: h.date,
+          name: h.name,
+          isHoliday: h.isHoliday,
+          year,
+        },
+      }).catch(() => {
+        // 忽略重复键错误
+      })
+    );
+
+    await Promise.all(createPromises);
+
+    for (const h of staticData) {
+      result.set(h.date, {
+        isHoliday: h.isHoliday,
+        name: h.name,
+      });
+    }
   }
 
   return result;
+}
+
+/**
+ * 强制刷新指定年份的节假日数据（从 API 获取最新数据）
+ * 用于手动触发更新
+ */
+export async function refreshYearHolidays(year: number): Promise<{ success: boolean; count: number; source: string }> {
+  const db = await getDb();
+
+  // 先删除旧数据
+  await db.holiday.deleteMany({
+    where: { year },
+  });
+
+  // 尝试从 API 获取
+  const apiData = await fetchYearHolidaysFromApi(year);
+
+  if (apiData.length > 0) {
+    // 批量插入新数据
+    for (const h of apiData) {
+      await db.holiday.create({
+        data: {
+          date: h.date,
+          name: h.name,
+          isHoliday: h.isHoliday,
+          year,
+        },
+      }).catch(() => {});
+    }
+    return { success: true, count: apiData.length, source: 'api' };
+  }
+
+  // API 失败，使用静态数据
+  const staticData = getStaticHolidaysForYear(year);
+  if (staticData.length > 0) {
+    for (const h of staticData) {
+      await db.holiday.create({
+        data: {
+          date: h.date,
+          name: h.name,
+          isHoliday: h.isHoliday,
+          year,
+        },
+      }).catch(() => {});
+    }
+    return { success: true, count: staticData.length, source: 'static' };
+  }
+
+  return { success: false, count: 0, source: 'none' };
+}
+
+/**
+ * 后台检查并预加载下一年的节假日数据
+ * 在 10-12 月期间，如果下一年的数据不可用，尝试从 API 获取
+ * 获取成功后存入数据库，后续就不再重复调用
+ */
+export async function checkAndPreloadNextYear(): Promise<{ checked: boolean; loaded: boolean; year?: number }> {
+  // 只在 10-12 月期间检查
+  if (!shouldPreloadNextYear()) {
+    return { checked: false, loaded: false };
+  }
+
+  const nextYear = new Date().getFullYear() + 1;
+  const db = await getDb();
+
+  // 检查下一年是否已有数据
+  const count = await db.holiday.count({
+    where: { year: nextYear },
+  });
+
+  // 如果已有数据，跳过
+  if (count > 0) {
+    return { checked: true, loaded: false, year: nextYear };
+  }
+
+  // 没有数据，尝试从 API 获取
+  console.log(`[Holiday] Checking next year holidays for ${nextYear}...`);
+  const apiData = await fetchYearHolidaysFromApi(nextYear);
+
+  if (apiData.length > 0) {
+    // 存入数据库
+    for (const h of apiData) {
+      await db.holiday.create({
+        data: {
+          date: h.date,
+          name: h.name,
+          isHoliday: h.isHoliday,
+          year: nextYear,
+        },
+      }).catch(() => {});
+    }
+    console.log(`[Holiday] Loaded ${apiData.length} holidays for year ${nextYear} from API`);
+    return { checked: true, loaded: true, year: nextYear };
+  }
+
+  // API 也没有数据，使用静态数据（如果有的话）
+  const staticData = getStaticHolidaysForYear(nextYear);
+  if (staticData.length > 0) {
+    for (const h of staticData) {
+      await db.holiday.create({
+        data: {
+          date: h.date,
+          name: h.name,
+          isHoliday: h.isHoliday,
+          year: nextYear,
+        },
+      }).catch(() => {});
+    }
+    console.log(`[Holiday] Loaded ${staticData.length} holidays for year ${nextYear} from static data`);
+    return { checked: true, loaded: true, year: nextYear };
+  }
+
+  return { checked: true, loaded: false, year: nextYear };
 }
 
 /**

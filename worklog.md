@@ -1755,3 +1755,38 @@ const dayEndISO = localDayEnd.toISOString();         // 转 UTC
 - `src/app/api/todos/yearly/route.ts` - 修复年度视图查询边界
 - `src/app/api/todos/filter/route.ts` - 修复筛选查询边界
 
+---
+
+## 2026-04-13: 更新节假日数据并优化获取机制
+
+### 问题描述
+- 静态节假日数据有多处错误（缺少调休日、节假日标记错误）
+- 节假日数据获取优先级不合理（静态数据优先于 API）
+- 缺乏自动更新机制，无法及时获取下一年数据
+
+### 改动内容
+
+1. **更新静态节假日数据**
+   - 从 timor.tech API 获取 2026 年最新数据（39 条记录）
+   - 修正错误：添加 2026-02-14、2026-02-23、2026-09-20、2026-09-25/26 调休日
+   - 移除错误数据：2026-01-25、2026-04-26、2026-10-08
+   - 修复 2026-02-15 从工作日改为春节假期
+
+2. **优化数据获取优先级**
+   - 改为：数据库缓存 → 外部 API → 静态数据（兜底）
+   - 确保优先使用最新的 API 数据
+
+3. **新增自动预加载机制**
+   - `shouldPreloadNextYear()`: 10-12 月期间检查下一年数据
+   - `checkAndPreloadNextYear()`: 后台异步检查并预加载
+   - 只在数据不存在时获取，避免重复请求
+
+4. **新增手动刷新接口**
+   - `/api/holidays?action=refresh&year=YYYY`: 强制刷新指定年份数据
+   - `/api/holidays?action=preload`: 手动触发预加载检查
+
+### 修改的文件
+- `src/lib/static-holidays.ts` - 更新 2026 年节假日数据
+- `src/lib/holiday-service.ts` - 优化优先级，新增预加载和刷新功能
+- `src/app/api/holidays/route.ts` - 新增 action 参数支持
+
