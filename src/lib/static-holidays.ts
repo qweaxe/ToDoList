@@ -68,8 +68,9 @@ const holidays2026: StaticHoliday[] = [
   { date: '2026-01-25', name: '元旦调休', isHoliday: false },  // 周六调休
   
   // 春节 (农历正月初一 = 2月17日，除夕 = 2月16日)
-  // 放假：2月16日(除夕) - 2月22日(初六)，共7天
-  // 调休：2月15日(周日)、2月28日(周六)、3月1日(周日)上班
+  // 放假：2月16日(除夕,周一) - 2月22日(初六,周日)，共7天
+  // 调休：2月15日(周日)、2月28日(周六)上班
+  // 注：3月1日(周日)是正常周末，不调休
   { date: '2026-02-15', name: '春节调休', isHoliday: false },  // 周日调休
   { date: '2026-02-16', name: '除夕', isHoliday: true },
   { date: '2026-02-17', name: '春节', isHoliday: true },
@@ -79,7 +80,6 @@ const holidays2026: StaticHoliday[] = [
   { date: '2026-02-21', name: '春节', isHoliday: true },
   { date: '2026-02-22', name: '春节', isHoliday: true },
   { date: '2026-02-28', name: '春节调休', isHoliday: false },  // 周六调休
-  { date: '2026-03-01', name: '春节调休', isHoliday: false },  // 周日调休
   
   // 清明节 (4月5日周一)
   // 放假：4月4日(周日) - 4月6日(周二)，共3天
