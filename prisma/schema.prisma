@@ -29,6 +29,7 @@ model User {
   todos           Todo[]
   recurrenceRules RecurrenceRule[]
   apiKeys         ApiKey[]
+  inboxItems      InboxItem[]
 
   @@map("users")
 }
@@ -183,4 +184,19 @@ model Reminder {
   @@index([remindAt, sent]) // 查询待发送提醒
   @@index([todoId])
   @@map("reminders")
+}
+
+// 捕获箱条目
+model InboxItem {
+  id               String    @id @default(cuid())
+  content          String    // 捕获的文本内容，唯一必填字段
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  convertedToTodoId String?  // 若已转化为任务，记录目标任务 ID
+  convertedAt      DateTime? // 转化时间
+
+  @@index([userId, createdAt])
+  @@index([userId, convertedToTodoId])
+  @@map("inbox_items")
 }

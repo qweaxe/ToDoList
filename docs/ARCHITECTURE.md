@@ -231,6 +231,7 @@ model User {
   todos            Todo[]
   recurrenceRules  RecurrenceRule[]
   apiKeys          ApiKey[]
+  inboxItems       InboxItem[]
 }
 
 // 任务分类
@@ -349,6 +350,20 @@ model Reminder {
   sent      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+// 捕获箱条目
+model InboxItem {
+  id               String    @id @default(cuid())
+  content          String    // 捕获的文本内容
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  convertedToTodoId String?  // 若已转化为任务，记录目标任务 ID
+  convertedAt      DateTime? // 转化时间
+
+  @@index([userId, createdAt])
+  @@index([userId, convertedToTodoId])
+}
 ```
 
 ### 4.2 任务类型判定逻辑
@@ -447,6 +462,17 @@ model Reminder {
 | GET | `/api/admin/check` | 检查管理员权限 |
 | GET | `/api/admin/holidays` | 获取节假日缓存状态 |
 | POST | `/api/admin/holidays` | 刷新/预加载节假日数据 |
+
+### 5.11 捕获箱 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| GET | `/api/inbox` | 获取未转化条目列表 |
+| POST | `/api/inbox` | 创建新捕获条目 |
+| GET | `/api/inbox/count` | 获取未处理条目数（用于侧边栏徽章） |
+| PUT | `/api/inbox/:id` | 更新条目内容 |
+| DELETE | `/api/inbox/:id` | 删除条目 |
+| POST | `/api/inbox/:id/convert` | 转化为正式任务 |
 
 ### 5.5 认证 API
 

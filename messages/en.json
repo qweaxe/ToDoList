@@ -491,5 +491,19 @@
     "totalTasks": "Total",
     "completed": "Completed",
     "pending": "Pending"
+  },
+  "inbox": {
+    "title": "Inbox",
+    "nav": "Inbox",
+    "description": "Quickly capture ideas, organize into tasks later",
+    "capturePlaceholder": "Quickly capture ideas...",
+    "captureHint": "Enter to save · Shift+Enter for newline · Esc to close",
+    "emptyState": "Inbox is empty ✨ Capture your thoughts here",
+    "convertToTodo": "Convert to Task",
+    "editContent": "Edit",
+    "deleteItem": "Delete",
+    "itemCount": "{count} items to organize",
+    "convertDialogTitle": "Convert to Task",
+    "originalContent": "Original Idea"
   }
 }

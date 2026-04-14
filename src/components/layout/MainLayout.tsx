@@ -5,6 +5,7 @@ import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { Footer } from './Footer';
 import { SecurityBanner } from './SecurityBanner';
+import { QuickCaptureButton } from '@/components/inbox/QuickCaptureButton';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -25,6 +26,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           <Footer />
         </div>
       </div>
+      {/* 全局捕获按钮 */}
+      <QuickCaptureButton />
     </div>
   );
 }

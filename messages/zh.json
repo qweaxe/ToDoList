@@ -490,5 +490,19 @@
     "totalTasks": "总任务",
     "completed": "已完成",
     "pending": "待完成"
+  },
+  "inbox": {
+    "title": "捕获箱",
+    "nav": "捕获箱",
+    "description": "快速捕获想法，稍后整理为任务",
+    "capturePlaceholder": "快速捕获想法...",
+    "captureHint": "Enter 保存 · Shift+Enter 换行 · Esc 关闭",
+    "emptyState": "捕获箱空了 ✨ 有想法直接记下来",
+    "convertToTodo": "转为任务",
+    "editContent": "编辑",
+    "deleteItem": "删除",
+    "itemCount": "{count} 条待整理",
+    "convertDialogTitle": "整理为任务",
+    "originalContent": "原始想法"
   }
 }

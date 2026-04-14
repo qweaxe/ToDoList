@@ -1835,3 +1835,79 @@ ADMIN_USER_IDS=用户ID1,用户ID2
 - `messages/zh.json` - 添加中文翻译
 - `messages/en.json` - 添加英文翻译
 
+---
+
+## 2026-04-13: Inbox 捕获箱功能实现
+
+### 改动内容
+
+1. **数据库模型**
+   - 新增 `InboxItem` 模型：id, content, userId, createdAt, convertedToTodoId, convertedAt
+   - User 模型添加 `inboxItems` 关联
+
+2. **API 端点**
+   - `GET /api/inbox` - 获取未转化条目列表
+   - `POST /api/inbox` - 创建新捕获条目（content 最大 500 字符）
+   - `GET /api/inbox/count` - 获取未处理条目数（用于侧边栏徽章）
+   - `PUT /api/inbox/:id` - 更新条目内容
+   - `DELETE /api/inbox/:id` - 删除条目
+   - `POST /api/inbox/:id/convert` - 转化为正式任务（事务操作）
+
+3. **前端 Hooks**
+   - `useInboxItems()` - 获取列表
+   - `useInboxCount()` - 获取数量（staleTime: 30s）
+   - `useCreateInboxItem()` - 创建（乐观更新）
+   - `useUpdateInboxItem()` - 更新内容
+   - `useDeleteInboxItem()` - 删除（乐观更新）
+   - `useConvertInboxItem()` - 转化（invalidate inbox + todos）
+
+4. **前端组件**
+   - `QuickCaptureButton` - 全局悬浮捕获按钮（右下角固定）
+     - 点击弹出极简输入面板（Popover）
+     - Enter 提交，Shift+Enter 换行，Esc 关闭
+     - 全局快捷键：Cmd/Ctrl + Shift + I
+     - 在 Inbox 页面内自动隐藏
+   - `InboxList` - Inbox 页面主体
+     - 列表按 createdAt DESC 排序
+     - 支持就地编辑内容
+     - 操作：转化为任务、编辑、删除
+   - `ConvertToTodoDialog` - 转化对话框
+     - 预填 title 为 inbox item 的 content
+     - 必填 startDate、dueDate（默认今天）
+     - 可选分类和等级
+   - `InboxView` - 页面级组件
+
+5. **UI 集成**
+   - Sidebar 添加"捕获箱"导航项，显示未处理数量徽章
+   - MainLayout 挂载 QuickCaptureButton
+   - page.tsx 添加 inbox 视图渲染
+   - use-view-store.ts 添加 'inbox' 视图类型
+
+6. **国际化**
+   - 添加 `inbox` 命名空间翻译（中/英文）
+
+### 设计原则
+- 极致低摩擦：1 次点击 + 打字 + 回车完成记录
+- 与任务系统解耦：Inbox 条目不是任务，不占用任何视图
+- 双向转化：可升级为正式任务，也可直接删除
+- 无 toast 提示：使用轻微视觉反馈
+
+### 修改的文件
+- `prisma/schema.prisma` - 新增 InboxItem 模型
+- `src/app/api/inbox/route.ts` - 新增列表/创建 API
+- `src/app/api/inbox/[id]/route.ts` - 新增更新/删除 API
+- `src/app/api/inbox/[id]/convert/route.ts` - 新增转化 API
+- `src/app/api/inbox/count/route.ts` - 新增计数 API
+- `src/hooks/use-inbox.ts` - 新增数据 hooks
+- `src/components/inbox/QuickCaptureButton.tsx` - 新增悬浮捕获按钮
+- `src/components/inbox/InboxList.tsx` - 新增列表组件
+- `src/components/inbox/ConvertToTodoDialog.tsx` - 新增转化对话框
+- `src/components/inbox/InboxView.tsx` - 新增页面组件
+- `src/hooks/use-view-store.ts` - 添加 inbox 视图类型
+- `src/components/layout/Sidebar.tsx` - 添加导航项和徽章
+- `src/components/layout/MainLayout.tsx` - 挂载悬浮按钮
+- `src/app/[locale]/page.tsx` - 添加 inbox 视图渲染
+- `messages/zh.json` - 添加中文翻译
+- `messages/en.json` - 添加英文翻译
+- `docs/ARCHITECTURE.md` - 更新架构文档
+

@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import {
   Calendar,
   Home,
+  Inbox,
   LayoutGrid,
   List,
   Settings,
@@ -12,8 +13,10 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useViewStore, ViewType } from '@/hooks/use-view-store';
+import { useInboxCount } from '@/hooks/use-inbox';
 import { cn } from '@/lib/utils';
 import { getTodayString } from '@/lib/date-utils';
 
@@ -55,6 +58,12 @@ const navItems: NavItem[] = [
     icon: <TrendingUp className="h-5 w-5" />,
     descKey: 'view.yearView',
   },
+  {
+    id: 'inbox',
+    labelKey: 'inbox.nav',
+    icon: <Inbox className="h-5 w-5" />,
+    descKey: 'inbox.description',
+  },
 ];
 
 interface SidebarProps {
@@ -64,6 +73,9 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const t = useTranslations();
   const { currentView, setCurrentView, sidebarOpen, setSidebarOpen, setSelectedDate } = useViewStore();
+  const { data: inboxCountData } = useInboxCount();
+
+  const inboxCount = inboxCountData?.data.count ?? 0;
 
   const handleNavClick = (view: ViewType) => {
     setCurrentView(view);
@@ -140,7 +152,7 @@ export function Sidebar({ className }: SidebarProps) {
                   )}
                 >
                   {item.icon}
-                  <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-start flex-1">
                     <span className="font-medium">{t(item.labelKey)}</span>
                     <span
                       className={cn(
@@ -153,6 +165,11 @@ export function Sidebar({ className }: SidebarProps) {
                       {t(item.descKey)}
                     </span>
                   </div>
+                  {item.id === 'inbox' && inboxCount > 0 && (
+                    <Badge variant="secondary" className="ml-auto">
+                      {inboxCount}
+                    </Badge>
+                  )}
                 </button>
               ))}
             </nav>

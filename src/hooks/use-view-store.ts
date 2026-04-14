@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { getTodayString } from '@/lib/date-utils';
 
 // 视图类型
-export type ViewType = 'day' | 'calendar' | 'week' | 'quarter' | 'year' | 'settings' | 'overdue' | 'task-list';
+export type ViewType = 'day' | 'calendar' | 'week' | 'quarter' | 'year' | 'settings' | 'overdue' | 'task-list' | 'inbox';
 
 // 设置子页面类型
 export type SettingsTab = 'categories' | 'levels' | 'account' | 'api' | 'admin';
