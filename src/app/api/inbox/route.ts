@@ -3,11 +3,10 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getApiSession } from '@/lib/api-auth';
+import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 /**
  * GET /api/inbox - 获取捕获箱条目
- * Query params:
- * - includeConverted: boolean - 是否包含已转化的条目
  */
 export async function GET(request: NextRequest) {
   try {
@@ -23,8 +22,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeConverted = searchParams.get('includeConverted') === 'true';
 
-    const db = await getDb();
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      const sql = includeConverted
+        ? 'SELECT * FROM inbox_items WHERE userId = ? ORDER BY createdAt DESC'
+        : 'SELECT * FROM inbox_items WHERE userId = ? AND convertedToTodoId IS NULL ORDER BY createdAt DESC';
+      const items = await d1.all(sql, userId);
+      return NextResponse.json({ success: true, data: items });
+    }
 
+    const db = await getDb();
     const where = includeConverted
       ? { userId }
       : { userId, convertedToTodoId: null };
@@ -34,10 +41,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: items,
-    });
+    return NextResponse.json({ success: true, data: items });
   } catch (error) {
     console.error('Get inbox items error:', error);
     return NextResponse.json(
@@ -49,7 +53,6 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/inbox - 创建捕获箱条目
- * Body: { content: string }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -62,10 +65,9 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = authResult.userId;
-    const body = await request.json();
+    const body = await request.json() as { content?: string };
     const { content } = body;
 
-    // 验证 content
     const trimmedContent = (content as string)?.trim();
     if (!trimmedContent) {
       return NextResponse.json(
@@ -81,19 +83,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      await d1.run(
+        'INSERT INTO inbox_items (id, content, userId, createdAt) VALUES (?, ?, ?, ?)',
+        id, trimmedContent, userId, now
+      );
+      return NextResponse.json({
+        success: true,
+        data: { id, content: trimmedContent, userId, createdAt: now, convertedToTodoId: null, convertedAt: null },
+      });
+    }
+
     const db = await getDb();
-
     const item = await db.inboxItem.create({
-      data: {
-        content: trimmedContent,
-        userId,
-      },
+      data: { content: trimmedContent, userId },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: item,
-    });
+    return NextResponse.json({ success: true, data: item });
   } catch (error) {
     console.error('Create inbox item error:', error);
     return NextResponse.json(

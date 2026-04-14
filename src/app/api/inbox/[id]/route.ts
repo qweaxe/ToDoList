@@ -3,10 +3,10 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getApiSession } from '@/lib/api-auth';
+import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 /**
  * PUT /api/inbox/:id - 更新捕获箱条目内容
- * Body: { content: string }
  */
 export async function PUT(
   request: NextRequest,
@@ -23,11 +23,10 @@ export async function PUT(
 
     const userId = authResult.userId;
     const { id } = await params;
-    const body = await request.json();
+    const body = await request.json() as { content?: string };
     const { content } = body;
 
-    // 验证 content
-    const trimmedContent = (content as string)?.trim();
+    const trimmedContent = content?.trim();
     if (!trimmedContent) {
       return NextResponse.json(
         { success: false, error: '内容不能为空' },
@@ -42,12 +41,30 @@ export async function PUT(
       );
     }
 
-    const db = await getDb();
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      const existing = await d1.first<{ userId: string }>(
+        'SELECT userId FROM inbox_items WHERE id = ?',
+        id
+      );
+      if (!existing || existing.userId !== userId) {
+        return NextResponse.json(
+          { success: false, error: '条目不存在' },
+          { status: 404 }
+        );
+      }
+      await d1.run(
+        'UPDATE inbox_items SET content = ? WHERE id = ?',
+        trimmedContent, id
+      );
+      return NextResponse.json({
+        success: true,
+        data: { id, content: trimmedContent },
+      });
+    }
 
-    // 检查条目存在且属于当前用户
-    const existing = await db.inboxItem.findUnique({
-      where: { id },
-    });
+    const db = await getDb();
+    const existing = await db.inboxItem.findUnique({ where: { id } });
 
     if (!existing || existing.userId !== userId) {
       return NextResponse.json(
@@ -61,10 +78,7 @@ export async function PUT(
       data: { content: trimmedContent },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: item,
-    });
+    return NextResponse.json({ success: true, data: item });
   } catch (error) {
     console.error('Update inbox item error:', error);
     return NextResponse.json(
@@ -92,12 +106,25 @@ export async function DELETE(
 
     const userId = authResult.userId;
     const { id } = await params;
-    const db = await getDb();
 
-    // 检查条目存在且属于当前用户
-    const existing = await db.inboxItem.findUnique({
-      where: { id },
-    });
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      const existing = await d1.first<{ userId: string }>(
+        'SELECT userId FROM inbox_items WHERE id = ?',
+        id
+      );
+      if (!existing || existing.userId !== userId) {
+        return NextResponse.json(
+          { success: false, error: '条目不存在' },
+          { status: 404 }
+        );
+      }
+      await d1.run('DELETE FROM inbox_items WHERE id = ?', id);
+      return NextResponse.json({ success: true });
+    }
+
+    const db = await getDb();
+    const existing = await db.inboxItem.findUnique({ where: { id } });
 
     if (!existing || existing.userId !== userId) {
       return NextResponse.json(
@@ -106,13 +133,8 @@ export async function DELETE(
       );
     }
 
-    await db.inboxItem.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({
-      success: true,
-    });
+    await db.inboxItem.delete({ where: { id } });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete inbox item error:', error);
     return NextResponse.json(
