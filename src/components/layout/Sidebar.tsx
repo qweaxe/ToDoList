@@ -73,7 +73,10 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const t = useTranslations();
   const { currentView, setCurrentView, sidebarOpen, setSidebarOpen, setSelectedDate } = useViewStore();
-  const { data: inboxCountData } = useInboxCount();
+  // 只在非 inbox 视图时请求计数，避免与 InboxView 内的请求冲突
+  const { data: inboxCountData } = useInboxCount({
+    enabled: currentView !== 'inbox',
+  });
 
   const inboxCount = inboxCountData?.data.count ?? 0;
 

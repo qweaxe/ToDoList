@@ -31,7 +31,7 @@ export function useInboxItems(includeConverted = false) {
 /**
  * 获取捕获箱未处理条目数（用于侧边栏徽章）
  */
-export function useInboxCount() {
+export function useInboxCount(options?: { enabled?: boolean }) {
   return useQuery<{
     success: boolean;
     data: { count: number };
@@ -42,6 +42,7 @@ export function useInboxCount() {
       return res.json();
     },
     staleTime: 30 * 1000, // 30 秒
+    enabled: options?.enabled ?? true,
   });
 }
 
