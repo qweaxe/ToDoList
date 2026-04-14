@@ -2110,3 +2110,33 @@ const currentYear = now.getFullYear();
 
 ### 修改的文件
 - `src/components/inbox/QuickCaptureButton.tsx` - 修复 hooks 顺序，将 return null 移至所有 hooks 之后
+
+---
+
+## 2026-04-14: 修复年度视图和季度视图 503 错误
+
+### 问题描述
+`/api/todos/yearly` 和 `/api/todos/quarterly` 两个接口在 Cloudflare Workers 生产环境返回 503 错误。
+
+### 根因分析
+503 由 Cloudflare Workers **平台层**直接返回，表示 Worker CPU 时间超出限制（非应用代码的 500）。
+原因：两个接口在生产环境都使用 Prisma ORM，而 Cloudflare Workers 是无状态的，每次请求都需要重新初始化 `PrismaClient`，初始化本身消耗大量 CPU，导致超限。
+
+### 改动内容
+与此前修复 inbox 接口相同的方案，添加 `IS_EDGE` 分支：
+- 生产环境（IS_EDGE=true）：使用 D1 原生 SQL，跳过 Prisma 初始化
+- 开发环境（IS_EDGE=false）：保留 Prisma 路径不变
+- 将 `getDb()` 调用移到 Prisma 路径内，避免在 edge 路径中执行
+
+**yearly 接口优化**：
+- 3条聚合 SQL 并行执行（`Promise.all`）：每日完成数、每月完成数、分类统计
+- 不再加载全部 Todo 对象，只返回聚合数字
+
+**quarterly 接口优化**：
+- 1条 SQL 获取里程碑（JOIN categories + levels）
+- 1条 SQL 获取季度整体统计（含高优先级计数）
+- 3条 SQL 并行获取各月统计
+
+### 修改的文件
+- `src/app/api/todos/yearly/route.ts` - 添加 D1 原生 SQL 路径
+- `src/app/api/todos/quarterly/route.ts` - 添加 D1 原生 SQL 路径

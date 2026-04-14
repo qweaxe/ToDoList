@@ -5,11 +5,11 @@ import { getDb } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { formatDate } from '@/lib/date-utils';
 import { format, eachDayOfInterval, getDay, getMonth } from 'date-fns';
+import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 // GET /api/todos/yearly?year=YYYY - 获取年度统计数据
 export async function GET(request: NextRequest) {
   try {
-    const db = await getDb();
     const session = await getAuthSession();
 
     if (!session?.user?.id) {
@@ -24,15 +24,131 @@ export async function GET(request: NextRequest) {
     const yearParam = searchParams.get('year');
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
 
-    // 计算查询边界：本地时间的年度开始 00:00 和年度结束 23:59:59，转换为 UTC
     const yearStartStr = `${year}-01-01`;
     const yearEndStr = `${year}-12-31`;
-    const yearStartBoundary = new Date(`${yearStartStr}T00:00:00`);
-    const yearEndBoundary = new Date(`${yearEndStr}T23:59:59`);
-
-    // 用于生成日期序列（本地时间的年度边界）
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year, 11, 31);
+
+    // D1 原生 SQL 路径（生产环境），避免 Prisma 初始化 CPU 开销
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      const startStr = `${yearStartStr}T00:00:00.000Z`;
+      const endStr = `${yearEndStr}T23:59:59.999Z`;
+
+      // 并行获取三组聚合数据
+      const [dayRows, monthRows, categoryRows] = await Promise.all([
+        // 每天完成数（用于热力图）
+        d1.all<{ date: string; count: number }>(
+          `SELECT strftime('%Y-%m-%d', completedAt) as date, COUNT(*) as count
+           FROM todos WHERE userId=? AND status='completed' AND completedAt>=? AND completedAt<=?
+           GROUP BY strftime('%Y-%m-%d', completedAt)`,
+          userId, startStr, endStr
+        ),
+        // 每月完成数
+        d1.all<{ month: number; count: number }>(
+          `SELECT CAST(strftime('%m', completedAt) AS INTEGER) as month, COUNT(*) as count
+           FROM todos WHERE userId=? AND status='completed' AND completedAt>=? AND completedAt<=?
+           GROUP BY strftime('%m', completedAt)`,
+          userId, startStr, endStr
+        ),
+        // 分类完成数（前5）
+        d1.all<{ categoryId: string; catName: string; count: number }>(
+          `SELECT t.categoryId, c.name as catName, COUNT(*) as count
+           FROM todos t LEFT JOIN categories c ON t.categoryId=c.id
+           WHERE t.userId=? AND t.status='completed' AND t.completedAt>=? AND t.completedAt<=?
+             AND t.categoryId IS NOT NULL
+           GROUP BY t.categoryId, c.name ORDER BY count DESC LIMIT 5`,
+          userId, startStr, endStr
+        ),
+      ]);
+
+      // 构建热力图查找表
+      const heatmap: Record<string, number> = {};
+      for (const row of dayRows) {
+        heatmap[row.date] = row.count;
+      }
+
+      // 生成完整年度热力图（365天）
+      const allDays = eachDayOfInterval({ start: yearStart, end: yearEnd });
+      const heatmapData = allDays.map((date) => {
+        const dateStr = formatDate(date);
+        const count = heatmap[dateStr] || 0;
+        return {
+          date: dateStr,
+          dayOfWeek: getDay(date),
+          week: Math.floor((date.getTime() - yearStart.getTime()) / (7 * 24 * 60 * 60 * 1000)),
+          month: getMonth(date),
+          count,
+          level: count === 0 ? 0 : count <= 2 ? 1 : count <= 4 ? 2 : count <= 6 ? 3 : 4,
+        };
+      });
+
+      // 按月统计
+      const monthMap: Record<number, number> = {};
+      for (const row of monthRows) {
+        monthMap[Number(row.month)] = Number(row.count);
+      }
+      const monthlyStats = Array.from({ length: 12 }, (_, i) => ({
+        month: i + 1,
+        monthName: format(new Date(year, i, 1), 'M月'),
+        completed: monthMap[i + 1] || 0,
+      }));
+      const mostProductiveMonth = monthlyStats.reduce(
+        (max, curr) => (curr.completed > max.completed ? curr : max),
+        monthlyStats[0]
+      );
+
+      // 分类统计
+      const topCategories = categoryRows.map((row) => ({
+        id: row.categoryId,
+        name: row.catName,
+        count: Number(row.count),
+      }));
+
+      // 总体统计
+      const totalCompleted = dayRows.reduce((sum, r) => sum + Number(r.count), 0);
+      const activeDays = dayRows.length;
+      const avgPerDay = activeDays > 0 ? (totalCompleted / activeDays).toFixed(1) : '0';
+
+      // 最长连续天数
+      let longestStreak = 0;
+      let currentStreak = 0;
+      for (const date of allDays) {
+        const dateStr = formatDate(date);
+        if (heatmap[dateStr] > 0) {
+          currentStreak++;
+          if (currentStreak > longestStreak) longestStreak = currentStreak;
+        } else {
+          currentStreak = 0;
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          year,
+          heatmap: heatmapData,
+          monthlyStats,
+          categoryStats: topCategories,
+          summary: {
+            totalCompleted,
+            activeDays,
+            avgPerDay,
+            longestStreak,
+            mostProductiveMonth: {
+              month: mostProductiveMonth.monthName,
+              completed: mostProductiveMonth.completed,
+            },
+            topCategory: topCategories[0] || null,
+          },
+        },
+      });
+    }
+
+    // 开发环境：Prisma 路径
+    const db = await getDb();
+    const yearStartBoundary = new Date(`${yearStartStr}T00:00:00`);
+    const yearEndBoundary = new Date(`${yearEndStr}T23:59:59`);
 
     // 获取年度内已完成的任务（用于热力图）
     const completedTasks = await db.todo.findMany({
@@ -86,11 +202,9 @@ export async function GET(request: NextRequest) {
     const monthlyStats = Array.from({ length: 12 }, (_, i) => {
       const monthStart = new Date(year, i, 1);
       const monthEnd = new Date(year, i + 1, 0);
-
       const monthTasks = completedTasks.filter(
         (t) => t.completedAt && t.completedAt >= monthStart && t.completedAt <= monthEnd
       );
-
       return {
         month: i + 1,
         monthName: format(new Date(year, i, 1), 'M月'),
@@ -98,7 +212,6 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // 找出最勤奋的月份
     const mostProductiveMonth = monthlyStats.reduce(
       (max, curr) => (curr.completed > max.completed ? curr : max),
       monthlyStats[0]
@@ -109,40 +222,28 @@ export async function GET(request: NextRequest) {
     completedTasks.forEach((task) => {
       if (task.category) {
         if (!categoryStats[task.category.id]) {
-          categoryStats[task.category.id] = {
-            name: task.category.name,
-            count: 0,
-          };
+          categoryStats[task.category.id] = { name: task.category.name, count: 0 };
         }
         categoryStats[task.category.id].count++;
       }
     });
 
-    // 找出最专注的分类
     const topCategories = Object.entries(categoryStats)
-      .map(([id, data]) => ({
-        id,
-        name: data.name,
-        count: data.count,
-      }))
+      .map(([id, data]) => ({ id, name: data.name, count: data.count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // 总体统计
     const totalCompleted = completedTasks.length;
     const activeDays = Object.keys(heatmap).length;
     const avgPerDay = activeDays > 0 ? (totalCompleted / activeDays).toFixed(1) : '0';
 
-    // 最长连续天数
     let longestStreak = 0;
     let currentStreak = 0;
     allDays.forEach((date) => {
       const dateStr = formatDate(date);
       if (heatmap[dateStr] > 0) {
         currentStreak++;
-        if (currentStreak > longestStreak) {
-          longestStreak = currentStreak;
-        }
+        if (currentStreak > longestStreak) longestStreak = currentStreak;
       } else {
         currentStreak = 0;
       }
