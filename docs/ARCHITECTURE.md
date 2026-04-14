@@ -11,7 +11,7 @@
 ### 2.1 核心框架
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| Next.js | 16 | 全栈框架（App Router） |
+| Next.js | 15.2.4 | 全栈框架（App Router） |
 | TypeScript | 5 | 类型安全 |
 | React | 19 | UI 组件 |
 
@@ -25,7 +25,8 @@
 | 技术 | 用途 |
 |------|------|
 | Prisma ORM | 数据库 ORM |
-| PostgreSQL | 生产环境数据库 |
+| SQLite | 开发环境数据库 |
+| Cloudflare D1 | 生产环境数据库（SQLite 兼容） |
 
 ### 2.4 UI 与样式
 | 技术 | 用途 |
@@ -42,13 +43,13 @@
 | date-fns | 日期处理 |
 | cron-parser | Cron 表达式解析 |
 | zod | 表单验证 |
-| bcryptjs | 密码加密 |
+| Web Crypto API | 密码加密（PBKDF2） |
 | next-intl | 国际化 (i18n) |
 
 ### 2.6 认证与授权
 | 技术 | 用途 |
 |------|------|
-| NextAuth.js v4 | 认证框架 |
+| NextAuth.js v5 | 认证框架（beta 版本） |
 | JWT | 会话管理 |
 | Credentials Provider | 用户名密码登录 |
 
@@ -79,6 +80,7 @@ src/
 │       │   ├── route.ts          # GET(列表) / POST(创建)
 │       │   ├── [id]/route.ts     # GET/PUT/DELETE 单个任务
 │       │   ├── [id]/subtask/route.ts # 子任务操作
+│       │   ├── [id]/reminders/route.ts # 任务提醒
 │       │   ├── batch/route.ts    # 批量操作
 │       │   ├── daily/route.ts    # 当日视图数据
 │       │   ├── weekly/route.ts   # 周视图数据
@@ -94,6 +96,20 @@ src/
 │       │   └── route.ts
 │       ├── holidays/             # 节假日 API
 │       │   └── route.ts
+│       ├── api-keys/             # API 密钥管理
+│       │   ├── route.ts          # 列表/创建
+│       │   └── [id]/route.ts     # 删除
+│       ├── export/               # 数据导出
+│       │   ├── todos/route.ts    # 任务导出
+│       │   └── backup/route.ts   # 完整备份
+│       ├── sync/                 # 增量同步
+│       │   └── route.ts
+│       ├── reminders/            # 提醒管理
+│       │   ├── pending/route.ts  # 待发送提醒
+│       │   └── [id]/route.ts     # 删除
+│       ├── admin/                # 管理员 API
+│       │   ├── check/route.ts    # 权限检查
+│       │   └── holidays/route.ts # 节假日管理
 │       └── seed/                 # 初始化种子数据
 │           └── route.ts
 │
@@ -127,7 +143,11 @@ src/
 │   │   ├── CategoryManager.tsx   # 分类管理
 │   │   ├── LevelManager.tsx      # 等级管理
 │   │   ├── ChangePassword.tsx    # 修改密码
-│   │   └── SecurityQuestionSetting.tsx # 密保问题设置
+│   │   ├── SecurityQuestionSetting.tsx # 密保问题设置
+│   │   ├── ApiKeyManager.tsx     # API 密钥管理
+│   │   ├── HolidayManager.tsx    # 节假日管理
+│   │   ├── CacheManager.tsx      # 缓存管理
+│   │   └── SystemInfo.tsx        # 系统信息
 │   ├── auth/                     # 认证组件
 │   │   ├── AuthPage.tsx          # 登录/注册页面
 │   │   ├── ForgotPasswordPage.tsx # 忘记密码页面
@@ -144,11 +164,17 @@ src/
 │   ├── use-holidays.ts           # 节假日数据 Hook
 │   ├── use-batch-selection.ts    # 批量选择 Hook
 │   ├── use-mobile.ts             # 移动端检测 Hook
-│   └── use-toast.ts              # Toast 提示 Hook
+│   ├── use-toast.ts              # Toast 提示 Hook
+│   ├── use-reminders.ts          # 提醒数据 Hook
+│   └── use-notifications.ts      # 浏览器通知 Hook
 │
 ├── lib/
-│   ├── db.ts                     # Prisma 客户端
+│   ├── db.ts                     # Prisma 客户端（D1 适配）
+│   ├── d1.ts                     # D1 原生客户端
 │   ├── auth.ts                   # NextAuth 配置
+│   ├── password.ts               # 密码加密（Web Crypto API）
+│   ├── admin.ts                  # 管理员权限检查
+│   ├── api-auth.ts               # API Token 认证
 │   ├── date-utils.ts             # 日期处理工具
 │   ├── cron-utils.ts             # Cron 表达式工具
 │   ├── holiday-service.ts        # 节假日服务
@@ -157,7 +183,8 @@ src/
 │   └── utils.ts                  # 通用工具函数
 │
 ├── services/
-│   └── recurrence-service.ts     # 周期任务同步服务
+│   ├── recurrence-service.ts     # 周期任务同步服务
+│   └── reminder-service.ts       # 提醒服务
 │
 ├── i18n/
 │   ├── request.ts                # next-intl 请求配置
@@ -186,27 +213,47 @@ prisma/
 ### 4.1 核心模型
 
 ```prisma
+// 用户表
+model User {
+  id                      String    @id @default(cuid())
+  username                String    @unique
+  password                String    // PBKDF2 加密存储
+  name                    String?   // 显示名称
+  securityQuestion        String?   // 密保问题
+  securityAnswer          String?   // 密保答案（加密存储）
+  securityAnswerAttempts  Int       @default(0)
+  securityAnswerLockedAt  DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // 关联数据
+  categories       Category[]
+  todos            Todo[]
+  recurrenceRules  RecurrenceRule[]
+  apiKeys          ApiKey[]
+}
+
 // 任务分类
 model Category {
   id          String   @id @default(cuid())
   name        String
   description String?
   emoji       String?
-  color       String?  // 可选颜色标识
+  color       String?
   userId      String   // 用户级数据隔离
   user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   todos       Todo[]
 
-  @@unique([name, userId]) // 同一用户下分类名唯一
+  @@unique([name, userId])
 }
 
 // 任务等级（固定三级：高、中、低）
 model Level {
   id          String   @id @default(cuid())
-  name        String   @unique // 等级名称，固定为：高、中、低
-  value       Int      @unique // 优先级数值，固定为：高=3，中=2，低=1
+  name        String   @unique
+  value       Int      @unique // 高=3，中=2，低=1
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -219,20 +266,20 @@ model Todo {
   title       String
   description String?
   status      String   @default("pending") // pending, in_progress, completed
-  completedAt String?  // 完成日期
 
-  // 时间维度
-  startDate   String   // ISO格式: YYYY-MM-DD
-  dueDate     String   // ISO格式: YYYY-MM-DD
+  // 时间维度（精确到秒，支持提醒功能）
+  startDate   DateTime  // 开始时间
+  dueDate     DateTime  // 截止时间
+  completedAt DateTime? // 完成时间
 
   // 多步骤任务 - 使用 JSON 存储
-  subTasks    String?  // JSON 字符串: [{id, text, isDone}]
+  subTasks    String?  // JSON: [{id, text, isDone}]
 
   // 周期任务
   isCycleTask Boolean  @default(false)
   recurrenceRuleId String?
   recurrenceRule   RecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id])
-  parentRuleId String? // 关联的周期规则ID，用于标识生成的实例
+  parentRuleId String? // 关联的周期规则ID
 
   // 关联
   categoryId  String?
@@ -243,36 +290,63 @@ model Todo {
   user        User   @relation(fields: [userId], references: [id])
 
   // 元数据
-  priority    Int      @default(0) // 排序优先级
-  isMilestone Boolean  @default(false) // 季度视图里程碑标记
+  priority    Int      @default(0)
+  isMilestone Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // 提醒关联
+  reminders Reminder[]
 }
 
 // 周期规则
 model RecurrenceRule {
   id        String   @id @default(cuid())
   frequency String   // DAILY, WEEKLY, MONTHLY, YEARLY, CUSTOM
-  interval  Int      @default(1) // 间隔
-  byDay     String?  // JSON 数组: [0,1,2,3,4,5,6] 表示周日到周六
-  cronExpr  String?  // 自定义 cron 表达式
-  startDate String   // 开始日期
-  endDate   String?  // 结束日期（可选）
-  isActive  Boolean  @default(true) // 是否激活
-  userId    String   // 用户级数据隔离
+  interval  Int      @default(1)
+  byDay     String?  // JSON: [0,1,2,3,4,5,6]
+  cronExpr  String?
+  startDate DateTime
+  endDate   DateTime?
+  isActive  Boolean  @default(true)
+  userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   todos     Todo[]
 }
 
-// 节假日缓存（用于存储从API获取的数据）
+// 节假日缓存
 model Holiday {
   id        String   @id @default(cuid())
   date      String   @unique // YYYY-MM-DD
-  name      String   // 节假日名称
-  isHoliday Boolean  // true=休息日, false=工作日（调休）
+  name      String
+  isHoliday Boolean  // true=休息日, false=调休
   year      Int
+  createdAt DateTime @default(now())
+}
+
+// API 密钥
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique // 加密存储
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+}
+
+// 任务提醒
+model Reminder {
+  id        String   @id @default(cuid())
+  todoId    String
+  todo      Todo     @relation(fields: [todoId], references: [id])
+  remindAt  DateTime
+  type      String   // "before_due", "custom"
+  offset    Int?     // 提前分钟数
+  sent      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 ```
@@ -333,6 +407,46 @@ model Holiday {
 | 方法 | 端点 | 描述 |
 |------|------|------|
 | GET | `/api/holidays?year=YYYY` | 获取年度节假日数据 |
+| GET | `/api/holidays?action=preload` | 预加载下一年数据 |
+| GET | `/api/holidays?action=refresh&year=YYYY` | 强制刷新指定年份 |
+
+### 5.6 API 密钥 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| GET | `/api/api-keys` | 获取所有 API 密钥 |
+| POST | `/api/api-keys` | 创建 API 密钥 |
+| DELETE | `/api/api-keys/:id` | 撤销 API 密钥 |
+
+### 5.7 数据导出 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| GET | `/api/export/todos?format=json\|csv` | 导出任务数据 |
+| GET | `/api/export/backup` | 完整数据备份 |
+
+### 5.8 增量同步 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| GET | `/api/sync?since=ISO8601` | 获取增量数据 |
+
+### 5.9 提醒 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| GET | `/api/reminders/pending` | 获取待发送提醒 |
+| DELETE | `/api/reminders/:id` | 删除提醒 |
+| GET | `/api/todos/:id/reminders` | 获取任务提醒 |
+| POST | `/api/todos/:id/reminders` | 创建提醒 |
+
+### 5.10 管理员 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| GET | `/api/admin/check` | 检查管理员权限 |
+| GET | `/api/admin/holidays` | 获取节假日缓存状态 |
+| POST | `/api/admin/holidays` | 刷新/预加载节假日数据 |
 
 ### 5.5 认证 API
 
@@ -377,7 +491,7 @@ model Holiday {
 model User {
   id        String   @id @default(cuid())
   username  String   @unique
-  password  String   // bcrypt 加密存储
+  password  String   // PBKDF2 加密存储
   name      String?  // 显示名称
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -392,6 +506,7 @@ model User {
   categories       Category[]
   todos            Todo[]
   recurrenceRules  RecurrenceRule[]
+  apiKeys          ApiKey[]
 }
 ```
 
@@ -803,3 +918,151 @@ const throttledToggle = throttle(toggleMutation.mutate, 300);
 | 是否有数据版本控制？ | ❌ | 无 version 字段 |
 | 是否有冲突检测机制？ | ❌ | 无乐观锁 |
 | 是否有数据校验？ | ✅ | Zod schema 验证 |
+
+---
+
+## 16. Cloudflare Pages 部署架构
+
+### 16.1 技术方案
+
+| 组件 | 技术 |
+|------|------|
+| 运行环境 | Cloudflare Workers (Edge Runtime) |
+| 数据库 | Cloudflare D1 (SQLite) |
+| 构建工具 | @cloudflare/next-on-pages |
+
+### 16.2 Edge Runtime 适配
+
+所有 API 路由和页面都添加了 `export const runtime = 'edge'`，确保兼容 Cloudflare Workers 环境。
+
+### 16.3 D1 数据库连接
+
+```typescript
+// src/lib/db.ts
+import { PrismaClient } from '@prisma/client';
+import { PrismaD1 } from '@prisma/adapter-d1';
+
+export async function getDb() {
+  if (process.env.NODE_ENV === 'development') {
+    // 开发环境：本地 SQLite
+    return new PrismaClient();
+  }
+  
+  // 生产环境：D1 binding
+  const { env } = await import('cloudflare:workers');
+  const adapter = new PrismaD1(env.DB);
+  return new PrismaClient({ adapter });
+}
+```
+
+### 16.4 密码加密适配
+
+Cloudflare Workers 不支持 Node.js `crypto` 模块，改用 Web Crypto API：
+
+```typescript
+// src/lib/password.ts
+export async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey(...);
+  const hash = await crypto.subtle.deriveBits(...);
+  return `${base64(salt)}:${base64(hash)}`;
+}
+```
+
+### 16.5 环境变量配置
+
+| 变量 | 说明 |
+|------|------|
+| `DATABASE_URL` | D1 数据库连接 |
+| `NEXTAUTH_SECRET` | JWT 签名密钥 |
+| `ADMIN_USER_IDS` | 管理员用户 ID（逗号分隔） |
+
+---
+
+## 17. API Token 认证机制
+
+### 17.1 Token 格式
+
+```
+tdl_<32位随机字符串>
+```
+
+### 17.2 认证流程
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ 外部程序     │────▶│ Bearer Token│────▶│  验证 Token  │
+└─────────────┘     └─────────────┘     └─────────────┘
+                                               │
+                           ┌───────────────────┴───────────────────┐
+                           │                                       │
+                           ▼                                       ▼
+                    ┌─────────────┐                         ┌─────────────┐
+                    │  返回数据   │                         │  401 错误   │
+                    └─────────────┘                         └─────────────┘
+```
+
+### 17.3 双重认证支持
+
+所有 CRUD API 同时支持：
+- **Bearer Token**：外部程序调用
+- **Session Cookie**：Web 界面调用
+
+```typescript
+export async function getApiSession(request: Request) {
+  // 优先检查 Bearer Token
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return validateApiToken(authHeader.slice(7));
+  }
+  
+  // 回退到 Session
+  return getAuthSession();
+}
+```
+
+### 17.4 Token 权限范围
+
+| 权限 | 说明 |
+|------|------|
+| 读取任务 | GET /api/todos/* |
+| 创建任务 | POST /api/todos |
+| 更新任务 | PUT /api/todos/:id |
+| 删除任务 | DELETE /api/todos/:id |
+| 导出数据 | GET /api/export/* |
+
+---
+
+## 18. 系统维护面板
+
+### 18.1 权限控制
+
+通过环境变量 `ADMIN_USER_IDS` 配置管理员：
+
+```typescript
+export async function isAdmin(): Promise<boolean> {
+  const session = await getAuthSession();
+  const adminIds = process.env.ADMIN_USER_IDS?.split(',') ?? [];
+  return adminIds.includes(session?.user?.id);
+}
+```
+
+### 18.2 功能模块
+
+| 模块 | 功能 |
+|------|------|
+| 系统信息 | 版本号、运行环境、构建时间 |
+| 节假日管理 | 查看缓存状态、手动刷新、预加载 |
+| 缓存清理 | 清理 localStorage、React Query 缓存 |
+
+### 18.3 节假日数据管理
+
+**数据获取优先级**：
+1. 数据库缓存
+2. 外部 API (timor.tech)
+3. 静态数据（兜底）
+
+**自动预加载机制**：
+- 每年 10-12 月期间，自动检查下一年数据
+- 如数据不存在，从 API 获取并存入数据库
+- 获取成功后跳过，避免重复请求
