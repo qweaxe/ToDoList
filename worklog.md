@@ -2140,3 +2140,60 @@ const currentYear = now.getFullYear();
 ### 修改的文件
 - `src/app/api/todos/yearly/route.ts` - 添加 D1 原生 SQL 路径
 - `src/app/api/todos/quarterly/route.ts` - 添加 D1 原生 SQL 路径
+
+---
+
+## 2026-04-14: 全面补全剩余 API 路由的 D1 原生 SQL 路径
+
+### 问题描述
+架构审计发现以下接口在生产环境（IS_EDGE）仍然走 Prisma 路径，会触发 CPU 超限 503：
+- `recurrence-service.ts` - 周期任务同步，被 daily/weekly/monthly 接口调用
+- `todos/weekly/route.ts` - 无 IS_EDGE 判断
+- `todos/monthly/route.ts` - 无 IS_EDGE 判断
+- `todos/toggle/route.ts` - 高频切换状态接口，无 IS_EDGE 判断
+- `todos/[id]/route.ts` - GET/PUT/DELETE 单任务接口，无 IS_EDGE 判断
+- `todos/route.ts` - GET 列表 / POST 创建接口，无 IS_EDGE 判断
+
+### 改动内容
+
+**recurrence-service.ts**：
+- 新增 `syncRecurringTasksD1()` 函数，使用 D1 原生 SQL
+- 单次 JOIN 查询获取所有活跃规则及其模板任务（避免 N+1）
+- 存在性检查：`strftime('%Y-%m-%d', dueDate)` 对比日期字符串
+- 通过 `crypto.randomUUID()` 生成新任务 ID
+- `syncRecurringTasks()` 根据 `IS_EDGE` 分发到对应实现
+
+**weekly/route.ts**：
+- 添加 `TODO_JOIN_FIELDS` / `TODO_JOIN_TABLES` / `reshapeTodo` 帮助函数
+- D1 路径：date overlap OR 条件查询，JS 端按日期分组
+- 将 `getDb()` 移入 Prisma 分支
+
+**monthly/route.ts**：
+- 添加 `TODO_JOIN_FIELDS` / `TODO_JOIN_TABLES` / `reshapeTodo` 帮助函数
+- D1 路径：日历范围查询 + 当月统计（独立 COUNT 查询）
+- 跨天任务展开逻辑保留
+
+**toggle/route.ts**：
+- D1 路径：SELECT 当前状态 → UPDATE → SELECT 含 JOIN 的完整任务数据返回
+- 将 `getDb()` 移入 Prisma 分支
+
+**todos/[id]/route.ts**：
+- 新增 `TODO_JOIN_FIELDS`（含 recurrence_rules 字段）和 `reshapeTodo`
+- GET D1 路径：JOIN 查询单条任务
+- PUT D1 路径：动态构建 SET 子句，只更新提供的字段；UPDATE 后 SELECT 返回完整数据
+- DELETE D1 路径：先检查所有权，再执行 DELETE
+- 将 `getDb()` 移入 Prisma 分支
+
+**todos/route.ts**：
+- 新增 `TODO_JOIN_FIELDS`（含 recurrence_rules 字段）和 `reshapeTodo`
+- GET D1 路径：动态构建 WHERE 条件（status/categoryId/levelId/isMilestone/日期范围）
+- POST D1 路径：可选创建 recurrenceRule → INSERT todo → SELECT 含 JOIN 的完整结果返回
+- 将 `getDb()` 移入 Prisma 分支
+
+### 修改的文件
+- `src/services/recurrence-service.ts` - 添加 D1 路径，IS_EDGE 分发
+- `src/app/api/todos/weekly/route.ts` - 添加 D1 路径
+- `src/app/api/todos/monthly/route.ts` - 添加 D1 路径
+- `src/app/api/todos/toggle/route.ts` - 添加 D1 路径
+- `src/app/api/todos/[id]/route.ts` - 添加 D1 路径（GET/PUT/DELETE）
+- `src/app/api/todos/route.ts` - 添加 D1 路径（GET/POST）

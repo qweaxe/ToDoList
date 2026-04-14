@@ -7,11 +7,52 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { syncRecurringTasks } from '@/services/recurrence-service';
 import { getAuthSession } from '@/lib/auth';
+import { getD1Client, IS_EDGE } from '@/lib/d1';
+
+// 与 daily/route.ts 共用的 JOIN 字段和表定义
+const TODO_JOIN_FIELDS = `
+  t.id, t.title, t.description, t.status,
+  t.startDate, t.dueDate, t.completedAt, t.subTasks,
+  t.isCycleTask, t.recurrenceRuleId, t.parentRuleId,
+  t.userId, t.categoryId, t.levelId,
+  t.priority, t.isMilestone, t.createdAt, t.updatedAt,
+  c.id AS cat_id, c.name AS cat_name, c.emoji AS cat_emoji,
+  c.color AS cat_color, c.description AS cat_desc,
+  c.userId AS cat_userId, c.createdAt AS cat_createdAt, c.updatedAt AS cat_updatedAt,
+  l.id AS lvl_id, l.name AS lvl_name, l.value AS lvl_value, l.description AS lvl_desc
+`;
+
+const TODO_JOIN_TABLES = `
+  FROM todos t
+  LEFT JOIN categories c ON c.id = t.categoryId
+  LEFT JOIN levels l ON l.id = t.levelId
+`;
+
+function reshapeTodo(row: Record<string, unknown>) {
+  return {
+    id: row.id, title: row.title, description: row.description,
+    status: row.status, startDate: row.startDate, dueDate: row.dueDate,
+    completedAt: row.completedAt, subTasks: row.subTasks,
+    isCycleTask: Boolean(row.isCycleTask), recurrenceRuleId: row.recurrenceRuleId,
+    parentRuleId: row.parentRuleId, userId: row.userId,
+    categoryId: row.categoryId, levelId: row.levelId,
+    priority: row.priority, isMilestone: Boolean(row.isMilestone),
+    createdAt: row.createdAt, updatedAt: row.updatedAt,
+    category: row.cat_id ? {
+      id: row.cat_id, name: row.cat_name, emoji: row.cat_emoji,
+      color: row.cat_color, description: row.cat_desc,
+      userId: row.cat_userId, createdAt: row.cat_createdAt, updatedAt: row.cat_updatedAt,
+    } : null,
+    level: row.lvl_id ? {
+      id: row.lvl_id, name: row.lvl_name,
+      value: row.lvl_value, description: row.lvl_desc,
+    } : null,
+  };
+}
 
 // GET /api/todos/weekly?date=YYYY-MM-DD - 获取一周的任务数据
 export async function GET(request: NextRequest) {
   try {
-    const db = await getDb();
     const session = await getAuthSession();
 
     if (!session?.user?.id) {
@@ -38,52 +79,86 @@ export async function GET(request: NextRequest) {
       await syncRecurringTasks(weekStart, weekEnd, userId);
     } catch (syncError) {
       console.error('Failed to sync recurring tasks:', syncError);
-      // 继续执行，不阻塞请求
     }
 
-    // 计算查询边界：本地时间的周开始 00:00 和周末结束 23:59:59，转换为 UTC
+    const weekStartISO = new Date(`${weekStartStr}T00:00:00`).toISOString();
+    const weekEndISO = new Date(`${weekEndStr}T23:59:59`).toISOString();
+
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+
+      const rawTodos = await d1.all<Record<string, unknown>>(
+        `SELECT ${TODO_JOIN_FIELDS} ${TODO_JOIN_TABLES}
+         WHERE t.userId = ?
+           AND (
+             (t.startDate >= ? AND t.startDate <= ?)
+             OR (t.dueDate >= ? AND t.dueDate <= ?)
+             OR (t.startDate <= ? AND t.dueDate >= ?)
+           )
+         ORDER BY l.value DESC, t.createdAt ASC`,
+        userId,
+        weekStartISO, weekEndISO,
+        weekStartISO, weekEndISO,
+        weekStartISO, weekStartISO
+      );
+
+      const todos = rawTodos.map(reshapeTodo);
+
+      // 按日期分组
+      const tasksByDate: Record<string, typeof todos> = {};
+      for (const date of weekDates) {
+        const dateStr = formatDate(date);
+        tasksByDate[dateStr] = todos.filter((todo) => {
+          const todoStart = (todo.startDate as string).substring(0, 10);
+          const todoEnd = (todo.dueDate as string).substring(0, 10);
+          return dateStr >= todoStart && dateStr <= todoEnd;
+        });
+      }
+
+      const totalTasks = todos.length;
+      const completedTasks = todos.filter((t) => t.status === 'completed').length;
+      const pendingTasks = totalTasks - completedTasks;
+      const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      const importantTasks = todos.filter((t) => t.level && (t.level as { value: number }).value >= 3 && t.status !== 'completed');
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          weekNumber: extractWeekNumber(targetDate),
+          startDate: weekStartStr,
+          endDate: weekEndStr,
+          dates: weekDates.map((d) => ({
+            date: formatDate(d),
+            dayName: format(d, 'EEE', { locale: zhCN }),
+            dayNumber: format(d, 'd'),
+            isToday: format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'),
+            isWeekend: [0, 6].includes(d.getDay()),
+          })),
+          tasksByDate,
+          stats: { total: totalTasks, completed: completedTasks, pending: pendingTasks, completionRate },
+          importantTasks: importantTasks.slice(0, 5),
+        },
+      });
+    }
+
+    // 开发环境：Prisma 路径
+    const db = await getDb();
     const weekStartBoundary = new Date(`${weekStartStr}T00:00:00`);
     const weekEndBoundary = new Date(`${weekEndStr}T23:59:59`);
 
-    // 获取这一周的所有任务
     const todos = await db.todo.findMany({
       where: {
         userId,
         OR: [
-          // 任务开始日期在这一周内
-          {
-            startDate: {
-              gte: weekStartBoundary,
-              lte: weekEndBoundary,
-            },
-          },
-          // 任务截止日期在这一周内
-          {
-            dueDate: {
-              gte: weekStartBoundary,
-              lte: weekEndBoundary,
-            },
-          },
-          // 跨天任务：开始日期在周开始之前，截止日期在周开始之后
-          {
-            AND: [
-              { startDate: { lte: weekStartBoundary } },
-              { dueDate: { gte: weekStartBoundary } },
-            ],
-          },
+          { startDate: { gte: weekStartBoundary, lte: weekEndBoundary } },
+          { dueDate: { gte: weekStartBoundary, lte: weekEndBoundary } },
+          { AND: [{ startDate: { lte: weekStartBoundary } }, { dueDate: { gte: weekStartBoundary } }] },
         ],
       },
-      include: {
-        category: true,
-        level: true,
-      },
-      orderBy: [
-        { level: { value: 'desc' } },
-        { createdAt: 'asc' },
-      ],
+      include: { category: true, level: true },
+      orderBy: [{ level: { value: 'desc' } }, { createdAt: 'asc' }],
     });
 
-    // 按日期分组任务
     const tasksByDate: Record<string, typeof todos> = {};
     for (const date of weekDates) {
       const dateStr = formatDate(date);
@@ -94,16 +169,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 计算本周统计
     const totalTasks = todos.length;
     const completedTasks = todos.filter((t) => t.status === 'completed').length;
-    const pendingTasks = totalTasks - completedTasks;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-    // 获取本周的重点任务（高优先级）
-    const importantTasks = todos.filter(
-      (t) => t.level && t.level.value >= 3 && t.status !== 'completed'
-    );
+    const importantTasks = todos.filter((t) => t.level && t.level.value >= 3 && t.status !== 'completed');
 
     return NextResponse.json({
       success: true,
@@ -119,12 +188,7 @@ export async function GET(request: NextRequest) {
           isWeekend: [0, 6].includes(d.getDay()),
         })),
         tasksByDate,
-        stats: {
-          total: totalTasks,
-          completed: completedTasks,
-          pending: pendingTasks,
-          completionRate,
-        },
+        stats: { total: totalTasks, completed: completedTasks, pending: totalTasks - completedTasks, completionRate },
         importantTasks: importantTasks.slice(0, 5),
       },
     });
