@@ -1946,3 +1946,37 @@ ADMIN_USER_IDS=用户ID1,用户ID2
 - `src/components/inbox/QuickCaptureButton.tsx` - 添加 isHydrated 处理
 - `src/app/[locale]/page.tsx` - 添加 isHydrated 处理
 - `src/components/views/YearlyView.tsx` - 修复月份/星期标签渲染
+
+---
+
+## 2026-04-14: 修复首页 hydration error #300 根因
+
+### 问题描述
+部署后首页直接报 React error #300（hydration mismatch），即使添加了 isHydrated 处理仍然报错。
+
+### 根因分析
+use-view-store.ts 在模块顶层计算日期：
+```typescript
+const now = new Date();
+const today = getTodayString();
+const currentYear = now.getFullYear();
+// ...
+```
+这些代码在模块导入时执行，服务端和客户端时间可能不同（SSR），导致初始状态不一致。
+
+### 改动内容
+1. **移除模块顶层日期计算**
+   - 改为函数 `getCurrentDateInfo()` 延迟计算
+
+2. **使用占位初始值**
+   - selectedDate: '1970-01-01'
+   - calendarYear: 1970
+   - calendarMonth: 1
+   - 其他日期字段同理
+
+3. **onRehydrateStorage 回调**
+   - hydration 完成后更新为真实日期
+   - 设置 `_hydrated: true` 标记完成
+
+### 修改的文件
+- `src/hooks/use-view-store.ts` - 延迟日期计算到 hydration 后

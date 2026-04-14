@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { getTodayString } from '@/lib/date-utils';
 
 // 视图类型
@@ -48,6 +48,9 @@ interface ViewState {
   // 侧边栏是否展开（移动端）
   sidebarOpen: boolean;
 
+  // hydration 完成标记
+  _hydrated: boolean;
+
   // 操作方法
   setCurrentView: (view: ViewType) => void;
   setSelectedDate: (date: string) => void;
@@ -70,28 +73,32 @@ interface ViewState {
   goToNextWeek: () => void;
 }
 
-// 获取当前日期信息
-const now = new Date();
-const today = getTodayString();
-const currentYear = now.getFullYear();
-const currentMonth = now.getMonth() + 1;
-const currentQuarter = Math.ceil(currentMonth / 3) as 1 | 2 | 3 | 4;
+// 获取当前日期信息的函数（不在模块顶层调用，避免 SSR 不匹配）
+function getCurrentDateInfo() {
+  const now = new Date();
+  const today = getTodayString();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const currentQuarter = Math.ceil(currentMonth / 3) as 1 | 2 | 3 | 4;
+  return { today, currentYear, currentMonth, currentQuarter };
+}
 
 export const useViewStore = create<ViewState>()(
   persist(
     (set, get) => ({
-      // 初始值
+      // 初始值使用固定默认值，避免 SSR 不匹配
       currentView: 'day',
-      selectedDate: today,
-      calendarYear: currentYear,
-      calendarMonth: currentMonth,
-      weekStartDate: today,
-      quarterYear: currentYear,
-      quarterNumber: currentQuarter,
-      yearlyYear: currentYear,
+      selectedDate: '1970-01-01', // 占位值，hydration 后会更新
+      calendarYear: 1970,
+      calendarMonth: 1,
+      weekStartDate: '1970-01-01',
+      quarterYear: 1970,
+      quarterNumber: 1,
+      yearlyYear: 1970,
       settingsTab: 'categories',
       taskListFilter: null,
       sidebarOpen: false,
+      _hydrated: false,
 
       // 操作方法
       setCurrentView: (view) => set({ currentView: view }),
@@ -109,12 +116,12 @@ export const useViewStore = create<ViewState>()(
 
       // 快捷操作
       goToToday: () => {
-        const now = new Date();
+        const { today, currentYear, currentMonth } = getCurrentDateInfo();
         set({
-          selectedDate: getTodayString(),
-          calendarYear: now.getFullYear(),
-          calendarMonth: now.getMonth() + 1,
-          weekStartDate: getTodayString(),
+          selectedDate: today,
+          calendarYear: currentYear,
+          calendarMonth: currentMonth,
+          weekStartDate: today,
         });
       },
 
@@ -152,6 +159,7 @@ export const useViewStore = create<ViewState>()(
     }),
     {
       name: 'todo-list-view-storage',
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         currentView: state.currentView,
         // 不持久化日期相关状态，每次访问都从今天开始
@@ -159,6 +167,20 @@ export const useViewStore = create<ViewState>()(
         // calendarYear: state.calendarYear,
         // calendarMonth: state.calendarMonth,
       }),
+      onRehydrateStorage: () => (state) => {
+        // hydration 完成后，更新为当前日期
+        if (state) {
+          const { today, currentYear, currentMonth, currentQuarter } = getCurrentDateInfo();
+          state.selectedDate = today;
+          state.calendarYear = currentYear;
+          state.calendarMonth = currentMonth;
+          state.weekStartDate = today;
+          state.quarterYear = currentYear;
+          state.quarterNumber = currentQuarter;
+          state.yearlyYear = currentYear;
+          state._hydrated = true;
+        }
+      },
     }
   )
 );
