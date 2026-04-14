@@ -1911,3 +1911,38 @@ ADMIN_USER_IDS=用户ID1,用户ID2
 - `messages/en.json` - 添加英文翻译
 - `docs/ARCHITECTURE.md` - 更新架构文档
 
+---
+
+## 2026-04-14: 修复 Inbox 视图切换时的 React hydration 错误
+
+### 问题描述
+1. 从捕获箱点击其他栏目时报 React error #310（hooks 顺序改变）
+2. 访问捕获箱时报 React error #300（hydration mismatch）
+3. YearlyView 月份/星期标签报 MISSING_MESSAGE 错误
+
+### 改动内容
+
+1. **修复 React error #310（Sidebar）**
+   - 移除 useInboxCount 的条件 enabled 参数
+   - 原因：enabled 依赖 currentView，导航时值变化导致 hooks 顺序改变
+   - 解决：始终启用 useInboxCount，避免 hooks 顺序变化
+
+2. **修复 React error #300（hydration mismatch）**
+   - 添加 isHydrated 状态等待客户端 hydration 完成
+   - 在 Sidebar、Header、QuickCaptureButton、page.tsx 中统一处理
+   - hydration 完成前使用默认值，避免 SSR 不匹配
+
+3. **修复 YearlyView MISSING_MESSAGE 错误**
+   - MONTH_LABELS 和 DAY_LABELS 数组已经是翻译后的字符串
+   - 直接使用数组值，不需要再次调用 t()
+
+4. **InboxList RelativeTime 组件**
+   - 已在之前修复，使用 useEffect 延迟渲染相对时间
+   - 避免 formatDistanceToNow 在服务端和客户端产生不同结果
+
+### 修改的文件
+- `src/components/layout/Sidebar.tsx` - 移除 enabled 条件，添加 isHydrated
+- `src/components/layout/Header.tsx` - 添加 isHydrated 处理
+- `src/components/inbox/QuickCaptureButton.tsx` - 添加 isHydrated 处理
+- `src/app/[locale]/page.tsx` - 添加 isHydrated 处理
+- `src/components/views/YearlyView.tsx` - 修复月份/星期标签渲染

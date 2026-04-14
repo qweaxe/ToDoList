@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { zhCN, enUS } from 'date-fns/locale';
 import { format } from 'date-fns';
@@ -27,6 +28,12 @@ export function Header() {
     goToNextMonth,
     toggleSidebar,
   } = useViewStore();
+
+  // 等待 hydration 完成，避免 SSR 不匹配
+  const [isHydrated, setIsHydrated] = useState(false);
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const viewLabels: Record<ViewType, string> = {
     day: t('nav.today'),
@@ -73,12 +80,12 @@ export function Header() {
             {(['day', 'calendar', 'week', 'quarter', 'year'] as ViewType[]).map((view) => (
               <Button
                 key={view}
-                variant={currentView === view ? 'default' : 'ghost'}
+                variant={(isHydrated && currentView === view) ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentView(view)}
                 className={cn(
                   'text-sm',
-                  currentView === view && 'shadow-sm'
+                  (isHydrated && currentView === view) && 'shadow-sm'
                 )}
               >
                 {viewLabels[view]}
@@ -87,7 +94,7 @@ export function Header() {
           </nav>
 
           {/* 日期导航（仅日历视图显示，移动端隐藏） */}
-          {currentView === 'calendar' && (
+          {(isHydrated && currentView === 'calendar') && (
             <div className="hidden md:flex items-center gap-1 ml-4">
               <Button
                 variant="ghost"
@@ -110,7 +117,7 @@ export function Header() {
           )}
 
           {/* 当前日期显示（当日视图） */}
-          {currentView === 'day' && (
+          {(isHydrated && currentView === 'day') && (
             <div className="hidden sm:flex items-center gap-2">
               <span className="font-medium">
                 {formatDateDisplay(selectedDate)}
@@ -143,7 +150,7 @@ export function Header() {
           )}
 
           <Button
-            variant={currentView === 'settings' ? 'default' : 'ghost'}
+            variant={(isHydrated && currentView === 'settings') ? 'default' : 'ghost'}
             size="icon"
             onClick={() => setCurrentView('settings')}
           >
@@ -167,7 +174,7 @@ export function Header() {
         {(['day', 'calendar', 'week', 'quarter', 'year'] as ViewType[]).map((view) => (
           <Button
             key={view}
-            variant={currentView === view ? 'default' : 'ghost'}
+            variant={(isHydrated && currentView === view) ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setCurrentView(view)}
             className="text-xs px-2"

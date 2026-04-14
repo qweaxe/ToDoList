@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
@@ -19,6 +19,24 @@ import { ConvertToTodoDialog } from './ConvertToTodoDialog';
 
 interface InboxListProps {
   onConvert?: (item: InboxItem) => void;
+}
+
+// 客户端渲染的相对时间组件，避免 hydration mismatch
+function RelativeTime({ date }: { date: string }) {
+  const [relativeTime, setRelativeTime] = useState('');
+  const locale = useLocale();
+  const dateLocale = locale === 'zh' ? zhCN : enUS;
+
+  useEffect(() => {
+    setRelativeTime(
+      formatDistanceToNow(new Date(date), {
+        addSuffix: true,
+        locale: dateLocale,
+      })
+    );
+  }, [date, dateLocale]);
+
+  return <span>{relativeTime}</span>;
 }
 
 export function InboxList({ onConvert }: InboxListProps) {
@@ -125,10 +143,7 @@ export function InboxList({ onConvert }: InboxListProps) {
                         {item.content}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(item.createdAt), {
-                          addSuffix: true,
-                          locale: dateLocale,
-                        })}
+                        <RelativeTime date={item.createdAt} />
                       </p>
                     </>
                   )}

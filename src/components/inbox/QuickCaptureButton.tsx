@@ -23,13 +23,19 @@ export function QuickCaptureButton() {
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { currentView } = useViewStore();
   const createMutation = useCreateInboxItem();
 
-  // 在 Inbox 页面内隐藏
-  if (currentView === 'inbox') {
+  // 等待 hydration 完成后再检查 currentView，避免 SSR 不匹配
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // 在 Inbox 页面内隐藏（hydration 完成后才判断）
+  if (isHydrated && currentView === 'inbox') {
     return null;
   }
 

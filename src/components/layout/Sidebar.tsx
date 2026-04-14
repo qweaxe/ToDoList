@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Calendar,
@@ -73,12 +74,16 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const t = useTranslations();
   const { currentView, setCurrentView, sidebarOpen, setSidebarOpen, setSelectedDate } = useViewStore();
-  // 只在非 inbox 视图时请求计数，避免与 InboxView 内的请求冲突
-  const { data: inboxCountData } = useInboxCount({
-    enabled: currentView !== 'inbox',
-  });
+  // 始终请求计数以显示徽章，避免导航时 enabled 变化导致的 React error #310
+  const { data: inboxCountData } = useInboxCount();
+  // 等待 hydration 完成，避免 SSR 不匹配
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  const inboxCount = inboxCountData?.data.count ?? 0;
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  const inboxCount = inboxCountData?.data?.count ?? 0;
 
   const handleNavClick = (view: ViewType) => {
     setCurrentView(view);
@@ -149,7 +154,7 @@ export function Sidebar({ className }: SidebarProps) {
                   onClick={() => handleNavClick(item.id)}
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
-                    currentView === item.id
+                    (isHydrated && currentView === item.id)
                       ? 'bg-primary text-primary-foreground'
                       : 'hover:bg-muted text-foreground'
                   )}
@@ -160,7 +165,7 @@ export function Sidebar({ className }: SidebarProps) {
                     <span
                       className={cn(
                         'text-xs',
-                        currentView === item.id
+                        (isHydrated && currentView === item.id)
                           ? 'text-primary-foreground/70'
                           : 'text-muted-foreground'
                       )}
@@ -184,7 +189,7 @@ export function Sidebar({ className }: SidebarProps) {
               onClick={() => handleNavClick('settings')}
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
-                currentView === 'settings'
+                (isHydrated && currentView === 'settings')
                   ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-muted text-foreground'
               )}

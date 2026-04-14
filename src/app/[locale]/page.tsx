@@ -2,7 +2,7 @@
 
 export const runtime = 'edge';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -22,6 +22,12 @@ export default function Home() {
   const t = useTranslations('common');
   const { data: session, status } = useSession();
   const { currentView } = useViewStore();
+  // 等待 hydration 完成，避免 SSR 不匹配
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   // 初始化种子数据（仅在已登录时）
   useEffect(() => {
@@ -46,7 +52,9 @@ export default function Home() {
 
   // 根据当前视图渲染不同内容
   const renderContent = () => {
-    switch (currentView) {
+    // hydration 完成前默认显示 DayView，避免 SSR 不匹配
+    const view = isHydrated ? currentView : 'day';
+    switch (view) {
       case 'day':
         return <DayView />;
       case 'calendar':

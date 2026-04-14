@@ -217,13 +217,13 @@ export function YearlyView() {
               <div className="min-w-[600px] sm:min-w-[700px]">
               {/* 月份标签 */}
               <div className="flex mb-2 pl-8">
-                {MONTH_LABELS.map((monthKey, i) => (
+                {MONTH_LABELS.map((monthLabel, i) => (
                   <div
-                    key={monthKey}
+                    key={i}
                     className="flex-1 text-xs text-muted-foreground"
                     style={{ minWidth: '52px' }}
                   >
-                    {i % 3 === 0 ? t(monthKey) : ''}
+                    {i % 3 === 0 ? monthLabel : ''}
                   </div>
                 ))}
               </div>
@@ -231,12 +231,12 @@ export function YearlyView() {
               <div className="flex gap-1">
                 {/* 星期标签 */}
                 <div className="flex flex-col gap-[2px] pt-1">
-                  {DAY_LABELS.map((dayKey, i) => (
+                  {DAY_LABELS.map((dayLabel, i) => (
                     <div
-                      key={dayKey}
+                      key={i}
                       className="h-[11px] text-[10px] text-muted-foreground flex items-center"
                     >
-                      {i % 2 === 1 ? t(dayKey) : ''}
+                      {i % 2 === 1 ? dayLabel : ''}
                     </div>
                   ))}
                 </div>
