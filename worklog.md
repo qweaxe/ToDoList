@@ -1689,6 +1689,114 @@ wrangler d1 execute todolist-db --remote --file=./d1-data.sql
 
 ---
 
+## 2026-04-11: 修复登录错误提示不显示问题
+
+### 改动内容
+
+1. **next-auth v5 错误处理修复**
+   - 使用 `CredentialsSignin` 子类替代普通 `Error` 传递错误消息
+   - 创建 `InvalidLoginError` 类处理"用户名或密码错误"
+   - 创建 `MissingCredentialsError` 类处理"请输入用户名和密码"
+
+2. **前端错误显示优化**
+   - 优先使用 `result.code`（自定义错误消息）
+   - 其次使用 `result.error`，最后使用默认消息
+
+### 修改的文件
+- `src/app/api/auth/[...nextauth]/route.ts` - Edge 路由错误处理
+- `src/auth.ts` - 开发环境错误处理
+- `src/components/auth/AuthPage.tsx` - 前端错误显示逻辑
+
+---
+
+## 2026-04-11: 添加网站图标
+
+### 改动内容
+
+1. **创建网站图标**
+   - 设计黑白配色风格的 SVG 图标
+   - 中心绿色渐变勾选符号，代表任务完成
+   - 灰色装饰圆环增加层次感
+   - 四角白色圆点作为装饰元素
+
+2. **配置 Next.js metadata**
+   - 在 root layout 中添加 icons 配置
+   - 支持浏览器标签页和 Apple 设备图标
+
+### 修改的文件
+- `public/icon.svg` - 新增网站图标
+- `src/app/layout.tsx` - 添加 icons metadata 配置
+
+---
+
+## 2026-04-11: 优化网站图标配色
+
+### 改动内容
+
+将图标从深色背景改为浅色背景，提高可见性和对比度：
+- 背景改为白色渐变，添加浅灰边框
+- 圆环和装饰点改为深色，在浅色背景上更清晰
+- 保持绿色勾选符号作为视觉焦点
+
+### 修改的文件
+- `public/icon.svg` - 优化图标配色方案
+
+---
+
+## 2026-04-12: 添加 Sonner Toaster 组件
+
+### 改动内容
+
+在 layout 中添加 Sonner Toaster 组件，确保 sonner toast 能正确显示。
+登录错误提示使用 sonner 库，需要 Toaster 组件渲染。
+
+### 修改的文件
+- `src/app/[locale]/layout.tsx` - 添加 SonnerToaster 组件
+
+---
+
+## 2026-04-12: 修复登录错误判断逻辑
+
+### 改动内容
+
+修复 next-auth v5 beta 版本的特殊行为：
+- v5 beta 可能返回 `ok: true` 但同时带有 `error` 或 `code` 字段
+- 需要同时检查 `ok` 和是否有错误字段来判断真正的登录状态
+- 只有 `ok: true` 且无错误时才显示登录成功
+
+### 修改的文件
+- `src/components/auth/AuthPage.tsx` - 修复登录结果判断逻辑
+
+---
+
+## 2026-04-12: 添加功能扩展方案文档
+
+### 改动内容
+
+创建功能扩展方案文档，详细记录四个新功能的实现方案：
+
+1. **任务标签系统** - 多标签支持、标签筛选、颜色自定义
+2. **任务模板** - 保存常用任务结构、快速创建重复任务
+3. **智能提醒** - 浏览器通知、预设提醒时间、提醒管理
+4. **搜索与筛选增强** - 全文搜索、高级筛选、筛选预设
+
+每个方案包含：
+- 数据库模型设计
+- API 端点实现
+- 前端组件代码
+- React Query Hooks
+- 国际化文案
+- 实现步骤和工作量估算
+
+### 修改的文件
+- `docs/features/README.md` - 方案索引和概述
+- `docs/features/01-task-tags.md` - 任务标签系统方案
+- `docs/features/02-task-templates.md` - 任务模板方案
+- `docs/features/03-smart-reminders.md` - 智能提醒方案
+- `docs/features/04-search-filter.md` - 搜索与筛选增强方案
+
+---
+
 ## 2026-04-13: 修复时间处理时区转换问题
 
 ### 问题描述
@@ -1980,3 +2088,25 @@ const currentYear = now.getFullYear();
 
 ### 修改的文件
 - `src/hooks/use-view-store.ts` - 延迟日期计算到 hydration 后
+
+---
+
+## 2026-04-14: 修复 QuickCaptureButton 违反 React Hooks 规则导致 error #300
+
+### 问题描述
+访问网站后页面无法打开，F12 显示 `Minified React error #300`（Rendered fewer hooks than during the previous render）。
+
+### 根因分析
+`QuickCaptureButton.tsx` 中存在 React Hooks 规则违反：
+- `if (isHydrated && currentView === 'inbox') { return null; }` 的提前返回位于三个 hook 调用之前：
+  - `useEffect`（自动聚焦）
+  - `useEffect`（全局快捷键）
+  - `useCallback`（提交处理）
+- 当用户切换到 inbox 视图后，hydration 完成，组件提前返回 null，此次渲染调用的 hooks 数量比上次少，React 抛出 error #300
+
+### 改动内容
+- 将三个 hook 调用（`useEffect` × 2，`useCallback` × 1）移到提前返回语句之前
+- 确保所有渲染路径下 hooks 调用数量保持一致
+
+### 修改的文件
+- `src/components/inbox/QuickCaptureButton.tsx` - 修复 hooks 顺序，将 return null 移至所有 hooks 之后

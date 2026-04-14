@@ -34,11 +34,6 @@ export function QuickCaptureButton() {
     setIsHydrated(true);
   }, []);
 
-  // 在 Inbox 页面内隐藏（hydration 完成后才判断）
-  if (isHydrated && currentView === 'inbox') {
-    return null;
-  }
-
   // 打开时自动聚焦
   useEffect(() => {
     if (open && textareaRef.current) {
@@ -75,6 +70,11 @@ export function QuickCaptureButton() {
       },
     });
   }, [content, createMutation]);
+
+  // 在 Inbox 页面内隐藏（hydration 完成后才判断，且必须在所有 hooks 之后）
+  if (isHydrated && currentView === 'inbox') {
+    return null;
+  }
 
   // 键盘事件处理
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

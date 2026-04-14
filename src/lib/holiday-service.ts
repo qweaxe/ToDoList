@@ -13,7 +13,9 @@ interface HolidayApiResponse {
   };
 }
 
-const HOLIDAY_API_BASE = 'https://timor.tech/api/holiday';
+// 主 API (timor.tech)，备选 API (ailcc.com)
+const HOLIDAY_API_BASE_PRIMARY = 'https://timor.tech/api/holiday';
+const HOLIDAY_API_BASE_FALLBACK = 'https://holiday.ailcc.com/api/holiday';
 
 /**
  * 检查是否需要预加载下一年的节假日数据
@@ -31,32 +33,53 @@ export function shouldPreloadNextYear(): boolean {
  * 从 API 获取单日节假日信息
  */
 async function fetchHolidayFromApi(date: string): Promise<{ isHoliday: boolean; name: string } | null> {
+  // 先尝试主 API
   try {
-    const response = await fetch(`${HOLIDAY_API_BASE}/${date}`, {
+    const response = await fetch(`${HOLIDAY_API_BASE_PRIMARY}/${date}`, {
       headers: {
         'Accept': 'application/json',
       },
       signal: AbortSignal.timeout(5000), // 5秒超时
     });
 
-    if (!response.ok) {
-      return null;
+    if (response.ok) {
+      const data: HolidayApiResponse = await response.json();
+
+      if (data.code === 0 && data.holiday) {
+        return {
+          isHoliday: data.holiday.holiday,
+          name: data.holiday.name || '',
+        };
+      }
     }
-
-    const data: HolidayApiResponse = await response.json();
-
-    if (data.code === 0 && data.holiday) {
-      return {
-        isHoliday: data.holiday.holiday,
-        name: data.holiday.name || '',
-      };
-    }
-
-    return null;
   } catch (error) {
-    console.error('Failed to fetch holiday from API:', error);
-    return null;
+    console.error('Failed to fetch holiday from primary API:', error);
   }
+
+  // 主 API 失败，尝试备选 API
+  try {
+    const response = await fetch(`${HOLIDAY_API_BASE_FALLBACK}/${date}`, {
+      headers: {
+        'Accept': 'application/json',
+      },
+      signal: AbortSignal.timeout(5000), // 5秒超时
+    });
+
+    if (response.ok) {
+      const data: HolidayApiResponse = await response.json();
+
+      if (data.code === 0 && data.holiday) {
+        return {
+          isHoliday: data.holiday.holiday,
+          name: data.holiday.name || '',
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch holiday from fallback API:', error);
+  }
+
+  return null;
 }
 
 /**
@@ -64,39 +87,67 @@ async function fetchHolidayFromApi(date: string): Promise<{ isHoliday: boolean; 
  * API 返回格式：{ code: 0, holiday: { "01-01": {...}, ... } }
  */
 async function fetchYearHolidaysFromApi(year: number): Promise<Array<{ date: string; name: string; isHoliday: boolean }>> {
+  // 先尝试主 API
   try {
-    const response = await fetch(`${HOLIDAY_API_BASE}/year/${year}`, {
+    const response = await fetch(`${HOLIDAY_API_BASE_PRIMARY}/year/${year}`, {
       headers: {
         'Accept': 'application/json',
       },
       signal: AbortSignal.timeout(10000), // 10秒超时
     });
 
-    if (!response.ok) {
-      return [];
-    }
+    if (response.ok) {
+      const data = await response.json() as { code?: number; holiday?: Record<string, { holiday: boolean; name: string; date: string }> };
 
-    const data = await response.json() as { code?: number; holiday?: Record<string, { holiday: boolean; name: string; date: string }> };
-
-    // API 返回格式：{ code: 0, holiday: { "01-01": {...}, ... } }
-    if (data.code === 0 && data.holiday) {
-      const holidays: Array<{ date: string; name: string; isHoliday: boolean }> = [];
-      for (const [, value] of Object.entries(data.holiday)) {
-        const h = value;
-        holidays.push({
-          date: h.date,
-          name: h.name,
-          isHoliday: h.holiday,
-        });
+      // API 返回格式：{ code: 0, holiday: { "01-01": {...}, ... } }
+      if (data.code === 0 && data.holiday) {
+        const holidays: Array<{ date: string; name: string; isHoliday: boolean }> = [];
+        for (const [, value] of Object.entries(data.holiday)) {
+          const h = value;
+          holidays.push({
+            date: h.date,
+            name: h.name,
+            isHoliday: h.holiday,
+          });
+        }
+        return holidays;
       }
-      return holidays;
     }
-
-    return [];
   } catch (error) {
-    console.error('Failed to fetch year holidays from API:', error);
-    return [];
+    console.error('Failed to fetch year holidays from primary API:', error);
   }
+
+  // 主 API 失败，尝试备选 API
+  try {
+    const response = await fetch(`${HOLIDAY_API_BASE_FALLBACK}/year/${year}`, {
+      headers: {
+        'Accept': 'application/json',
+      },
+      signal: AbortSignal.timeout(10000), // 10秒超时
+    });
+
+    if (response.ok) {
+      const data = await response.json() as { code?: number; holiday?: Record<string, { holiday: boolean; name: string; date: string }> };
+
+      // API 返回格式：{ code: 0, holiday: { "01-01": {...}, ... } }
+      if (data.code === 0 && data.holiday) {
+        const holidays: Array<{ date: string; name: string; isHoliday: boolean }> = [];
+        for (const [, value] of Object.entries(data.holiday)) {
+          const h = value;
+          holidays.push({
+            date: h.date,
+            name: h.name,
+            isHoliday: h.holiday,
+          });
+        }
+        return holidays;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch year holidays from fallback API:', error);
+  }
+
+  return [];
 }
 
 /**
