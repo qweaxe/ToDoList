@@ -2263,3 +2263,16 @@ const currentYear = now.getFullYear();
 - `src/components/views/YearlyView.tsx` - 星期标签调整 + 分类点击
 - `src/components/calendar/CalendarCell.tsx` - 移动端显示优化
 - `src/components/calendar/CalendarGrid.tsx` - 移动端横向滚动支持
+
+## 2026-04-15: 修复 React Hooks 顺序错误
+
+### 改动内容
+- 修复 WeekView.tsx 中 React hooks 规则违反问题
+  - 将 `stats`、`importantTasks`、`allTasks`、`handleStatClick`、`filteredTasksForDialog` 声明移到 `if (isLoading)` 之前
+- 修复 YearlyView.tsx 中 React hooks 规则违反问题
+  - 将 `summary`、`monthlyStats`、`categoryStats` 声明移到 `if (isLoading)` 之前
+- 解决 React error #310 "Rendered fewer hooks than during the previous render"
+
+### 修改的文件
+- `src/components/views/WeekView.tsx` - 修复 hooks 顺序
+- `src/components/views/YearlyView.tsx` - 修复 hooks 顺序

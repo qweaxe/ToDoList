@@ -83,6 +83,19 @@ export function YearlyView() {
   const { data, isLoading } = useYearlyStats(year);
   const today = getTodayString();
 
+  // 提取数据（在提前返回之前，避免 React hooks 规则违反）
+  const summary = data?.data.summary || {
+    totalCompleted: 0,
+    activeDays: 0,
+    avgPerDay: '0',
+    longestStreak: 0,
+    mostProductiveMonth: { month: 'Jan', completed: 0 },
+    topCategory: null,
+  };
+
+  const monthlyStats = data?.data.monthlyStats || [];
+  const categoryStats = data?.data.categoryStats || [];
+
   // 从翻译获取月份和星期标签
   const MONTH_LABELS = [
     t('month.january'), t('month.february'), t('month.march'),
@@ -169,18 +182,6 @@ export function YearlyView() {
       </div>
     );
   }
-
-  const summary = data?.data.summary || {
-    totalCompleted: 0,
-    activeDays: 0,
-    avgPerDay: '0',
-    longestStreak: 0,
-    mostProductiveMonth: { month: 'Jan', completed: 0 },
-    topCategory: null,
-  };
-
-  const monthlyStats = data?.data.monthlyStats || [];
-  const categoryStats = data?.data.categoryStats || [];
 
   return (
     <div className="container mx-auto py-4 sm:py-6 max-w-6xl px-4 sm:px-6">

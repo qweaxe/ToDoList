@@ -328,6 +328,31 @@ export function WeekView() {
 
   const today = getTodayString();
 
+  // 提取数据（在提前返回之前，避免 React hooks 规则违反）
+  const stats = data?.data.stats || { total: 0, completed: 0, pending: 0, completionRate: 0 };
+  const importantTasks = data?.data.importantTasks || [];
+
+  // 获取所有任务列表（扁平化）
+  const allTasks = useMemo(() => {
+    const tasksByDate = data?.data.tasksByDate || {};
+    return Object.values(tasksByDate).flat();
+  }, [data?.data.tasksByDate]);
+
+  // 点击统计数字
+  const handleStatClick = (type: 'total' | 'completed' | 'pending') => {
+    const weekNum = data?.data.weekNumber || 1;
+    setTaskListTitle(`${t('view.weekNumber', { week: weekNum })} - ${t(`task.${type === 'total' ? 'total' : type}`)}`);
+    setTaskListFilter(type === 'total' ? 'all' : type);
+    setIsTaskListOpen(true);
+  };
+
+  // 根据筛选条件过滤任务
+  const filteredTasksForDialog = useMemo(() => {
+    if (taskListFilter === 'all') return allTasks;
+    if (taskListFilter === 'completed') return allTasks.filter(t => t.status === 'completed');
+    return allTasks.filter(t => t.status !== 'completed');
+  }, [allTasks, taskListFilter]);
+
   // 配置拖拽传感器
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -449,30 +474,6 @@ export function WeekView() {
       </div>
     );
   }
-
-  const stats = data?.data.stats || { total: 0, completed: 0, pending: 0, completionRate: 0 };
-  const importantTasks = data?.data.importantTasks || [];
-
-  // 获取所有任务列表（扁平化）
-  const allTasks = useMemo(() => {
-    const tasksByDate = data?.data.tasksByDate || {};
-    return Object.values(tasksByDate).flat();
-  }, [data?.data.tasksByDate]);
-
-  // 点击统计数字
-  const handleStatClick = (type: 'total' | 'completed' | 'pending') => {
-    const weekNum = data?.data.weekNumber || 1;
-    setTaskListTitle(`${t('view.weekNumber', { week: weekNum })} - ${t(`task.${type === 'total' ? 'total' : type}`)}`);
-    setTaskListFilter(type === 'total' ? 'all' : type);
-    setIsTaskListOpen(true);
-  };
-
-  // 根据筛选条件过滤任务
-  const filteredTasksForDialog = useMemo(() => {
-    if (taskListFilter === 'all') return allTasks;
-    if (taskListFilter === 'completed') return allTasks.filter(t => t.status === 'completed');
-    return allTasks.filter(t => t.status !== 'completed');
-  }, [allTasks, taskListFilter]);
 
   return (
     <div className="container mx-auto py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
