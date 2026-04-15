@@ -15,6 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { TaskListDialog } from '@/components/task/TaskListDialog';
 import { useYearlyStats } from '@/hooks/use-todos';
 import { useViewStore } from '@/hooks/use-view-store';
 import { getTodayString, formatDate } from '@/lib/date-utils';
@@ -34,6 +35,49 @@ export function YearlyView() {
   const locale = useLocale();
   const { selectedDate, setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+
+  // 任务列表弹窗状态
+  const [isTaskListOpen, setIsTaskListOpen] = useState(false);
+  const [taskListTitle, setTaskListTitle] = useState('');
+  const [categoryTasks, setCategoryTasks] = useState<any[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+
+  // 点击分类统计 - 获取该分类的任务
+  const handleCategoryClick = async (category: { id: string; name: string }) => {
+    setTaskListTitle(`${year} - ${category.name}`);
+    setIsLoadingTasks(true);
+    setIsTaskListOpen(true);
+
+    try {
+      const res = await fetch(`/api/todos/filter?type=category&id=${category.id}&year=${year}`);
+      const data = await res.json();
+      setCategoryTasks((data as any)?.data?.todos || []);
+    } catch (error) {
+      console.error('Failed to fetch category tasks:', error);
+      setCategoryTasks([]);
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  };
+
+  // 点击已完成统计 - 获取年度已完成任务
+  const handleCompletedClick = async () => {
+    setTaskListTitle(`${year} - ${t('task.completed')}`);
+    setIsLoadingTasks(true);
+    setIsTaskListOpen(true);
+
+    try {
+      // 获取年度已完成任务（通过 filter API 获取所有分类的任务再筛选）
+      const res = await fetch(`/api/todos?status=completed&year=${year}`);
+      const data = await res.json();
+      setCategoryTasks((data as any)?.data || []);
+    } catch (error) {
+      console.error('Failed to fetch completed tasks:', error);
+      setCategoryTasks([]);
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  };
 
   const year = new Date(selectedDate).getFullYear();
   const { data, isLoading } = useYearlyStats(year);
@@ -161,7 +205,7 @@ export function YearlyView() {
 
       {/* 统计卡片 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={handleCompletedClick}>
           <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
               <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-500" />
@@ -236,7 +280,7 @@ export function YearlyView() {
                       key={i}
                       className="h-[11px] text-[10px] text-muted-foreground flex items-center"
                     >
-                      {i % 2 === 1 ? dayLabel : ''}
+                      {i % 2 === 0 ? dayLabel : ''}
                     </div>
                   ))}
                 </div>
@@ -363,7 +407,8 @@ export function YearlyView() {
                   {categoryStats.map((category, index) => (
                     <div
                       key={category.id}
-                      className="flex items-center justify-between p-2 rounded hover:bg-muted/50"
+                      className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => handleCategoryClick(category)}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">
@@ -390,6 +435,14 @@ export function YearlyView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 任务列表弹窗 */}
+      <TaskListDialog
+        open={isTaskListOpen}
+        onClose={() => setIsTaskListOpen(false)}
+        title={taskListTitle}
+        tasks={categoryTasks}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TaskForm } from '@/components/task/TaskForm';
+import { TaskListDialog } from '@/components/task/TaskListDialog';
 import { useWeeklyTodos, useToggleTodo, useDeleteTodo, useUpdateTodo, useUpdateCompletedAt } from '@/hooks/use-todos';
 import { useViewStore } from '@/hooks/use-view-store';
 import { getTodayString, addWeeksToDate, formatDate } from '@/lib/date-utils';
@@ -295,6 +296,11 @@ export function WeekView() {
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
 
+  // 任务列表弹窗状态
+  const [isTaskListOpen, setIsTaskListOpen] = useState(false);
+  const [taskListTitle, setTaskListTitle] = useState('');
+  const [taskListFilter, setTaskListFilter] = useState<'all' | 'completed' | 'pending'>('all');
+
   // 从翻译获取星期名称
   const DAY_NAMES = [
     t('weekday.monShort'),
@@ -447,6 +453,27 @@ export function WeekView() {
   const stats = data?.data.stats || { total: 0, completed: 0, pending: 0, completionRate: 0 };
   const importantTasks = data?.data.importantTasks || [];
 
+  // 获取所有任务列表（扁平化）
+  const allTasks = useMemo(() => {
+    const tasksByDate = data?.data.tasksByDate || {};
+    return Object.values(tasksByDate).flat();
+  }, [data?.data.tasksByDate]);
+
+  // 点击统计数字
+  const handleStatClick = (type: 'total' | 'completed' | 'pending') => {
+    const weekNum = data?.data.weekNumber || 1;
+    setTaskListTitle(`${t('view.weekNumber', { week: weekNum })} - ${t(`task.${type === 'total' ? 'total' : type}`)}`);
+    setTaskListFilter(type === 'total' ? 'all' : type);
+    setIsTaskListOpen(true);
+  };
+
+  // 根据筛选条件过滤任务
+  const filteredTasksForDialog = useMemo(() => {
+    if (taskListFilter === 'all') return allTasks;
+    if (taskListFilter === 'completed') return allTasks.filter(t => t.status === 'completed');
+    return allTasks.filter(t => t.status !== 'completed');
+  }, [allTasks, taskListFilter]);
+
   return (
     <div className="container mx-auto py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
       {/* 标题和控制区 */}
@@ -479,7 +506,7 @@ export function WeekView() {
 
       {/* 周总结 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleStatClick('total')}>
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-muted-foreground" />
@@ -488,7 +515,7 @@ export function WeekView() {
             <div className="text-2xl sm:text-3xl font-bold mt-1">{stats.total}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleStatClick('completed')}>
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-500" />
@@ -497,7 +524,7 @@ export function WeekView() {
             <div className="text-2xl sm:text-3xl font-bold mt-1 text-green-500">{stats.completed}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleStatClick('pending')}>
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="text-xs sm:text-sm text-muted-foreground">{t('task.pending')}</div>
             <div className="text-2xl sm:text-3xl font-bold mt-1 text-yellow-500">{stats.pending}</div>
@@ -600,6 +627,14 @@ export function WeekView() {
         }}
         initialData={editingTask || undefined}
         defaultDate={selectedDateForForm || selectedDate}
+      />
+
+      {/* 任务列表弹窗 */}
+      <TaskListDialog
+        open={isTaskListOpen}
+        onClose={() => setIsTaskListOpen(false)}
+        title={taskListTitle}
+        tasks={filteredTasksForDialog}
       />
     </div>
   );

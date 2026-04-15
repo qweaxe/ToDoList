@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { CalendarGrid } from '@/components/calendar/CalendarGrid';
 import { MonthStats } from '@/components/calendar/MonthStats';
 import { TaskForm } from '@/components/task/TaskForm';
 import { TaskDetailDialog } from '@/components/task/TaskDetailDialog';
+import { TaskListDialog } from '@/components/task/TaskListDialog';
 import { useMonthlyTodos } from '@/hooks/use-todos';
 import { useHolidays } from '@/hooks/use-holidays';
 import { useViewStore } from '@/hooks/use-view-store';
@@ -28,6 +29,11 @@ export function CalendarView() {
   const [selectedDateForForm, setSelectedDateForForm] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // 任务列表弹窗状态
+  const [isTaskListOpen, setIsTaskListOpen] = useState(false);
+  const [taskListTitle, setTaskListTitle] = useState('');
+  const [taskListFilter, setTaskListFilter] = useState<'all' | 'completed' | 'pending'>('all');
 
   // 获取月度任务
   const { data: monthlyData, isLoading: isTasksLoading } = useMonthlyTodos(
@@ -99,6 +105,33 @@ export function CalendarView() {
     setIsFormOpen(true);
   };
 
+  // 获取所有任务列表（扁平化）
+  const allTasks = useMemo(() => {
+    const tasks = monthlyData?.data.tasks || {};
+    return Object.values(tasks).flat();
+  }, [monthlyData?.data.tasks]);
+
+  // 点击统计数字
+  const handleStatClick = (type: 'total' | 'completed' | 'pending') => {
+    const monthNames = [
+      t('month.january'), t('month.february'), t('month.march'),
+      t('month.april'), t('month.may'), t('month.june'),
+      t('month.july'), t('month.august'), t('month.september'),
+      t('month.october'), t('month.november'), t('month.december')
+    ];
+    const labelKey = type === 'total' ? 'totalTasks' : type;
+    setTaskListTitle(`${calendarYear} ${monthNames[calendarMonth - 1]} - ${t(`monthStats.${labelKey}`)}`);
+    setTaskListFilter(type === 'total' ? 'all' : type);
+    setIsTaskListOpen(true);
+  };
+
+  // 根据筛选条件过滤任务
+  const filteredTasksForDialog = useMemo(() => {
+    if (taskListFilter === 'all') return allTasks;
+    if (taskListFilter === 'completed') return allTasks.filter(t => t.status === 'completed');
+    return allTasks.filter(t => t.status !== 'completed');
+  }, [allTasks, taskListFilter]);
+
   return (
     <div className="container mx-auto py-6 max-w-6xl">
       {/* 标题和控制区 */}
@@ -143,7 +176,7 @@ export function CalendarView() {
         {/* 侧边统计 - 移动端隐藏，桌面端显示 */}
         <div className="hidden lg:block lg:col-span-1 space-y-4">
           {monthlyData?.data.stats ? (
-            <MonthStats stats={monthlyData.data.stats} />
+            <MonthStats stats={monthlyData.data.stats} onStatClick={handleStatClick} />
           ) : (
             <Skeleton className="h-40" />
           )}
@@ -197,6 +230,14 @@ export function CalendarView() {
           setIsDetailOpen(false);
           setSelectedTaskId(null);
         }}
+      />
+
+      {/* 任务列表弹窗 */}
+      <TaskListDialog
+        open={isTaskListOpen}
+        onClose={() => setIsTaskListOpen(false)}
+        title={taskListTitle}
+        tasks={filteredTasksForDialog}
       />
     </div>
   );

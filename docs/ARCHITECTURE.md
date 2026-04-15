@@ -69,6 +69,7 @@ src/
 │   ├── globals.css               # 全局样式
 │   ├── middleware.ts             # 国际化中间件
 │   └── api/                      # API Routes
+│       ├── route.ts              # 根 API（健康检查）
 │       ├── auth/                 # 认证相关 API
 │       │   ├── register/route.ts # 用户注册
 │       │   ├── [...nextauth]/    # NextAuth.js 端点
@@ -107,6 +108,7 @@ src/
 │       ├── reminders/            # 提醒管理
 │       │   ├── pending/route.ts  # 待发送提醒
 │       │   └── [id]/route.ts     # 删除
+│       │   └── [id]/sent/route.ts # 标记已发送
 │       ├── admin/                # 管理员 API
 │       │   ├── check/route.ts    # 权限检查
 │       │   └── holidays/route.ts # 节假日管理
@@ -166,13 +168,14 @@ src/
 │   ├── use-mobile.ts             # 移动端检测 Hook
 │   ├── use-toast.ts              # Toast 提示 Hook
 │   ├── use-reminders.ts          # 提醒数据 Hook
-│   └── use-notifications.ts      # 浏览器通知 Hook
+│   ├── use-notifications.ts      # 浏览器通知 Hook
+│   └── use-inbox.ts              # 捕获箱数据 Hook
 │
 ├── lib/
 │   ├── db.ts                     # Prisma 客户端（D1 适配）
 │   ├── d1.ts                     # D1 原生客户端
 │   ├── auth.ts                   # NextAuth 配置
-│   ├── password.ts               # 密码加密（Web Crypto API）
+│   ├── password.ts               # 密码加密（Web crypto API）
 │   ├── admin.ts                  # 管理员权限检查
 │   ├── api-auth.ts               # API Token 认证
 │   ├── date-utils.ts             # 日期处理工具
@@ -180,6 +183,7 @@ src/
 │   ├── holiday-service.ts        # 节假日服务
 │   ├── static-holidays.ts        # 静态节假日数据
 │   ├── api-utils.ts              # API 工具函数
+│   ├── mutation-manager.ts       # Mutation 管理器（乐观更新）
 │   └── utils.ts                  # 通用工具函数
 │
 ├── services/
@@ -383,6 +387,12 @@ model InboxItem {
 
 ## 5. API 接口设计
 
+### 5.0 根 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| GET | `/api` | 健康检查 |
+
 ### 5.1 任务 API
 
 | 方法 | 端点 | 描述 |
@@ -452,6 +462,7 @@ model InboxItem {
 |------|------|------|
 | GET | `/api/reminders/pending` | 获取待发送提醒 |
 | DELETE | `/api/reminders/:id` | 删除提醒 |
+| PUT | `/api/reminders/:id/sent` | 标记提醒已发送 |
 | GET | `/api/todos/:id/reminders` | 获取任务提醒 |
 | POST | `/api/todos/:id/reminders` | 创建提醒 |
 

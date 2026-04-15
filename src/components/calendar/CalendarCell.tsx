@@ -77,7 +77,7 @@ export function CalendarCell({
   return (
     <div
       className={cn(
-        'min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] p-1 sm:p-2 border rounded-lg cursor-pointer transition-colors',
+        'min-w-[48px] min-h-[72px] sm:min-w-0 sm:min-h-[80px] lg:min-h-[100px] p-1.5 sm:p-2 border rounded-lg cursor-pointer transition-colors',
         'hover:bg-muted/50 hover:border-primary/50',
         !isCurrentMonth && 'bg-muted/20 opacity-40',
         isCurrentMonth && 'bg-card hover:shadow-sm',
@@ -123,7 +123,7 @@ export function CalendarCell({
             <div
               key={task.id}
               className={cn(
-                'text-xs truncate px-1.5 py-0.5 rounded cursor-pointer transition-colors',
+                'text-[10px] sm:text-xs truncate px-1 sm:px-1.5 py-0.5 rounded cursor-pointer transition-colors',
                 'hover:bg-muted/80',
                 task.status === 'completed'
                   ? 'line-through text-muted-foreground bg-muted/30'
@@ -136,7 +136,7 @@ export function CalendarCell({
             >
               <span
                 className={cn(
-                  'inline-block w-1.5 h-1.5 rounded-full mr-1',
+                  'inline-block w-1.5 h-1.5 rounded-full mr-0.5 sm:mr-1',
                   getTaskColor(task.level)
                 )}
               />
@@ -146,7 +146,7 @@ export function CalendarCell({
 
           {/* 更多任务提示 */}
           {hiddenCount > 0 && (
-            <div className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted/10 rounded">
+            <div className="text-[9px] sm:text-[10px] text-muted-foreground px-1 sm:px-1.5 py-0.5 bg-muted/10 rounded">
               +{hiddenCount} {t('calendar.more')}
             </div>
           )}

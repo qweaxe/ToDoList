@@ -2197,3 +2197,69 @@ const currentYear = now.getFullYear();
 - `src/app/api/todos/toggle/route.ts` - 添加 D1 路径
 - `src/app/api/todos/[id]/route.ts` - 添加 D1 路径（GET/PUT/DELETE）
 - `src/app/api/todos/route.ts` - 添加 D1 路径（GET/POST）
+
+---
+
+## 2026-04-15: 更新架构文档以匹配实际代码
+
+### 改动内容
+
+根据代码审计结果，更新 `docs/ARCHITECTURE.md` 使其与实际代码保持一致：
+
+1. **项目结构更新**
+   - 添加根 API 路由 `src/app/api/route.ts`（健康检查）
+   - 添加提醒已发送 API `src/app/api/reminders/[id]/sent/route.ts`
+   - 添加捕获箱数据 Hook `src/hooks/use-inbox.ts`
+   - 添加 Mutation 管理器 `src/lib/mutation-manager.ts`
+
+2. **API 接口文档更新**
+   - 新增 5.0 节：根 API（健康检查）
+   - 5.9 节新增：`PUT /api/reminders/:id/sent` 标记提醒已发送
+
+### 修改的文件
+- `docs/ARCHITECTURE.md` - 更新项目结构和 API 接口文档
+
+---
+
+## 2026-04-15: 任务统计点击展示明细功能优化
+
+### 改动内容
+
+1. **新建 TaskListDialog 组件**
+   - 创建通用任务列表弹窗组件
+   - 支持分页（每页 20 条，支持上一页/下一页）
+   - 支持按状态筛选（全部/已完成/待完成）
+   - 点击任务可查看详情
+
+2. **日历视图统计点击**
+   - MonthStats 组件添加 `onStatClick` 回调
+   - 总任务、已完成、待完成统计数字可点击
+   - 点击后弹出对应任务列表
+
+3. **周视图统计点击**
+   - 统计卡片（总任务、已完成、待完成）可点击
+   - 点击后弹出对应任务列表
+
+4. **季度视图统计点击**
+   - 统计卡片（总任务、已完成）可点击
+   - 里程碑统计点击后展示所有里程碑任务
+
+5. **年度视图优化**
+   - 星期标签从显示 3 个（一、三、五）改为显示 4 个（日、二、四、六）
+   - 已完成统计卡片可点击，展示年度已完成任务
+   - 分类统计行可点击，展示该分类下的任务
+
+6. **移动端日历优化**
+   - 格子最小宽度从 ~60px 增加到 ~72px
+   - 任务标题字体移动端更小（text-[10px]）
+   - 网格支持横向滚动
+
+### 修改的文件
+- `src/components/task/TaskListDialog.tsx` - 新增通用任务列表弹窗组件
+- `src/components/calendar/MonthStats.tsx` - 添加点击回调
+- `src/components/views/CalendarView.tsx` - 集成任务列表弹窗
+- `src/components/views/WeekView.tsx` - 统计卡片可点击
+- `src/components/views/QuarterlyView.tsx` - 统计卡片可点击
+- `src/components/views/YearlyView.tsx` - 星期标签调整 + 分类点击
+- `src/components/calendar/CalendarCell.tsx` - 移动端显示优化
+- `src/components/calendar/CalendarGrid.tsx` - 移动端横向滚动支持

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Flag, Target, TrendingUp, Calendar, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TaskListDialog } from '@/components/task/TaskListDialog';
 import { useQuarterlyTodos } from '@/hooks/use-todos';
 import { useViewStore } from '@/hooks/use-view-store';
 import { formatDate, addMonthsToDate, getTodayString, formatDateDisplay } from '@/lib/date-utils';
@@ -20,6 +22,11 @@ export function QuarterlyView() {
   const { data, isLoading, error } = useQuarterlyTodos(selectedDate);
 
   const today = getTodayString();
+
+  // 任务列表弹窗状态
+  const [isTaskListOpen, setIsTaskListOpen] = useState(false);
+  const [taskListTitle, setTaskListTitle] = useState('');
+  const [taskListTasks, setTaskListTasks] = useState<any[]>([]);
 
   // 切换到上一季度
   const goToPreviousQuarter = () => {
@@ -102,6 +109,39 @@ export function QuarterlyView() {
   const months = data.data.months || [];
   const milestones = data.data.milestones || [];
 
+  // 获取所有任务（从月度数据中提取）
+  const allTasks = useMemo(() => {
+    // 从 months 数据中提取所有任务
+    const tasks: any[] = [];
+    months.forEach(month => {
+      if (month.tasks) {
+        tasks.push(...month.tasks);
+      }
+    });
+    return tasks;
+  }, [months]);
+
+  // 点击统计数字
+  const handleStatClick = (type: 'total' | 'completed' | 'pending' | 'milestone') => {
+    const quarter = data?.data.quarter || 1;
+    const year = data?.data.year || new Date().getFullYear();
+
+    if (type === 'milestone') {
+      setTaskListTitle(`${year} Q${quarter} - ${t('task.milestone')}`);
+      setTaskListTasks(milestones);
+    } else {
+      setTaskListTitle(`${year} Q${quarter} - ${t(`task.${type === 'total' ? 'total' : type}`)}`);
+      if (type === 'total') {
+        setTaskListTasks(allTasks);
+      } else if (type === 'completed') {
+        setTaskListTasks(allTasks.filter(t => t.status === 'completed'));
+      } else {
+        setTaskListTasks(allTasks.filter(t => t.status !== 'completed'));
+      }
+    }
+    setIsTaskListOpen(true);
+  };
+
   return (
     <div className="container mx-auto py-4 sm:py-6 max-w-6xl px-4 sm:px-6">
       {/* 标题和控制区 */}
@@ -130,7 +170,7 @@ export function QuarterlyView() {
 
       {/* 统计概览 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleStatClick('total')}>
           <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
               <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -139,7 +179,7 @@ export function QuarterlyView() {
             <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1">{stats.total}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleStatClick('completed')}>
           <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
@@ -148,7 +188,7 @@ export function QuarterlyView() {
             <div className="text-xl sm:text-2xl md:text-3xl font-bold mt-1 text-green-500">{stats.completed}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleStatClick('milestone')}>
           <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2">
               <Flag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
@@ -261,6 +301,14 @@ export function QuarterlyView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 任务列表弹窗 */}
+      <TaskListDialog
+        open={isTaskListOpen}
+        onClose={() => setIsTaskListOpen(false)}
+        title={taskListTitle}
+        tasks={taskListTasks}
+      />
     </div>
   );
 }
