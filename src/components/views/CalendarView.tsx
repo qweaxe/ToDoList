@@ -133,7 +133,7 @@ export function CalendarView() {
   }, [allTasks, taskListFilter]);
 
   return (
-    <div className="container mx-auto py-6 max-w-6xl">
+    <div className="container mx-auto py-4 sm:py-6 max-w-6xl px-4 sm:px-6">
       {/* 标题和控制区 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">

@@ -2276,3 +2276,13 @@ const currentYear = now.getFullYear();
 ### 修改的文件
 - `src/components/views/WeekView.tsx` - 修复 hooks 顺序
 - `src/components/views/YearlyView.tsx` - 修复 hooks 顺序
+
+## 2026-04-15: 优化日历视图移动端适配
+
+### 改动内容
+- CalendarView 添加水平内边距 `px-4 sm:px-6`，与其他视图保持一致
+- CalendarGrid 最小宽度从 350px 增加到 380px，确保日历格子完整显示
+
+### 修改的文件
+- `src/components/views/CalendarView.tsx` - 添加移动端水平内边距
+- `src/components/calendar/CalendarGrid.tsx` - 增加最小宽度
