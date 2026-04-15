@@ -28,6 +28,52 @@ export function QuarterlyView() {
   const [taskListTitle, setTaskListTitle] = useState('');
   const [taskListTasks, setTaskListTasks] = useState<any[]>([]);
 
+  // 提取数据（在提前返回之前，避免 React hooks 规则违反）
+  const stats = data?.data?.stats || {
+    total: 0,
+    completed: 0,
+    pending: 0,
+    completionRate: 0,
+    highPriority: 0,
+    milestoneCount: 0,
+    completedMilestones: 0,
+  };
+
+  const months = data?.data?.months || [];
+  const milestones = data?.data?.milestones || [];
+
+  // 获取所有任务（从月度数据中提取）
+  const allTasks = useMemo(() => {
+    const tasks: any[] = [];
+    months.forEach(month => {
+      if ((month as any).tasks) {
+        tasks.push(...(month as any).tasks);
+      }
+    });
+    return tasks;
+  }, [months]);
+
+  // 点击统计数字
+  const handleStatClick = (type: 'total' | 'completed' | 'pending' | 'milestone') => {
+    const quarter = data?.data?.quarter || 1;
+    const year = data?.data?.year || new Date().getFullYear();
+
+    if (type === 'milestone') {
+      setTaskListTitle(`${year} Q${quarter} - ${t('task.milestone')}`);
+      setTaskListTasks(milestones);
+    } else {
+      setTaskListTitle(`${year} Q${quarter} - ${t(`task.${type === 'total' ? 'total' : type}`)}`);
+      if (type === 'total') {
+        setTaskListTasks(allTasks);
+      } else if (type === 'completed') {
+        setTaskListTasks(allTasks.filter(task => task.status === 'completed'));
+      } else {
+        setTaskListTasks(allTasks.filter(task => task.status !== 'completed'));
+      }
+    }
+    setIsTaskListOpen(true);
+  };
+
   // 切换到上一季度
   const goToPreviousQuarter = () => {
     const newDate = addMonthsToDate(selectedDate, -3);
@@ -47,7 +93,7 @@ export function QuarterlyView() {
 
   // 点击日期 - 跳转到日历视图
   const handleMonthClick = (monthNumber: number) => {
-    const year = data?.data.year || new Date().getFullYear();
+    const year = data?.data?.year || new Date().getFullYear();
     setCalendarYear(year);
     setCalendarMonth(monthNumber);
     setCurrentView('calendar');
@@ -95,52 +141,6 @@ export function QuarterlyView() {
       </div>
     );
   }
-
-  const stats = data.data.stats || {
-    total: 0,
-    completed: 0,
-    pending: 0,
-    completionRate: 0,
-    highPriority: 0,
-    milestoneCount: 0,
-    completedMilestones: 0,
-  };
-
-  const months = data.data.months || [];
-  const milestones = data.data.milestones || [];
-
-  // 获取所有任务（从月度数据中提取）
-  const allTasks = useMemo(() => {
-    // 从 months 数据中提取所有任务
-    const tasks: any[] = [];
-    months.forEach(month => {
-      if (month.tasks) {
-        tasks.push(...month.tasks);
-      }
-    });
-    return tasks;
-  }, [months]);
-
-  // 点击统计数字
-  const handleStatClick = (type: 'total' | 'completed' | 'pending' | 'milestone') => {
-    const quarter = data?.data.quarter || 1;
-    const year = data?.data.year || new Date().getFullYear();
-
-    if (type === 'milestone') {
-      setTaskListTitle(`${year} Q${quarter} - ${t('task.milestone')}`);
-      setTaskListTasks(milestones);
-    } else {
-      setTaskListTitle(`${year} Q${quarter} - ${t(`task.${type === 'total' ? 'total' : type}`)}`);
-      if (type === 'total') {
-        setTaskListTasks(allTasks);
-      } else if (type === 'completed') {
-        setTaskListTasks(allTasks.filter(t => t.status === 'completed'));
-      } else {
-        setTaskListTasks(allTasks.filter(t => t.status !== 'completed'));
-      }
-    }
-    setIsTaskListOpen(true);
-  };
 
   return (
     <div className="container mx-auto py-4 sm:py-6 max-w-6xl px-4 sm:px-6">
