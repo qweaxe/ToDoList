@@ -159,6 +159,13 @@ export function CalendarView() {
         </div>
       </div>
 
+      {/* 移动端：统计信息在上方 */}
+      {monthlyData?.data.stats && (
+        <div className="lg:hidden mb-4">
+          <MonthStats stats={monthlyData.data.stats} onStatClick={handleStatClick} />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* 日历主区域 */}
         <div className="lg:col-span-3">
@@ -173,7 +180,7 @@ export function CalendarView() {
           />
         </div>
 
-        {/* 侧边统计 - 移动端隐藏，桌面端显示 */}
+        {/* 桌面端：侧边统计 */}
         <div className="hidden lg:block lg:col-span-1 space-y-4">
           {monthlyData?.data.stats ? (
             <MonthStats stats={monthlyData.data.stats} onStatClick={handleStatClick} />

@@ -77,7 +77,7 @@ export function CalendarCell({
   return (
     <div
       className={cn(
-        'min-w-[48px] min-h-[72px] sm:min-w-0 sm:min-h-[80px] lg:min-h-[100px] p-1.5 sm:p-2 border rounded-lg cursor-pointer transition-colors',
+        'min-w-[68px] min-h-[80px] sm:min-w-0 sm:min-h-[80px] lg:min-h-[100px] p-1.5 sm:p-2 border rounded-lg cursor-pointer transition-colors',
         'hover:bg-muted/50 hover:border-primary/50',
         !isCurrentMonth && 'bg-muted/20 opacity-40',
         isCurrentMonth && 'bg-card hover:shadow-sm',

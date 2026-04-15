@@ -178,7 +178,7 @@ function DateColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'min-h-[160px] sm:min-h-[200px] md:min-h-[300px] border rounded-lg overflow-hidden transition-colors',
+        'min-w-[100px] min-h-[160px] sm:min-w-0 sm:min-h-[200px] md:min-h-[300px] border rounded-lg overflow-hidden transition-colors',
         'bg-card',
         isToday && 'ring-2 ring-primary',
         isWeekendDay && 'bg-red-50/30 dark:bg-red-950/10',
@@ -574,7 +574,7 @@ export function WeekView() {
       >
         {/* 周视图网格 - 移动端支持横向滚动 */}
         <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2">
-          <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[560px] sm:min-w-0">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[700px] sm:min-w-0">
             {/* 星期头部 */}
             {DAY_NAMES.map((day, index) => (
               <div

@@ -2286,3 +2286,22 @@ const currentYear = now.getFullYear();
 ### 修改的文件
 - `src/components/views/CalendarView.tsx` - 添加移动端水平内边距
 - `src/components/calendar/CalendarGrid.tsx` - 增加最小宽度
+
+## 2026-04-15: 重构日历视图和周视图移动端布局
+
+### 改动内容
+1. **日历视图移动端布局重构**
+   - 移动端统计信息从隐藏改为显示在日历上方
+   - 日历格子最小宽度从 48px 增加到 68px
+   - 日历格子最小高度从 72px 增加到 80px
+   - 日历网格最小宽度从 380px 增加到 490px
+
+2. **周视图移动端布局优化**
+   - 周网格最小宽度从 560px 增加到 700px（每列约 100px）
+   - 日期列添加最小宽度 100px
+
+### 修改的文件
+- `src/components/views/CalendarView.tsx` - 移动端统计信息移到上方
+- `src/components/calendar/CalendarGrid.tsx` - 增加最小宽度到 490px
+- `src/components/calendar/CalendarCell.tsx` - 增加格子尺寸到 68px × 80px
+- `src/components/views/WeekView.tsx` - 增加最小宽度到 700px，日期列添加 min-w
