@@ -2305,3 +2305,29 @@ const currentYear = now.getFullYear();
 - `src/components/calendar/CalendarGrid.tsx` - 增加最小宽度到 490px
 - `src/components/calendar/CalendarCell.tsx` - 增加格子尺寸到 68px × 80px
 - `src/components/views/WeekView.tsx` - 增加最小宽度到 700px，日期列添加 min-w
+
+---
+
+## 2026-04-16: 更新文档以匹配实际代码
+
+### 改动内容
+
+1. **CLAUDE.md 更新**
+   - 修正数据库类型：PostgreSQL → SQLite/D1
+   - 修正框架版本：Next.js 16 → Next.js 15
+   - 添加认证技术栈：NextAuth.js v5 (beta) + JWT
+   - 补充完整 API 端点列表（原来只有 7 个，现在 40+ 个）
+   - 修正环境变量描述：移除 PostgreSQL 相关，添加 NEXTAUTH_SECRET、ADMIN_USER_IDS
+
+2. **ARCHITECTURE.md 更新**
+   - 修正密码加密描述：PBKDF2 → bcrypt
+   - 补充遗漏的组件目录：
+     - `src/components/inbox/` - 捕获箱组件（4 个文件）
+     - `src/components/reminder/` - 提醒组件（2 个文件）
+     - `src/components/task/TaskListDialog.tsx` - 任务列表弹窗
+     - `src/components/providers.tsx` - 全局 Provider
+   - 调整 API 章节顺序：5.5 认证 API 移到 5.4 之后
+
+### 修改的文件
+- `CLAUDE.md` - 修正技术栈描述，补充 API 端点
+- `docs/ARCHITECTURE.md` - 修正密码描述，补充组件，调整章节顺序

@@ -136,11 +136,20 @@ src/
 │   │   ├── TaskCard.tsx          # 任务卡片
 │   │   ├── TaskForm.tsx          # 任务表单
 │   │   ├── TaskDetailDialog.tsx  # 任务详情弹窗
+│   │   ├── TaskListDialog.tsx    # 任务列表弹窗（统计点击）
 │   │   └── BatchActionsToolbar.tsx # 批量操作工具栏
 │   ├── calendar/                 # 日历相关组件
 │   │   ├── CalendarGrid.tsx      # 日历网格
 │   │   ├── CalendarCell.tsx      # 日历单元格
 │   │   └── MonthStats.tsx        # 月度统计
+│   ├── inbox/                    # 捕获箱组件
+│   │   ├── InboxView.tsx         # 捕获箱页面
+│   │   ├── InboxList.tsx         # 捕获箱列表
+│   │   ├── QuickCaptureButton.tsx # 全局悬浮捕获按钮
+│   │   └── ConvertToTodoDialog.tsx # 转化为任务对话框
+│   ├── reminder/                 # 提醒组件
+│   │   ├── ReminderManager.tsx   # 提醒管理器
+│   │   └── NotificationPermissionPrompt.tsx # 通知权限提示
 │   ├── settings/                 # 设置组件
 │   │   ├── CategoryManager.tsx   # 分类管理
 │   │   ├── LevelManager.tsx      # 等级管理
@@ -154,9 +163,10 @@ src/
 │   │   ├── AuthPage.tsx          # 登录/注册页面
 │   │   ├── ForgotPasswordPage.tsx # 忘记密码页面
 │   │   └── SessionProvider.tsx   # 会话提供者
-│   └── common/                   # 通用组件
-│       ├── EmojiPicker.tsx       # Emoji 选择器
-│       └── LanguageSwitcher.tsx  # 语言切换
+│   ├── common/                   # 通用组件
+│   │   ├── EmojiPicker.tsx       # Emoji 选择器
+│   │   └── LanguageSwitcher.tsx  # 语言切换
+│   └── providers.tsx             # 全局 Provider 包装器
 │
 ├── hooks/                        # 自定义 Hooks
 │   ├── use-todos.ts              # 任务数据 Hook
@@ -221,10 +231,10 @@ prisma/
 model User {
   id                      String    @id @default(cuid())
   username                String    @unique
-  password                String    // PBKDF2 加密存储
+  password                String    // bcrypt 加密存储
   name                    String?   // 显示名称
   securityQuestion        String?   // 密保问题
-  securityAnswer          String?   // 密保答案（加密存储）
+  securityAnswer          String?   // 密保答案（bcrypt 加密存储）
   securityAnswerAttempts  Int       @default(0)
   securityAnswerLockedAt  DateTime?
   createdAt               DateTime  @default(now())
@@ -435,6 +445,21 @@ model InboxItem {
 | GET | `/api/holidays?action=preload` | 预加载下一年数据 |
 | GET | `/api/holidays?action=refresh&year=YYYY` | 强制刷新指定年份 |
 
+### 5.5 认证 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| POST | `/api/auth/register` | 用户注册 |
+| POST | `/api/auth/[...nextauth]` | NextAuth.js 认证端点 |
+| GET | `/api/auth/session` | 获取当前会话信息 |
+| POST | `/api/auth/signout` | 用户登出 |
+| PUT | `/api/auth/change-password` | 修改密码 |
+| POST | `/api/auth/forgot-password` | 忘记密码（获取密保问题） |
+| POST | `/api/auth/reset-password` | 重置密码 |
+| GET | `/api/auth/security-question` | 获取密保问题状态 |
+| PUT | `/api/auth/security-question` | 设置/更新密保问题 |
+| DELETE | `/api/auth/security-question` | 删除密保问题 |
+
 ### 5.6 API 密钥 API
 
 | 方法 | 端点 | 描述 |
@@ -484,21 +509,6 @@ model InboxItem {
 | PUT | `/api/inbox/:id` | 更新条目内容 |
 | DELETE | `/api/inbox/:id` | 删除条目 |
 | POST | `/api/inbox/:id/convert` | 转化为正式任务 |
-
-### 5.5 认证 API
-
-| 方法 | 端点 | 描述 |
-|------|------|------|
-| POST | `/api/auth/register` | 用户注册 |
-| POST | `/api/auth/[...nextauth]` | NextAuth.js 认证端点 |
-| GET | `/api/auth/session` | 获取当前会话信息 |
-| POST | `/api/auth/signout` | 用户登出 |
-| PUT | `/api/auth/change-password` | 修改密码 |
-| POST | `/api/auth/forgot-password` | 忘记密码（获取密保问题） |
-| POST | `/api/auth/reset-password` | 重置密码 |
-| GET | `/api/auth/security-question` | 获取密保问题状态 |
-| PUT | `/api/auth/security-question` | 设置/更新密保问题 |
-| DELETE | `/api/auth/security-question` | 删除密保问题 |
 
 ---
 

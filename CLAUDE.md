@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-一个基于 Next.js 16、Prisma ORM 和 PostgreSQL 构建的多视图待办事项应用。支持日/周/月/季度/年视图，具有周期任务、子任务和节假日集成功能。
+一个基于 Next.js 15、Prisma ORM 和 SQLite/D1 构建的多视图待办事项应用。支持日/周/月/季度/年视图，具有周期任务、子任务、节假日集成和捕获箱功能。
 
 ## 常用命令
 
@@ -27,10 +27,11 @@ bun run lint             # 运行 ESLint
 ## 架构
 
 ### 技术栈
-- **框架**: Next.js 16 (App Router) + TypeScript
-- **数据库**: PostgreSQL via Prisma ORM
+- **框架**: Next.js 15 (App Router) + TypeScript
+- **数据库**: SQLite (开发环境) / Cloudflare D1 (生产环境) via Prisma ORM
 - **状态管理**: TanStack Query（服务端状态） + Zustand（客户端状态）
 - **UI**: Tailwind CSS 4 + shadcn/ui + Framer Motion
+- **认证**: NextAuth.js v5 (beta) + JWT
 
 ### 核心目录
 
@@ -67,14 +68,56 @@ bun run lint             # 运行 ESLint
 
 ### API 端点
 
-任务相关端点:
+**任务相关：**
 - `/api/todos/daily?date=YYYY-MM-DD` - 获取指定日期的任务
 - `/api/todos/weekly?startDate=YYYY-MM-DD` - 获取一周的任务
 - `/api/todos/monthly?year=YYYY&month=MM` - 获取一月的任务
 - `/api/todos/quarterly?startDate=YYYY-MM-DD` - 获取里程碑任务
 - `/api/todos/yearly?year=YYYY` - 年度统计数据
+- `/api/todos` - 任务列表/创建
+- `/api/todos/[id]` - 单任务 CRUD
 - `/api/todos/batch` - 批量操作（删除、状态变更）
+- `/api/todos/toggle` - 切换任务状态
+- `/api/todos/filter` - 按分类/等级筛选
+- `/api/todos/[id]/subtask` - 子任务操作
+- `/api/todos/[id]/reminders` - 任务提醒管理
+
+**捕获箱：**
+- `/api/inbox` - 捕获箱列表/创建
+- `/api/inbox/count` - 未处理条目数
+- `/api/inbox/[id]` - 更新/删除条目
+- `/api/inbox/[id]/convert` - 转化为任务
+
+**分类与等级：**
+- `/api/categories` - 分类 CRUD
+- `/api/levels` - 等级列表（固定三级）
+
+**提醒：**
+- `/api/reminders/pending` - 待发送提醒
+- `/api/reminders/[id]` - 删除提醒
+- `/api/reminders/[id]/sent` - 标记已发送
+
+**认证：**
+- `/api/auth/register` - 用户注册
+- `/api/auth/[...nextauth]` - NextAuth 端点
+- `/api/auth/change-password` - 修改密码
+- `/api/auth/forgot-password` - 忘记密码
+- `/api/auth/reset-password` - 重置密码
+- `/api/auth/security-question` - 密保问题管理
+
+**数据导出：**
+- `/api/export/todos` - 导出任务
+- `/api/export/backup` - 完整备份
+- `/api/sync` - 增量同步
+
+**管理：**
+- `/api/admin/check` - 管理员权限检查
+- `/api/admin/holidays` - 节假日管理
+- `/api/holidays` - 节假日数据
+
+**其他：**
 - `/api/seed` - 初始化默认分类和等级
+- `/api/api-keys` - API 密钥管理
 
 ### 周期任务同步
 
@@ -82,7 +125,6 @@ bun run lint             # 运行 ESLint
 1. 查询活跃的 `RecurrenceRule` 记录
 2. `calculateOccurrenceDates()` 计算时间窗口内的日期
 3. 如果任务实例不存在则创建（通过 `parentRuleId` 检查）
-
 详见 `src/services/recurrence-service.ts`。
 
 ## 重要模式
@@ -122,8 +164,9 @@ export async function POST(request: Request) {
 ## 环境变量
 
 `.env.local` 中需要配置:
-- `DATABASE_URL` - PostgreSQL 连接字符串（连接池）
-- `DIRECT_URL` - 直连 PostgreSQL（用于迁移）
+- `DATABASE_URL` - SQLite/D1 数据库连接
+- `NEXTAUTH_SECRET` - JWT 签名密钥
+- `ADMIN_USER_IDS` - 管理员用户 ID（逗号分隔，可选）
 
 ## 提交代码工作流
 
