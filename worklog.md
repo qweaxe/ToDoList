@@ -2372,3 +2372,40 @@ function getDateOnly(isoString: string): string {
 - `src/components/views/OverdueView.tsx` - 分组历史待办时使用本地日期
 - `src/components/views/DayView.tsx` - 分组历史待办时使用本地日期
 - `src/components/views/WeekView.tsx` - 拖拽判断跨天时使用本地日期
+
+---
+
+## 2026-04-20: 修复编辑任务时日期格式导致的 RangeError
+
+### 问题描述
+- 编辑旧任务点击保存后，页面报错 `RangeError: Invalid time value`
+- 原因：从 API 获取的 startDate/dueDate 是 ISO datetime 格式（如 `2026-04-20T00:00:00.000Z`）
+- 直接传给 `new Date()` 和 `format()` 时，在某些情况下产生无效日期对象
+- 导致 `toISOString()` 抛出 RangeError
+
+### 改动内容
+1. **新增 `extractDateFromISO` 函数**
+   - 从 ISO datetime 提取纯日期部分（`yyyy-MM-dd`）
+   - 解决日期显示和 Calendar 组件的格式问题
+
+2. **改进 `extractTimeFromISO` 函数**
+   - 添加有效性检查和 fallback
+   - 避免 `isNaN(date.getTime())` 错误
+
+3. **改进 `combineDateAndTime` 函数**
+   - 添加完整的参数验证
+   - 添加日期格式验证
+   - 添加 Date 对象有效性检查
+   - 提供 fallback 机制
+
+4. **表单初始化时提取日期部分**
+   - reset() 使用纯日期格式而非 ISO datetime
+   - 确保表单字段值始终是 `yyyy-MM-dd` 格式
+
+5. **日期显示使用 `extractDateFromISO`**
+   - Calendar 组件的 selected 属性
+   - Button 显示的日期文本
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 修复日期处理逻辑
+- `src/types/api.ts` - 更新 datetime regex 兼容更多格式

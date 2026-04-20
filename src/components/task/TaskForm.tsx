@@ -125,21 +125,63 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
   const startDate = watch('startDate');
   const dueDate = watch('dueDate');
 
+  // 从 ISO 字符串提取日期部分（yyyy-MM-dd）
+  const extractDateFromISO = (isoString: string): string => {
+    if (!isoString) return getTodayString();
+    // 如果已经是纯日期格式，直接返回
+    if (!isoString.includes('T')) return isoString;
+    // 从 ISO datetime 提取日期部分
+    return isoString.split('T')[0];
+  };
+
   // 从 ISO 字符串提取时间部分
   const extractTimeFromISO = (isoString: string, isDueDate: boolean = false): string => {
-    if (isoString.includes('T')) {
-      const date = new Date(isoString);
-      return format(date, 'HH:mm');
+    if (!isoString || !isoString.includes('T')) {
+      // 默认：开始时间 00:00，截止时间 23:59
+      return isDueDate ? '23:59' : '00:00';
     }
-    // 默认：开始时间 00:00，截止时间 23:59
-    return isDueDate ? '23:59' : '00:00';
+    const date = new Date(isoString);
+    // 验证 Date 对象是否有效
+    if (isNaN(date.getTime())) {
+      return isDueDate ? '23:59' : '00:00';
+    }
+    return format(date, 'HH:mm');
   };
 
   // 合并日期和时间为 ISO 字符串（本地时间 → UTC）
   const combineDateAndTime = (dateStr: string, timeStr: string): string => {
+    // 验证输入参数
+    if (!dateStr || !timeStr) {
+      console.error('combineDateAndTime: invalid inputs', { dateStr, timeStr });
+      // 使用今天作为 fallback
+      const today = getTodayString();
+      const fallbackTime = timeStr || '00:00';
+      const localDate = new Date(`${today}T${fallbackTime}:00`);
+      return localDate.toISOString();
+    }
+
+    // 如果 dateStr 已经是 ISO datetime 格式，提取日期部分
+    const dateOnly = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+
+    // 验证日期格式
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+      console.error('combineDateAndTime: invalid date format', dateOnly);
+      const today = getTodayString();
+      const localDate = new Date(`${today}T${timeStr}:00`);
+      return localDate.toISOString();
+    }
+
     // 创建本地时间的 Date 对象，然后转换为 UTC ISO 字符串
-    // 不带时区后缀，让 new Date() 解析为本地时间
-    const localDate = new Date(`${dateStr}T${timeStr}:00`);
+    const localDate = new Date(`${dateOnly}T${timeStr}:00`);
+
+    // 验证 Date 对象是否有效
+    if (isNaN(localDate.getTime())) {
+      console.error('combineDateAndTime: invalid Date object', `${dateOnly}T${timeStr}:00`);
+      const today = getTodayString();
+      const fallbackDate = new Date(`${today}T00:00:00`);
+      return fallbackDate.toISOString();
+    }
+
     return localDate.toISOString();
   };
 
@@ -155,11 +197,15 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
       initializedTaskId.current = currentTaskId;
 
       if (initialData) {
+        // 提取日期部分（yyyy-MM-dd），避免 ISO datetime 格式导致的显示问题
+        const startDateOnly = extractDateFromISO(initialData.startDate);
+        const dueDateOnly = extractDateFromISO(initialData.dueDate);
+
         reset({
           title: initialData.title,
           description: initialData.description || '',
-          startDate: initialData.startDate,
-          dueDate: initialData.dueDate,
+          startDate: startDateOnly,
+          dueDate: dueDateOnly,
           categoryId: initialData.categoryId || '',
           levelId: initialData.levelId || '',
           isMilestone: initialData.isMilestone,
@@ -317,13 +363,13 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                  {startDate ? format(new Date(extractDateFromISO(startDate)), 'yyyy-MM-dd') : t('task.selectDate')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={startDate ? new Date(startDate) : undefined}
+                  selected={startDate ? new Date(extractDateFromISO(startDate)) : undefined}
                   onSelect={(date) => {
                     if (date) {
                       setValue('startDate', format(date, 'yyyy-MM-dd'));
@@ -354,13 +400,13 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : t('task.selectDate')}
+                  {dueDate ? format(new Date(extractDateFromISO(dueDate)), 'yyyy-MM-dd') : t('task.selectDate')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={dueDate ? new Date(dueDate) : undefined}
+                  selected={dueDate ? new Date(extractDateFromISO(dueDate)) : undefined}
                   onSelect={(date) => {
                     if (date) {
                       setValue('dueDate', format(date, 'yyyy-MM-dd'));
