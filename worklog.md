@@ -2409,3 +2409,52 @@ function getDateOnly(isoString: string): string {
 ### 修改的文件
 - `src/components/task/TaskForm.tsx` - 修复日期处理逻辑
 - `src/types/api.ts` - 更新 datetime regex 兼容更多格式
+
+---
+
+## 2026-04-20: 全面修复日期时间时区处理问题
+
+### 问题描述
+- 项目中多处存在 `toISOString().split('T')[0]` 用法，会将本地时间转换为 UTC 导致日期偏移
+- `new Date()` 对纯日期字符串（如 `2026-04-20`）的解析会将其视为 UTC midnight，在本地时区可能显示为前一天
+- 缺乏 Date 对象有效性验证，可能导致 `RangeError: Invalid time value`
+
+### 改动内容
+
+1. **use-view-store.ts**
+   - 导入 `format`, `addWeeks`, `subWeeks` from date-fns
+   - 替换 `toISOString().split('T')[0]` 为 `format(date, 'yyyy-MM-dd')`
+   - 使用中午时间（12:00:00）避免日期边界问题
+
+2. **use-todos.ts**
+   - 导入 `format` from date-fns
+   - 乐观更新中的 `completedAt` 使用本地日期而非 UTC 日期
+
+3. **TaskDetailDialog.tsx**
+   - 新增 `extractDateFromISO()` 函数提取纯日期
+   - 改进 `extractTimeFromISO()` 和 `combineDateAndTime()` 添加验证
+   - 表单初始化使用纯日期格式
+   - Calendar 组件使用 `parseISO` + 中午时间避免时区边界
+
+4. **ConvertToTodoDialog.tsx**
+   - 导入 `parseISO` from date-fns
+   - 日期显示直接使用字符串而非 `new Date()`
+   - Calendar 组件使用 `parseISO` + 中午时间
+
+5. **DayView.tsx**
+   - 导入 `parseISO`, `subDays`, `addDays` from date-fns
+   - 日期导航使用 `parseISO` + 中午时间
+   - Calendar 组件使用 `parseISO` + 中午时间
+
+6. **export/todos/route.ts**
+   - 导入 `format` from date-fns
+   - CSV 文件名使用本地日期而非 UTC 日期
+   - 变量重命名避免与导入的 `format` 函数冲突
+
+### 修改的文件
+- `src/hooks/use-view-store.ts` - 修复周导航时区问题
+- `src/hooks/use-todos.ts` - 修复乐观更新 completedAt 时区问题
+- `src/components/task/TaskDetailDialog.tsx` - 修复日期编辑处理
+- `src/components/inbox/ConvertToTodoDialog.tsx` - 修复日期选择处理
+- `src/components/views/DayView.tsx` - 修复日导航时区问题
+- `src/app/api/export/todos/route.ts` - 修复导出文件名时区问题

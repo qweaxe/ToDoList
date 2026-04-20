@@ -7,6 +7,7 @@ export const runtime = 'edge';
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { format } from 'date-fns';
 import { getApiSession } from '@/lib/api-auth';
 import { getDb } from '@/lib/db';
 
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const categoryId = searchParams.get('categoryId');
     const levelId = searchParams.get('levelId');
-    const format = searchParams.get('format') || 'json'; // json 或 csv
+    const outputFormat = searchParams.get('format') || 'json'; // json 或 csv
 
     // 构建查询条件
     const where: any = { userId };
@@ -84,8 +85,8 @@ export async function GET(request: NextRequest) {
       updatedAt: todo.updatedAt,
     }));
 
-    // 根据 format 返回不同格式
-    if (format === 'csv') {
+    // 根据 outputFormat 返回不同格式
+    if (outputFormat === 'csv') {
       // 生成 CSV
       const headers = [
         'ID',
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse(csv, {
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
-          'Content-Disposition': `attachment; filename="todos-${new Date().toISOString().split('T')[0]}.csv"`,
+          'Content-Disposition': `attachment; filename="todos-${format(new Date(), 'yyyy-MM-dd')}.csv"`,
         },
       });
     }

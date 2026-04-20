@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO, subDays, addDays } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
 import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertTriangle, CheckSquare } from 'lucide-react';
@@ -75,15 +75,16 @@ export function DayView() {
   };
 
   const handlePrevDay = () => {
-    const current = new Date(selectedDate);
-    current.setDate(current.getDate() - 1);
-    setSelectedDate(format(current, 'yyyy-MM-dd'));
+    // selectedDate 是 yyyy-MM-dd 格式，使用 parseISO 解析并添加中午时间避免时区边界问题
+    const current = parseISO(`${selectedDate}T12:00:00`);
+    const prevDay = subDays(current, 1);
+    setSelectedDate(format(prevDay, 'yyyy-MM-dd'));
   };
 
   const handleNextDay = () => {
-    const current = new Date(selectedDate);
-    current.setDate(current.getDate() + 1);
-    setSelectedDate(format(current, 'yyyy-MM-dd'));
+    const current = parseISO(`${selectedDate}T12:00:00`);
+    const nextDay = addDays(current, 1);
+    setSelectedDate(format(nextDay, 'yyyy-MM-dd'));
   };
 
   const handleEdit = (task: {
@@ -201,13 +202,13 @@ export function DayView() {
               <Button variant="outline" className="gap-2 min-w-[120px] sm:min-w-[140px]">
                 <CalendarIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('task.selectDate')}</span>
-                <span className="sm:hidden">{format(new Date(selectedDate), 'MMM d', { locale: dateFnsLocale })}</span>
+                <span className="sm:hidden">{format(parseISO(`${selectedDate}T12:00:00`), 'MMM d', { locale: dateFnsLocale })}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
               <Calendar
                 mode="single"
-                selected={new Date(selectedDate)}
+                selected={parseISO(`${selectedDate}T12:00:00`)}
                 onSelect={handleDateChange}
                 initialFocus
               />

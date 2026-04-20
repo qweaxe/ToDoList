@@ -104,20 +104,49 @@ export function TaskDetailDialog({
   const [editStartTime, setEditStartTime] = useState<string>('00:00');
   const [editDueTime, setEditDueTime] = useState<string>('23:59');
 
+  // 从 ISO 字符串提取日期部分（yyyy-MM-dd）
+  const extractDateFromISO = (isoString: string): string => {
+    if (!isoString) return '';
+    // 如果已经是纯日期格式，直接返回
+    if (!isoString.includes('T')) return isoString;
+    // 从 ISO datetime 提取日期部分（转为本地日期）
+    const date = new Date(isoString);
+    return format(date, 'yyyy-MM-dd');
+  };
+
   // 从 ISO 字符串提取时间部分
   const extractTimeFromISO = (isoString: string, isDueDate: boolean = false): string => {
-    if (isoString.includes('T')) {
-      const date = new Date(isoString);
-      return format(date, 'HH:mm');
+    if (!isoString || !isoString.includes('T')) {
+      return isDueDate ? '23:59' : '00:00';
     }
-    return isDueDate ? '23:59' : '00:00';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) {
+      return isDueDate ? '23:59' : '00:00';
+    }
+    return format(date, 'HH:mm');
   };
 
   // 合并日期和时间为 ISO 字符串（本地时间 → UTC）
   const combineDateAndTime = (dateStr: string, timeStr: string): string => {
-    // 创建本地时间的 Date 对象，然后转换为 UTC ISO 字符串
-    // 不带时区后缀，让 new Date() 解析为本地时间
-    const localDate = new Date(`${dateStr}T${timeStr}:00`);
+    if (!dateStr || !timeStr) {
+      console.error('combineDateAndTime: invalid inputs', { dateStr, timeStr });
+      return new Date().toISOString();
+    }
+
+    // 如果 dateStr 已经是 ISO datetime 格式，提取日期部分
+    const dateOnly = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+
+    // 验证日期格式
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+      console.error('combineDateAndTime: invalid date format', dateOnly);
+      return new Date().toISOString();
+    }
+
+    const localDate = new Date(`${dateOnly}T${timeStr}:00`);
+    if (isNaN(localDate.getTime())) {
+      console.error('combineDateAndTime: invalid Date object');
+      return new Date().toISOString();
+    }
     return localDate.toISOString();
   };
 
@@ -138,11 +167,14 @@ export function TaskDetailDialog({
   // 重置编辑状态 - 直接从 task 初始化，不使用 effect
   const getInitialEditValues = useCallback(() => {
     if (!task) return null;
+    // 提取日期部分（yyyy-MM-dd），避免 ISO datetime 格式问题
+    const startDateOnly = extractDateFromISO(task.startDate);
+    const dueDateOnly = extractDateFromISO(task.dueDate);
     return {
       title: task.title,
       description: task.description || '',
-      startDate: task.startDate,
-      dueDate: task.dueDate,
+      startDate: startDateOnly,
+      dueDate: dueDateOnly,
       categoryId: task.categoryId || '',
       levelId: task.levelId || '',
       subTasks: parsedSubTasks,
@@ -422,13 +454,13 @@ export function TaskDetailDialog({
                         <PopoverTrigger asChild>
                           <Button variant="outline" className="flex-1 justify-start text-left font-normal">
                             <Calendar className="h-4 w-4 mr-2" />
-                            {editStartDate ? format(new Date(editStartDate), 'yyyy-MM-dd') : ''}
+                            {editStartDate || ''}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <CalendarComponent
                             mode="single"
-                            selected={editStartDate ? new Date(editStartDate) : undefined}
+                            selected={editStartDate ? parseISO(`${editStartDate}T12:00:00`) : undefined}
                             onSelect={(date) =>
                               date && setEditStartDate(format(date, 'yyyy-MM-dd'))
                             }
@@ -449,13 +481,13 @@ export function TaskDetailDialog({
                         <PopoverTrigger asChild>
                           <Button variant="outline" className="flex-1 justify-start text-left font-normal">
                             <Calendar className="h-4 w-4 mr-2" />
-                            {editDueDate ? format(new Date(editDueDate), 'yyyy-MM-dd') : ''}
+                            {editDueDate || ''}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <CalendarComponent
                             mode="single"
-                            selected={editDueDate ? new Date(editDueDate) : undefined}
+                            selected={editDueDate ? parseISO(`${editDueDate}T12:00:00`) : undefined}
                             onSelect={(date) =>
                               date && setEditDueDate(format(date, 'yyyy-MM-dd'))
                             }

@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import type { CreateTodoInput, UpdateTodoInput } from '@/types/api';
 import { mutationManager, isAbortError } from '@/lib/mutation-manager';
 
@@ -256,7 +257,8 @@ export function useToggleTodo() {
           // 如果是 todo 对象且 id 匹配
           if (record.id === id && typeof record.status === 'string') {
             const newStatus = record.status === 'completed' ? 'pending' : 'completed';
-            const today = new Date().toISOString().split('T')[0];
+            // 使用本地日期而非 UTC 日期
+            const today = format(new Date(), 'yyyy-MM-dd');
             return {
               ...record,
               status: newStatus,

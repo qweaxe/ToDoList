@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { format, addWeeks, subWeeks } from 'date-fns';
 import { getTodayString } from '@/lib/date-utils';
 
 // 视图类型
@@ -145,16 +146,21 @@ export const useViewStore = create<ViewState>()(
 
       goToPreviousWeek: () => {
         const { weekStartDate } = get();
-        const date = new Date(weekStartDate);
-        date.setDate(date.getDate() - 7);
-        set({ weekStartDate: date.toISOString().split('T')[0] });
+        // weekStartDate 是 yyyy-MM-dd 格式，使用 parseISO 解析
+        const date = weekStartDate.includes('T')
+          ? subWeeks(new Date(weekStartDate), 1)
+          : new Date(`${weekStartDate}T12:00:00`); // 使用中午时间避免时区边界问题
+        const prevDate = subWeeks(date, 1);
+        set({ weekStartDate: format(prevDate, 'yyyy-MM-dd') });
       },
 
       goToNextWeek: () => {
         const { weekStartDate } = get();
-        const date = new Date(weekStartDate);
-        date.setDate(date.getDate() + 7);
-        set({ weekStartDate: date.toISOString().split('T')[0] });
+        const date = weekStartDate.includes('T')
+          ? new Date(weekStartDate)
+          : new Date(`${weekStartDate}T12:00:00`); // 使用中午时间避免时区边界问题
+        const nextDate = addWeeks(date, 1);
+        set({ weekStartDate: format(nextDate, 'yyyy-MM-dd') });
       },
     }),
     {

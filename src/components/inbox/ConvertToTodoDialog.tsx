@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -156,13 +156,13 @@ export function ConvertToTodoDialog({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(new Date(startDate), 'yyyy-MM-dd') : '选择日期'}
+                    {startDate || '选择日期'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={startDate ? new Date(startDate) : undefined}
+                    selected={startDate ? parseISO(`${startDate}T12:00:00`) : undefined}
                     onSelect={(date) =>
                       date && setStartDate(format(date, 'yyyy-MM-dd'))
                     }
@@ -183,13 +183,13 @@ export function ConvertToTodoDialog({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(new Date(dueDate), 'yyyy-MM-dd') : '选择日期'}
+                    {dueDate || '选择日期'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={dueDate ? new Date(dueDate) : undefined}
+                    selected={dueDate ? parseISO(`${dueDate}T12:00:00`) : undefined}
                     onSelect={(date) =>
                       date && setDueDate(format(date, 'yyyy-MM-dd'))
                     }
