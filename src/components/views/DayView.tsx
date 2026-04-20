@@ -133,10 +133,14 @@ export function DayView() {
     setCurrentView('overdue');
   };
 
-  // 按日期分组历史待办（提取日期部分）
+  // 按日期分组历史待办（将 UTC 转换为本地日期）
+  const getDateLocal = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
   const groupedOverdue = data?.data.overdue.reduce(
     (acc, task) => {
-      const date = task.dueDate.split('T')[0]; // 提取日期部分
+      const date = getDateLocal(task.dueDate);
       if (!acc[date]) {
         acc[date] = [];
       }

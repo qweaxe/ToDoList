@@ -78,9 +78,15 @@ interface TaskCardProps {
   onSelect?: (id: string) => void;
 }
 
-// 辅助函数：从 ISO datetime 提取日期部分进行比较
+// 辅助函数：从 ISO datetime 提取本地日期部分进行比较
+// 存储的是 UTC 时间，需要转换为本地时间再提取日期
 function getDateOnly(isoString: string): string {
-  return isoString.split('T')[0];
+  const date = new Date(isoString);
+  // 使用本地时间的年月日格式化
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function TaskCard({
@@ -119,13 +125,15 @@ export function TaskCard({
       ? Math.round((completedSubTasks / subTasks.length) * 100)
       : 0;
 
-  // 判断是否跨天任务（比较日期部分）
+  // 判断是否跨天任务（比较本地日期部分）
   const isCrossDay = getDateOnly(task.startDate) !== getDateOnly(task.dueDate);
 
-  // 判断是否过期（比较日期部分）
+  // 判断是否过期（比较本地日期部分）
+  const todayLocal = getDateOnly(new Date().toISOString());
+  const dueDateLocal = getDateOnly(task.dueDate);
   const isOverdue =
     task.status !== 'completed' &&
-    new Date(task.dueDate) < new Date(new Date().toDateString());
+    dueDateLocal < todayLocal;
 
   // 是否已完成
   const isCompleted = task.status === 'completed';

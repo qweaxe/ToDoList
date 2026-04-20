@@ -434,18 +434,25 @@ export function WeekView() {
       const task = allTasks.find((t: TaskItem) => t.id === taskId);
 
       if (task) {
-        // 比较日期部分（不含时间）
-        const taskStartDate = task.startDate.split('T')[0];
-        const taskDueDate = task.dueDate.split('T')[0];
+        // 比较日期部分（需将 UTC 转换为本地时间）
+        const getDateLocal = (iso: string) => {
+          const d = new Date(iso);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
+        const taskStartDate = getDateLocal(task.startDate);
+        const taskDueDate = getDateLocal(task.dueDate);
         const isSameDay = taskStartDate === taskDueDate;
 
-        // 提取时间部分
+        // 提取时间部分（从 UTC ISO 字符串）
         const dueTime = task.dueDate.includes('T') ? task.dueDate.split('T')[1] : '23:59:59.000Z';
         const startTime = task.startDate.includes('T') ? task.startDate.split('T')[1] : '00:00:00.000Z';
 
-        // 构建新的日期时间
-        const newDueDate = task.dueDate.includes('T') ? `${newDate}T${dueTime}` : newDate;
-        const newStartDate = isSameDay ? (task.startDate.includes('T') ? `${newDate}T${startTime}` : newDate) : task.startDate;
+        // 构建新的日期时间（本地时间转 UTC）
+        const combineDateTime = (dateStr: string, timeStr: string) => {
+          return new Date(`${dateStr}T${timeStr}`).toISOString();
+        };
+        const newDueDate = combineDateTime(newDate, dueTime.slice(0, 5)); // 取 HH:mm
+        const newStartDate = isSameDay ? combineDateTime(newDate, startTime.slice(0, 5)) : task.startDate;
 
         updateMutation.mutate({
           id: taskId,

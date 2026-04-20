@@ -2331,3 +2331,44 @@ const currentYear = now.getFullYear();
 ### 修改的文件
 - `CLAUDE.md` - 修正技术栈描述，补充 API 端点
 - `docs/ARCHITECTURE.md` - 修正密码描述，补充组件，调整章节顺序
+
+---
+
+## 2026-04-20: 修复任务日期显示跨天误判问题
+
+### 问题描述
+- 用户创建不跨天任务（如 4月20日 00:00 - 23:59），但在 4月19日和 4月20日都显示该任务
+- 任务卡片显示"跨天"标记，但实际是同一天
+- 原因：日期存储为 UTC 时间，前端判断跨天时直接从 ISO 字符串截取日期部分，没有考虑时区转换
+
+### 示例分析
+```
+用户输入：2026-04-20 00:00 - 23:59（北京时间 UTC+8）
+存储为UTC：startDate = 2026-04-19T16:00Z, dueDate = 2026-04-20T15:59Z
+旧逻辑 split('T')[0]：startDate → "2026-04-19", dueDate → "2026-04-20"
+结果：误判为跨天，两天都显示
+```
+
+### 改动内容
+- 修复 `getDateOnly` 函数：从 UTC ISO 字符串正确转换为本地日期
+- 修复 TaskCard 跨天判断和过期判断逻辑
+- 修复 OverdueView 和 DayView 历史待办分组逻辑
+- 修复 WeekView 拖拽任务时日期判断逻辑
+
+### 修复后的逻辑
+```typescript
+function getDateOnly(isoString: string): string {
+  const date = new Date(isoString);  // 解析 UTC
+  // 使用本地时间的年月日
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+```
+
+### 修改的文件
+- `src/components/task/TaskCard.tsx` - getDateOnly 函数改为 UTC→本地时间转换
+- `src/components/views/OverdueView.tsx` - 分组历史待办时使用本地日期
+- `src/components/views/DayView.tsx` - 分组历史待办时使用本地日期
+- `src/components/views/WeekView.tsx` - 拖拽判断跨天时使用本地日期
