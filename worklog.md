@@ -2458,3 +2458,27 @@ function getDateOnly(isoString: string): string {
 - `src/components/inbox/ConvertToTodoDialog.tsx` - 修复日期选择处理
 - `src/components/views/DayView.tsx` - 修复日导航时区问题
 - `src/app/api/export/todos/route.ts` - 修复导出文件名时区问题
+
+---
+
+## 2026-04-20: 新增跨天任务横跨框设计文档
+
+### 改动内容
+- 创建跨天任务横跨框设计文档，规划全场景实现方案
+- 覆盖范围：PC端日历视图、PC端周视图、移动端日历视图、移动端周视图
+- 核心功能：跨天任务以横跨条形式显示，横跨多个日期列
+
+### 设计要点
+- 统一数据结构 `CrossDaySpan` 定义跨天任务信息
+- 网格定位计算：基于列索引计算 left/width/top 位置
+- 多行布局：使用 `assignRowsToSpans` 算法避免重叠
+- 移动端适配：简化单元格显示 + Drawer 详情抽屉
+
+### 实施计划
+- 第一阶段：PC端日历视图跨天框（2天）
+- 第二阶段：PC端周视图跨天框（1.5天）
+- 第三阶段：移动端日历视图优化（1天）
+- 第四阶段：移动端周视图优化（1天）
+
+### 修改的文件
+- `docs/CROSS_DAY_SPAN_DESIGN.md` - 新增设计文档
