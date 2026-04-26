@@ -87,6 +87,23 @@ export const createLevelSchema = z.object({
 
 export type CreateLevelInput = z.infer<typeof createLevelSchema>;
 
+// 创建时间记录验证
+export const createTimeEntrySchema = z.object({
+  title: z.string().min(1, '活动名称不能为空').max(100, '活动名称最多100个字符'),
+  description: z.string().max(500, '描述最多500个字符').optional().nullable(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式无效'),
+  startTime: z.string().regex(datetimeRegex, '开始时间格式无效'),
+  endTime: z.string().regex(datetimeRegex, '结束时间格式无效'),
+  categoryId: z.string().optional().nullable(),
+  todoId: z.string().optional().nullable(),
+});
+
+export type CreateTimeEntryInput = z.infer<typeof createTimeEntrySchema>;
+
+// 更新时间记录验证
+export const updateTimeEntrySchema = createTimeEntrySchema.partial();
+export type UpdateTimeEntryInput = z.infer<typeof updateTimeEntrySchema>;
+
 // API 响应类型
 export interface ApiResponse<T> {
   success: boolean;

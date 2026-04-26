@@ -505,5 +505,26 @@
     "itemCount": "{count} items to organize",
     "convertDialogTitle": "Convert to Task",
     "originalContent": "Original Idea"
+  },
+  "time": {
+    "title": "Time Tracking",
+    "nav": "Time",
+    "description": "Track daily time allocation",
+    "newEntry": "Log Time",
+    "editEntry": "Edit Entry",
+    "entries": "Time Entries",
+    "activity": "Activity",
+    "activityPlaceholder": "What did you do...",
+    "startTime": "Start",
+    "endTime": "End",
+    "dateTime": "Date & Time",
+    "duration": "Duration",
+    "totalDuration": "Total Time",
+    "taskTime": "Task Time",
+    "otherTime": "Other Time",
+    "categoryDistribution": "Time Distribution",
+    "noRecords": "No time records for today",
+    "linkedTask": "Linked Task",
+    "timeOrderError": "Start time must be earlier than end time"
   }
 }

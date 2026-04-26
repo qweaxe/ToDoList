@@ -30,6 +30,7 @@ model User {
   recurrenceRules RecurrenceRule[]
   apiKeys         ApiKey[]
   inboxItems      InboxItem[]
+  timeEntries     TimeEntry[]
 
   @@map("users")
 }
@@ -49,6 +50,7 @@ model Category {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   todos Todo[]
+  timeEntries TimeEntry[]
 
   @@unique([userId, name]) // 用户级别唯一
   @@map("categories")
@@ -106,6 +108,7 @@ model Todo {
 
   // 关联
   reminders Reminder[]
+  timeEntries TimeEntry[]
 
   @@index([userId])
   @@index([startDate])
@@ -199,4 +202,36 @@ model InboxItem {
   @@index([userId, createdAt])
   @@index([userId, convertedToTodoId])
   @@map("inbox_items")
+}
+
+// 时间记录条目
+model TimeEntry {
+  id          String   @id @default(cuid())
+  title       String   // 活动名称
+  description String?  // 详细描述
+
+  // 时间维度
+  date        DateTime // 记录日期（YYYY-MM-DD 部分）
+  startTime   DateTime // 开始时间（精确时间）
+  endTime     DateTime // 结束时间（精确时间）
+  duration    Int      // 持续时长（分钟，计算字段）
+
+  // 可选关联 Todo
+  todoId      String?
+  todo        Todo?    @relation(fields: [todoId], references: [id], onDelete: SetNull)
+
+  // 用户和分类关联
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([date])
+  @@index([categoryId])
+  @@index([todoId])
+  @@map("time_entries")
 }

@@ -4,7 +4,7 @@ import { format, addWeeks, subWeeks } from 'date-fns';
 import { getTodayString } from '@/lib/date-utils';
 
 // 视图类型
-export type ViewType = 'day' | 'calendar' | 'week' | 'quarter' | 'year' | 'settings' | 'overdue' | 'task-list' | 'inbox';
+export type ViewType = 'day' | 'calendar' | 'week' | 'quarter' | 'year' | 'settings' | 'overdue' | 'task-list' | 'inbox' | 'time';
 
 // 设置子页面类型
 export type SettingsTab = 'categories' | 'levels' | 'account' | 'api' | 'admin';

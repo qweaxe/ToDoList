@@ -15,6 +15,7 @@ import { SettingsView } from '@/components/views/SettingsView';
 import { OverdueView } from '@/components/views/OverdueView';
 import { TaskListView } from '@/components/views/TaskListView';
 import { InboxView } from '@/components/inbox/InboxView';
+import { TimeView } from '@/components/views/TimeView';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { useViewStore } from '@/hooks/use-view-store';
 
@@ -73,6 +74,8 @@ export default function Home() {
         return <TaskListView />;
       case 'inbox':
         return <InboxView />;
+      case 'time':
+        return <TimeView />;
       default:
         return <DayView />;
     }

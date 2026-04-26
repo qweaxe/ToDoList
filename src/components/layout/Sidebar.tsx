@@ -12,6 +12,7 @@ import {
   Target,
   TrendingUp,
   X,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,12 @@ const navItems: NavItem[] = [
     labelKey: 'inbox.nav',
     icon: <Inbox className="h-5 w-5" />,
     descKey: 'inbox.description',
+  },
+  {
+    id: 'time',
+    labelKey: 'time.nav',
+    icon: <Clock className="h-5 w-5" />,
+    descKey: 'time.description',
   },
 ];
 

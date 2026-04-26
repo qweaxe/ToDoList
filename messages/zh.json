@@ -504,5 +504,26 @@
     "itemCount": "{count} 条待整理",
     "convertDialogTitle": "整理为任务",
     "originalContent": "原始想法"
+  },
+  "time": {
+    "title": "时间记录",
+    "nav": "时间记录",
+    "description": "追踪每日时间分配",
+    "newEntry": "记录时间",
+    "editEntry": "编辑记录",
+    "entries": "时间条目",
+    "activity": "活动名称",
+    "activityPlaceholder": "你做了什么...",
+    "startTime": "开始",
+    "endTime": "结束",
+    "dateTime": "日期和时间",
+    "duration": "时长",
+    "totalDuration": "总时长",
+    "taskTime": "任务时间",
+    "otherTime": "其他时间",
+    "categoryDistribution": "时间分布",
+    "noRecords": "今日暂无时间记录",
+    "linkedTask": "关联任务",
+    "timeOrderError": "开始时间必须早于结束时间"
   }
 }
