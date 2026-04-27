@@ -42,6 +42,7 @@ import {
 import { cn } from '@/lib/utils';
 import { createTimeEntrySchema, type CreateTimeEntryInput } from '@/types/api';
 import { useCategories } from '@/hooks/use-categories';
+import { useTodos } from '@/hooks/use-todos';
 import { useCreateTimeEntry, useUpdateTimeEntry } from '@/hooks/use-time-entries';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -96,10 +97,12 @@ export function TimeEntryForm({ open, onClose, initialData, date }: TimeEntryFor
   const [endTime, setEndTime] = useState('10:00');
 
   const { data: categoriesData } = useCategories();
+  const { data: todosData } = useTodos({ status: 'pending' }); // 只获取待完成的任务
   const createMutation = useCreateTimeEntry();
   const updateMutation = useUpdateTimeEntry();
 
   const categories = categoriesData?.data || [];
+  const todos = todosData?.data || [];
 
   const {
     register,
@@ -270,6 +273,33 @@ export function TimeEntryForm({ open, onClose, initialData, date }: TimeEntryFor
                 <span className="flex items-center gap-2">
                   {cat.emoji && <span>{cat.emoji}</span>}
                   {cat.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* 关联任务 */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2">
+          <Link2 className="h-4 w-4" />
+          {t('time.linkedTask')}
+        </Label>
+        <Select
+          value={watch('todoId') || 'none'}
+          onValueChange={(value) => setValue('todoId', value === 'none' ? null : value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={t('time.selectTask')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">{t('time.noLinkedTask')}</SelectItem>
+            {todos.map((todo) => (
+              <SelectItem key={todo.id} value={todo.id}>
+                <span className="flex items-center gap-2 truncate">
+                  {todo.category?.emoji && <span>{todo.category.emoji}</span>}
+                  <span className="truncate">{todo.title}</span>
                 </span>
               </SelectItem>
             ))}

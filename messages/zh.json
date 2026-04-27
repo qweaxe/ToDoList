@@ -524,6 +524,8 @@
     "categoryDistribution": "时间分布",
     "noRecords": "今日暂无时间记录",
     "linkedTask": "关联任务",
+    "selectTask": "选择任务",
+    "noLinkedTask": "不关联任务",
     "timeOrderError": "开始时间必须早于结束时间"
   }
 }

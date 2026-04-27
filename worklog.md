@@ -2482,3 +2482,26 @@ function getDateOnly(isoString: string): string {
 
 ### 修改的文件
 - `docs/CROSS_DAY_SPAN_DESIGN.md` - 新增设计文档
+
+---
+
+## 2026-04-27: 时间记录表单添加任务关联选择器
+
+### 问题描述
+- 时间记录功能数据库层已支持 `todoId` 字段关联任务
+- 但表单界面缺少任务选择器 UI，用户无法选择关联的任务
+
+### 改动内容
+1. **TimeEntryForm.tsx**
+   - 导入 `useTodos` hook 获取待完成任务列表
+   - 新增任务选择器 Select 组件
+   - 选择器显示任务分类 emoji + 任务标题
+
+2. **翻译文件更新**
+   - `messages/zh.json`: 新增 `selectTask`、`noLinkedTask` 翻译
+   - `messages/en.json`: 新增 `selectTask`、`noLinkedTask` 翻译
+
+### 修改的文件
+- `src/components/time/TimeEntryForm.tsx` - 添加任务选择器 UI
+- `messages/zh.json` - 新增中文翻译
+- `messages/en.json` - 新增英文翻译

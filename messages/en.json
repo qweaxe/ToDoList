@@ -525,6 +525,8 @@
     "categoryDistribution": "Time Distribution",
     "noRecords": "No time records for today",
     "linkedTask": "Linked Task",
+    "selectTask": "Select Task",
+    "noLinkedTask": "No Linked Task",
     "timeOrderError": "Start time must be earlier than end time"
   }
 }
