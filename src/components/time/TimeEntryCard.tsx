@@ -2,11 +2,14 @@
 
 import { useTranslations } from 'next-intl';
 import { format, parseISO } from 'date-fns';
-import { Pencil, Trash2, Clock } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface TimeEntryCardProps {
   entry: {
@@ -38,10 +41,9 @@ interface TimeEntryCardProps {
     todoId?: string | null;
   }) => void;
   onDelete: (id: string) => void;
-  compact?: boolean;
 }
 
-export function TimeEntryCard({ entry, onEdit, onDelete, compact = false }: TimeEntryCardProps) {
+export function TimeEntryCard({ entry, onEdit, onDelete }: TimeEntryCardProps) {
   const t = useTranslations();
 
   const formatTime = (isoString: string) => {
@@ -62,7 +64,6 @@ export function TimeEntryCard({ entry, onEdit, onDelete, compact = false }: Time
   };
 
   const handleEdit = () => {
-    // 从 startTime 提取日期
     const date = format(parseISO(entry.startTime), 'yyyy-MM-dd');
     onEdit({
       id: entry.id,
@@ -77,79 +78,64 @@ export function TimeEntryCard({ entry, onEdit, onDelete, compact = false }: Time
   };
 
   return (
-    <Card className={cn('transition-colors', compact && 'py-2')}>
-      <CardContent className={cn('p-3 sm:p-4', compact && 'py-2')}>
-        <div className="flex items-start gap-3 sm:gap-4">
-          {/* 分类图标/emoji */}
-          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-            {entry.category?.emoji ? (
-              <span className="text-lg">{entry.category.emoji}</span>
-            ) : (
-              <Clock className="h-5 w-5 text-muted-foreground" />
-            )}
-          </div>
+    <div className="group flex items-center gap-3 py-3 px-2 hover:bg-muted/50 rounded-lg transition-colors">
+      {/* 时间范围 */}
+      <div className="flex-shrink-0 text-sm text-muted-foreground font-medium w-24">
+        {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
+      </div>
 
-          {/* 内容区域 */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium truncate">{entry.title}</h3>
-                {entry.description && !compact && (
-                  <p className="text-sm text-muted-foreground truncate mt-1">
-                    {entry.description}
-                  </p>
-                )}
-              </div>
+      {/* 分类 emoji */}
+      <div className="flex-shrink-0 w-8 text-center">
+        {entry.category?.emoji ? (
+          <span className="text-lg">{entry.category.emoji}</span>
+        ) : (
+          <span className="text-sm text-muted-foreground">○</span>
+        )}
+      </div>
 
-              {/* 时长徽章 */}
-              <Badge variant="secondary" className="flex-shrink-0">
-                {formatDuration(entry.duration)}
-              </Badge>
-            </div>
-
-            {/* 时间和关联信息 */}
-            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground flex-wrap">
-              <span>{formatTime(entry.startTime)} - {formatTime(entry.endTime)}</span>
-              {entry.category && (
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'text-xs',
-                    entry.category.color && `bg-${entry.category.color}/10`
-                  )}
-                >
-                  {entry.category.name}
-                </Badge>
-              )}
-              {entry.todo && (
-                <Badge variant="outline" className="text-xs">
-                  {t('time.linkedTask')}: {entry.todo.title}
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* 操作按钮 */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleEdit}
-              className="h-8 w-8"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onDelete(entry.id)}
-              className="h-8 w-8 text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* 标题和描述 */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium truncate">{entry.title}</span>
+          {entry.todo && (
+            <span className="text-xs text-muted-foreground truncate">
+              → {entry.todo.title}
+            </span>
+          )}
         </div>
-      </CardContent>
-    </Card>
+        {entry.description && (
+          <p className="text-xs text-muted-foreground truncate mt-0.5">
+            {entry.description}
+          </p>
+        )}
+      </div>
+
+      {/* 时长 */}
+      <div className="flex-shrink-0 text-sm font-medium text-muted-foreground">
+        {formatDuration(entry.duration)}
+      </div>
+
+      {/* 操作按钮 */}
+      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleEdit}>
+              {t('common.edit')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onDelete(entry.id)}
+              className="text-destructive"
+            >
+              {t('common.delete')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   );
 }

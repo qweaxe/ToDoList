@@ -2505,3 +2505,43 @@ function getDateOnly(isoString: string): string {
 - `src/components/time/TimeEntryForm.tsx` - 添加任务选择器 UI
 - `messages/zh.json` - 新增中文翻译
 - `messages/en.json` - 新增英文翻译
+
+---
+
+## 2026-04-27: 时间记录页面 UI 优化 - 简洁清爽风格
+
+### 问题描述
+- 时间记录页面显示拥挤，占满屏幕空间
+- 统计区域使用 3 个大卡片 + 分类分布卡片，视觉负担重
+- 时间条目卡片信息密集，包含大量 Badge 和按钮
+
+### 改动内容
+
+1. **TimeStatsCard.tsx 重构**
+   - 移除 3 个统计卡片 + 分类分布卡片
+   - 改为单行简洁统计条：总时长 | 任务时间 | 其他时间
+   - 使用分隔线和图标，减少视觉负担
+
+2. **TimeEntryCard.tsx 重构**
+   - 移除 Card 包装，改为扁平行布局
+   - 布局：时间范围 | emoji | 标题(描述) | 时长 | 操作
+   - 操作按钮改为 DropdownMenu，hover 时显示
+   - 关联任务改为简洁的箭头指示（→ 任务标题）
+
+3. **TimeView.tsx 优化**
+   - 移除标题行（"时间记录"大标题）
+   - 日期导航移到头部，使用 ghost 按钮风格
+   - 添加最大宽度限制（max-w-3xl）和居中布局
+   - 增加水平内边距（px-4 sm:px-6）
+   - 空状态提示简化为一行文字
+
+### UI 变化总结
+- 从"卡片堆叠"改为"清单列表"风格
+- 信息密度降低，留白增加
+- 操作按钮隐藏，hover 显示
+- 整体视觉更轻盈清爽
+
+### 修改的文件
+- `src/components/time/TimeStatsCard.tsx` - 简化为单行统计条
+- `src/components/time/TimeEntryCard.tsx` - 简化为扁平行布局
+- `src/components/views/TimeView.tsx` - 优化整体布局
