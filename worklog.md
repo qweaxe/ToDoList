@@ -2545,3 +2545,44 @@ function getDateOnly(isoString: string): string {
 - `src/components/time/TimeStatsCard.tsx` - 简化为单行统计条
 - `src/components/time/TimeEntryCard.tsx` - 简化为扁平行布局
 - `src/components/views/TimeView.tsx` - 优化整体布局
+
+---
+
+## 2026-04-27: 新增任务预计耗时字段
+
+### 背景
+区分两种场景避免用户困惑：
+1. 真正的跨天事项：需要多天才能完成的工作
+2. 截止日期长但耗时短的事项：如一周内回复邮件，实际只需几分钟
+
+### 改动内容
+
+1. **数据库层**
+   - Prisma schema 新增 `estimatedDuration` 字段（Int?，分钟）
+   - 创建迁移文件 `7_add_estimated_duration/migration.sql`
+
+2. **API 层**
+   - `src/types/api.ts`: createTodoSchema 和 updateTodoSchema 新增 estimatedDuration 验证
+   - `src/app/api/todos/route.ts`: D1 SQL 和 reshapeTodo 函数支持新字段
+
+3. **前端 UI**
+   - `src/components/task/TaskForm.tsx`: 新增预计耗时选择器
+   - 预设选项：15m/30m/1h/2h/4h/1d/2d/3d
+   - `src/hooks/use-todos.ts`: Todo interface 新增字段
+
+4. **国际化**
+   - 新增翻译：estimatedDuration、selectDuration、noDuration、minutes、hour、hours、day、days
+
+### 使用说明
+- 预计耗时 >= 480分钟（1天）的任务才会显示跨天横跨框
+- 未设置预计耗时的任务，按现有逻辑显示（跨天则显示跨天标记）
+
+### 修改的文件
+- `prisma/schema.prisma` - 新增 estimatedDuration 字段
+- `prisma/migrations/7_add_estimated_duration/migration.sql` - 新增迁移
+- `src/types/api.ts` - 新增 schema 验证
+- `src/app/api/todos/route.ts` - API 支持新字段
+- `src/components/task/TaskForm.tsx` - 新增选择器 UI
+- `src/hooks/use-todos.ts` - 新增类型定义
+- `messages/zh.json` - 新增中文翻译
+- `messages/en.json` - 新增英文翻译

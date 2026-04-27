@@ -32,6 +32,8 @@ export const createTodoSchema = z.object({
   isMilestone: z.boolean().optional(),
   priority: z.number().min(0).optional(),
   completedAt: z.string().regex(datetimeRegex, '日期时间格式无效').optional().nullable(),
+  // 预计耗时（分钟），预设值：15/30/60/120/240/480/960/1440
+  estimatedDuration: z.number().min(0).max(10080).optional().nullable(), // 最大 7 天 = 10080 分钟
 });
 
 export type CreateTodoInput = z.infer<typeof createTodoSchema>;
@@ -61,6 +63,8 @@ export const updateTodoSchema = z.object({
   isMilestone: z.boolean().optional(),
   priority: z.number().min(0).optional(),
   completedAt: z.string().regex(datetimeRegex, '日期时间格式无效').optional().nullable(),
+  // 预计耗时（分钟）
+  estimatedDuration: z.number().min(0).max(10080).optional().nullable(),
 });
 export type UpdateTodoInput = z.infer<typeof updateTodoSchema>;
 

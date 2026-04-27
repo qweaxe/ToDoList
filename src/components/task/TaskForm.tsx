@@ -72,6 +72,7 @@ interface TaskFormProps {
     isMilestone: boolean;
     priority: number;
     status?: string;
+    estimatedDuration?: number | null;  // 预计耗时（分钟）
   };
   defaultDate?: string;
 }
@@ -89,6 +90,8 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
   // 时间选择器状态（默认开始时间 00:00，截止时间 23:59）
   const [startTime, setStartTime] = useState<string>('00:00');
   const [dueTime, setDueTime] = useState<string>('23:59');
+  // 预计耗时状态（分钟）
+  const [estimatedDuration, setEstimatedDuration] = useState<number | null>(null);
 
   const { data: categoriesData } = useCategories();
   const { data: levelsData } = useLevels();
@@ -210,12 +213,15 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           levelId: initialData.levelId || '',
           isMilestone: initialData.isMilestone,
           priority: initialData.priority,
+          estimatedDuration: initialData.estimatedDuration,
         });
         setIsCycleTask(initialData.isCycleTask);
         setCompletedAt(initialData.completedAt || null);
         // 提取时间部分
         setStartTime(extractTimeFromISO(initialData.startDate, false));
         setDueTime(extractTimeFromISO(initialData.dueDate, true));
+        // 设置预计耗时
+        setEstimatedDuration(initialData.estimatedDuration || null);
 
         // 解析子任务
         if (initialData.subTasks) {
@@ -238,6 +244,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           levelId: '',
           isMilestone: false,
           priority: 0,
+          estimatedDuration: null,
         });
         setSubTasks([]);
         setIsCycleTask(false);
@@ -245,6 +252,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
         // 重置时间为默认值
         setStartTime('00:00');
         setDueTime('23:59');
+        setEstimatedDuration(null);
       }
     }
   }, [initialData, defaultDate, reset]);
@@ -290,6 +298,7 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             startDate: startDateWithTime,
           }
         : null,
+      estimatedDuration,  // 添加预计耗时
     };
 
     // 只有已完成的任务才发送完成日期字段
@@ -442,6 +451,34 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
                   {cat.emoji} {cat.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 预计耗时 */}
+        <div className="space-y-2 flex-1">
+          <Label>{t('task.estimatedDuration')}</Label>
+          <Select
+            value={estimatedDuration?.toString() || 'none'}
+            onValueChange={(value) => {
+              setEstimatedDuration(value === 'none' ? null : parseInt(value));
+              setValue('estimatedDuration', value === 'none' ? null : parseInt(value));
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('task.selectDuration')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{t('task.noDuration')}</SelectItem>
+              {/* 预设值：15m/30m/1h/2h/4h/1d/2d/3d */}
+              <SelectItem value="15">15 {t('task.minutes')}</SelectItem>
+              <SelectItem value="30">30 {t('task.minutes')}</SelectItem>
+              <SelectItem value="60">1 {t('task.hour')}</SelectItem>
+              <SelectItem value="120">2 {t('task.hours')}</SelectItem>
+              <SelectItem value="240">4 {t('task.hours')}</SelectItem>
+              <SelectItem value="480">1 {t('task.day')}</SelectItem>
+              <SelectItem value="960">2 {t('task.days')}</SelectItem>
+              <SelectItem value="1440">3 {t('task.days')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

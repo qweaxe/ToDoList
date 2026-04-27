@@ -25,6 +25,7 @@ interface Todo {
   level: Level | null;
   priority: number;
   isMilestone: boolean;
+  estimatedDuration: number | null;  // 预计耗时（分钟）
   createdAt: string;
   updatedAt: string;
 }

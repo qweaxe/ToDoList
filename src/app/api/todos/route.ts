@@ -11,7 +11,7 @@ const TODO_JOIN_FIELDS = `
   t.startDate, t.dueDate, t.completedAt, t.subTasks,
   t.isCycleTask, t.recurrenceRuleId, t.parentRuleId,
   t.userId, t.categoryId, t.levelId,
-  t.priority, t.isMilestone, t.createdAt, t.updatedAt,
+  t.priority, t.isMilestone, t.estimatedDuration, t.createdAt, t.updatedAt,
   c.id AS cat_id, c.name AS cat_name, c.emoji AS cat_emoji,
   c.color AS cat_color, c.description AS cat_desc,
   c.userId AS cat_userId, c.createdAt AS cat_createdAt, c.updatedAt AS cat_updatedAt,
@@ -37,6 +37,7 @@ function reshapeTodo(row: Record<string, unknown>) {
     parentRuleId: row.parentRuleId, userId: row.userId,
     categoryId: row.categoryId, levelId: row.levelId,
     priority: row.priority, isMilestone: Boolean(row.isMilestone),
+    estimatedDuration: row.estimatedDuration,
     createdAt: row.createdAt, updatedAt: row.updatedAt,
     category: row.cat_id ? {
       id: row.cat_id, name: row.cat_name, emoji: row.cat_emoji,
@@ -182,8 +183,8 @@ export async function POST(request: NextRequest) {
       const todoId = crypto.randomUUID();
       await d1.run(
         `INSERT INTO todos (id, title, description, status, startDate, dueDate, completedAt,
-         categoryId, levelId, subTasks, isCycleTask, recurrenceRuleId, isMilestone, priority, userId, createdAt, updatedAt)
-         VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         categoryId, levelId, subTasks, isCycleTask, recurrenceRuleId, isMilestone, priority, estimatedDuration, userId, createdAt, updatedAt)
+         VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         todoId, validated.title, validated.description ?? null,
         new Date(validated.startDate).toISOString(),
         new Date(validated.dueDate).toISOString(),
@@ -194,6 +195,7 @@ export async function POST(request: NextRequest) {
         recurrenceRuleId,
         validated.isMilestone ? 1 : 0,
         validated.priority ?? 0,
+        validated.estimatedDuration ?? null,
         userId, now, now
       );
 
