@@ -470,15 +470,16 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">{t('task.noDuration')}</SelectItem>
-              {/* 预设值：15m/30m/1h/2h/4h/1d/2d/3d */}
               <SelectItem value="15">15 {t('task.minutes')}</SelectItem>
-              <SelectItem value="30">30 {t('task.minutes')}</SelectItem>
               <SelectItem value="60">1 {t('task.hour')}</SelectItem>
               <SelectItem value="120">2 {t('task.hours')}</SelectItem>
               <SelectItem value="240">4 {t('task.hours')}</SelectItem>
-              <SelectItem value="480">1 {t('task.day')}</SelectItem>
-              <SelectItem value="960">2 {t('task.days')}</SelectItem>
-              <SelectItem value="1440">3 {t('task.days')}</SelectItem>
+              <SelectItem value="480">8 {t('task.hours')}</SelectItem>
+              <SelectItem value="2880">2 {t('task.days')}</SelectItem>
+              <SelectItem value="10080">1 {t('task.week')}</SelectItem>
+              <SelectItem value="43200">1 {t('task.month')}</SelectItem>
+              <SelectItem value="129600">1 {t('task.quarter')}</SelectItem>
+              <SelectItem value="259200">0.5 {t('task.year')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

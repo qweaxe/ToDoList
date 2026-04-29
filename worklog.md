@@ -2613,3 +2613,81 @@ Claude Code VSCode 扩展的 diff 显示功能需要精确匹配字符串，但�
 ### 修改的文件
 - `.editorconfig` - 新增编辑器配置
 - 174+ 个源文件 - 换行符 CRLF → LF
+
+---
+
+## 2026-04-29: 跨天任务横跨条功能（Phase 1）
+
+### 背景
+月视图和周视图存在以下显示问题：
+1. 跨天任务在每个日期单元格重复显示，造成视觉冗余
+2. 移动端字体太小，内容难以阅读
+
+### 改动内容
+
+1. **新增类型定义**
+   - `src/types/cross-day-span.ts`: CrossDaySpan 接口和 shouldShowSpanningBar 函数
+   - 基于 estimatedDuration 判断是否显示横跨条（>= 1440分钟显示）
+
+2. **新增计算逻辑**
+   - `src/lib/cross-day-utils.ts`: 横跨条计算和行分配算法
+   - computeCalendarSpans(): 从任务数据提取跨天信息
+   - assignRowsToSpans(): 贪心算法避免重叠
+   - calculateSpanPosition(): 计算位置（left/width/top/height）
+   - getCrossWeekSpanFragments(): 处理跨周任务分段渲染
+
+3. **新增组件**
+   - `src/components/calendar/CalendarSpanBar.tsx`: 单条横跨条组件
+   - `src/components/calendar/CalendarSpanLayer.tsx`: 横跨条覆盖层组件
+   - 使用 ResizeObserver 测量单元格尺寸
+
+4. **集成到日历视图**
+   - `src/components/calendar/CalendarGrid.tsx`: 
+     - 新增 showSpanBars 参数
+     - 过滤已显示横跨条的任务避免重复
+   - `src/components/views/CalendarView.tsx`:
+     - 通过环境变量 NEXT_PUBLIC_ENABLE_SPAN_BARS 控制功能开关
+
+5. **Feature Flag 设计**
+   - 使用环境变量控制功能开关
+   - 未设置 NEXT_PUBLIC_ENABLE_SPAN_BARS 时功能默认关闭
+   - 可按环境（Production/Preview）独立控制
+
+### 使用说明
+1. 本功能在 `preview` 分支启用，预览环境可测试
+2. 测试稳定后合并到 `feat/cloudflare-deploy` 分支，正式环境启用
+3. 仅对 estimatedDuration >= 1440分钟（1天）的跨天任务显示横跨条
+4. 未设置 estimatedDuration 的跨天任务默认显示横跨条
+
+### 修改的文件
+- `src/types/cross-day-span.ts` - 新增类型定义
+- `src/lib/cross-day-utils.ts` - 新增计算逻辑
+- `src/components/calendar/CalendarSpanBar.tsx` - 新增横跨条组件
+- `src/components/calendar/CalendarSpanLayer.tsx` - 新增覆盖层组件
+- `src/components/calendar/CalendarGrid.tsx` - 集成横跨条功能
+- `src/components/views/CalendarView.tsx` - 添加 Feature Flag
+
+## 2026-04-29: 修复预计耗时编辑保存和优化时间范围选项
+
+### 改动内容
+1. **修复 TaskDetailDialog 预计耗时无法保存的问题**
+   - 添加 editEstimatedDuration 状态变量
+   - 在 getInitialEditValues 中初始化 estimatedDuration
+   - 在 startEditing 和 resetEdit 中正确设置值
+   - 在 handleSave 中将 estimatedDuration 包含在更新请求中
+   - 添加预计耗时选择器 UI（编辑模式下显示）
+
+2. **统一预计耗时时间范围选项**
+   - TaskForm 和 TaskDetailDialog 使用相同的时间范围
+   - 新范围：15分钟、1小时、2小时、4小时、8小时、2天、1周、1月、1季度、半年
+   - 覆盖从快速小任务到大型项目的常见场景
+
+3. **添加国际化翻译**
+   - 在 task 和 taskDetail 两个命名空间添加 week、month、quarter、year 翻译
+   - 中英文翻译文件同步更新
+
+### 修改的文件
+- `src/components/task/TaskDetailDialog.tsx` - 修复预计耗时编辑保存，添加选择器 UI
+- `src/components/task/TaskForm.tsx` - 统一时间范围选项
+- `messages/zh.json` - 添加时间单位中文翻译
+- `messages/en.json` - 添加时间单位英文翻译
