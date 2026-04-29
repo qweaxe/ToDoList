@@ -3,8 +3,15 @@ compatibility_date = "2026-04-10"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
-[vars]
+# 环境特定变量配置
+# 生产环境
+[env.production.vars]
 NEXTAUTH_URL = "https://todolist-cf.pages.dev"
+
+# 预览环境
+[env.preview.vars]
+NEXTAUTH_URL = "https://preview.todolist-cf.pages.dev"
+
 # Secrets (NEXTAUTH_SECRET) 需要通过 Cloudflare Dashboard 设置:
 # Pages -> todolist-cf -> Settings -> Environment variables -> Add variable
 # 类型选择 "Secret"，名称为 NEXTAUTH_SECRET
