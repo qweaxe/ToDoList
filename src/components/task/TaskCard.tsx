@@ -63,6 +63,7 @@ interface TaskCardProps {
     } | null;
     isMilestone: boolean;
     priority: number;
+    estimatedDuration?: number | null; // 预计耗时（分钟）
   };
   onToggle: (id: string) => void;
   onEdit: (task: TaskCardProps['task']) => void;
@@ -125,8 +126,10 @@ export function TaskCard({
       ? Math.round((completedSubTasks / subTasks.length) * 100)
       : 0;
 
-  // 判断是否跨天任务（比较本地日期部分）
-  const isCrossDay = getDateOnly(task.startDate) !== getDateOnly(task.dueDate);
+  // 判断是否跨天任务（基于 estimatedDuration）
+  // 只有预计耗时 >= 1天（1440分钟）才显示跨天标记
+  // 未设置 estimatedDuration 时，不显示跨天标记
+  const isCrossDay = (task.estimatedDuration ?? null) !== null && (task.estimatedDuration ?? 0) >= 1440;
 
   // 判断是否过期（比较本地日期部分）
   const todayLocal = getDateOnly(new Date().toISOString());

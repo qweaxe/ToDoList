@@ -279,7 +279,9 @@ export function TaskDetailDialog({
   if (!open || !taskId) return null;
 
   const isCompleted = task?.status === 'completed';
-  const isCrossDay = task?.startDate !== task?.dueDate;
+  // 只有预计耗时 >= 1天（1440分钟）才显示跨天标记
+  // 未设置 estimatedDuration 时，不显示跨天标记
+  const isCrossDay = (task?.estimatedDuration ?? null) !== null && (task?.estimatedDuration ?? 0) >= 1440;
   const completedSubTasks = parsedSubTasks.filter((st) => st.isDone).length;
   const subTaskProgress =
     parsedSubTasks.length > 0
