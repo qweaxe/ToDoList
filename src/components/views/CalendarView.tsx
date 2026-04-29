@@ -177,6 +177,7 @@ export function CalendarView() {
             isLoading={isLoading}
             onDateClick={handleDateClick}
             onTaskClick={handleTaskClick}
+            showSpanBars={true}
           />
         </div>
 

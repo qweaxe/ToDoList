@@ -6,17 +6,23 @@ import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarCell } from './CalendarCell';
+import { CalendarSpanLayer } from './CalendarSpanLayer';
 import { formatDate, isTodayDate, isWeekend } from '@/lib/date-utils';
+import { computeCalendarSpans } from '@/lib/cross-day-utils';
+import type { CrossDaySpan } from '@/types/cross-day-span';
 
 interface Task {
   id: string;
   title: string;
   status: string;
+  startDate: string;
+  dueDate: string;
   level?: {
     id: string;
     name: string;
     value: number;
   } | null;
+  estimatedDuration?: number | null;
 }
 
 interface CalendarGridProps {
@@ -28,6 +34,8 @@ interface CalendarGridProps {
   onDateClick?: (date: string) => void;
   onTaskClick?: (taskId: string) => void;
   maxVisibleTasks?: number;
+  /** 是否显示跨天任务横跨条 */
+  showSpanBars?: boolean;
 }
 
 export function CalendarGrid({
@@ -39,6 +47,7 @@ export function CalendarGrid({
   onDateClick,
   onTaskClick,
   maxVisibleTasks = 3,
+  showSpanBars = false,
 }: CalendarGridProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -69,6 +78,17 @@ export function CalendarGrid({
   const isInCurrentMonth = (date: Date) => {
     return isSameMonth(date, currentMonth);
   };
+
+  // 计算跨天任务横跨条数据
+  const spans: CrossDaySpan[] = useMemo(() => {
+    if (!showSpanBars) return [];
+    return computeCalendarSpans(tasks, calendarDates);
+  }, [showSpanBars, tasks, calendarDates]);
+
+  // 获取横跨条中涉及的任务 ID（用于在单元格中过滤）
+  const spanTaskIds = useMemo(() => {
+    return new Set(spans.map(s => s.taskId));
+  }, [spans]);
 
   // 星期标签
   const WEEKDAYS = [
@@ -125,18 +145,29 @@ export function CalendarGrid({
 
       {/* 日历网格 - 移动端支持横向滚动 */}
       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2">
-        <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[490px] sm:min-w-0">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[490px] sm:min-w-0 relative">
+          {/* 横跨条覆盖层 */}
+          {showSpanBars && spans.length > 0 && (
+            <CalendarSpanLayer spans={spans} onTaskClick={onTaskClick} />
+          )}
+
+          {/* 日历单元格 */}
           {calendarDates.map((date, index) => {
             const dateStr = formatDate(date);
             const dayTasks = tasks[dateStr] || [];
             const holiday = holidays?.[dateStr];
+
+            // 过滤掉已显示为横跨条的任务（避免重复显示）
+            const filteredTasks = showSpanBars
+              ? dayTasks.filter(task => !spanTaskIds.has(task.id))
+              : dayTasks;
 
             return (
               <CalendarCell
                 key={index}
                 date={date}
                 isCurrentMonth={isInCurrentMonth(date)}
-                tasks={dayTasks}
+                tasks={filteredTasks}
                 holiday={holiday}
                 maxVisibleTasks={maxVisibleTasks}
                 onClick={() => onDateClick?.(dateStr)}
