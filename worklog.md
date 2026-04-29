@@ -2586,3 +2586,30 @@ function getDateOnly(isoString: string): string {
 - `src/hooks/use-todos.ts` - 新增类型定义
 - `messages/zh.json` - 新增中文翻译
 - `messages/en.json` - 新增英文翻译
+
+---
+
+## 2026-04-29: 统一项目换行符为 LF
+
+### 背景
+Claude Code VSCode 扩展的 diff 显示功能需要精确匹配字符串，但项目使用 CRLF 换行符导致 diff 无法正常打开，报错 "String not found in file"。
+
+### 改动内容
+
+1. **创建 `.editorconfig` 配置文件**
+   - 统一项目使用 LF 换行符
+   - 统一 UTF-8 编码
+   - 统一缩进风格（space，2 格）
+
+2. **转换 174+ 个源文件**
+   - 所有 `.ts`、`.tsx` 文件从 CRLF 转换为 LF
+   - 配置文件（`package.json`、`tsconfig.json` 等）
+   - 翻译文件（`messages/*.json`）
+   - 数据库迁移文件
+
+3. **Git 配置**
+   - 设置 `core.autocrlf = false` 避免 Git 自动转换
+
+### 修改的文件
+- `.editorconfig` - 新增编辑器配置
+- 174+ 个源文件 - 换行符 CRLF → LF

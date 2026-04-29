@@ -1,5 +1,6 @@
 'use client';
 
+// Sidebar: 左侧导航栏组件，包含视图切换和捕获箱入口
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import {

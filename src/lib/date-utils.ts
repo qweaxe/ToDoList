@@ -66,6 +66,8 @@ export function toDate(date: DateInput): Date {
 
 /**
  * 格式化日期为 YYYY-MM-DD 格式
+ * @param date - 日期输入
+ * @returns 格式化后的日期字符串
  */
 export function formatDate(date: DateInput): string {
   const d = toDate(date);
@@ -74,6 +76,8 @@ export function formatDate(date: DateInput): string {
 
 /**
  * 格式化日期时间为 YYYY-MM-DD HH:mm 格式
+ * @param date - 日期输入
+ * @returns 格式化后的日期时间字符串
  */
 export function formatDateTime(date: DateInput): string {
   const d = toDate(date);
@@ -82,6 +86,8 @@ export function formatDateTime(date: DateInput): string {
 
 /**
  * 格式化时间为 HH:mm 格式
+ * @param date - 日期输入
+ * @returns 格式化后的时间字符串
  */
 export function formatTime(date: DateInput): string {
   const d = toDate(date);
@@ -90,6 +96,8 @@ export function formatTime(date: DateInput): string {
 
 /**
  * 格式化日期为 ISO 字符串（用于 API）
+ * @param date - 日期输入
+ * @returns ISO 8601 格式的日期时间字符串
  */
 export function toISOString(date: DateInput): string {
   const d = toDate(date);
