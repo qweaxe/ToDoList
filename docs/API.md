@@ -877,5 +877,158 @@ console.log(`更新 ${syncResult.data.todos.updated.length} 个任务`);
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.2 | 2026-04-30 | 新增时间追踪 API、任务预计耗时字段 |
 | 1.1 | 2026-04-02 | 新增任务写入接口、增量同步接口 |
 | 1.0 | 2026-04-02 | 初始版本，支持 API Token 认证和数据导出 |
+
+---
+
+## 时间追踪 API
+
+### 创建时间记录
+
+**请求**
+```
+POST /api/time-entries
+Authorization: Bearer <your_token>
+Content-Type: application/json
+```
+
+**请求体**
+```json
+{
+  "title": "完成项目报告",
+  "description": "Q1 季度报告撰写",
+  "date": "2026-04-30",
+  "startTime": "2026-04-30T09:00:00",
+  "endTime": "2026-04-30T10:30:00",
+  "categoryId": "clxxx...",
+  "todoId": "clxxx..."  // 可选，关联任务
+}
+```
+
+**请求字段说明**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | 是 | 活动名称（1-100字符） |
+| description | string | 否 | 详细描述 |
+| date | string | 是 | 记录日期 (YYYY-MM-DD) |
+| startTime | string | 是 | 开始时间 (ISO datetime) |
+| endTime | string | 是 | 结束时间 (ISO datetime) |
+| categoryId | string | 否 | 分类 ID |
+| todoId | string | 否 | 关联的任务 ID |
+
+**响应**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clxxx...",
+    "title": "完成项目报告",
+    "description": "Q1 季度报告撰写",
+    "date": "2026-04-30T12:00:00.000Z",
+    "startTime": "2026-04-30T01:00:00.000Z",
+    "endTime": "2026-04-30T02:30:00.000Z",
+    "duration": 90,
+    "category": { "id": "clxxx...", "name": "工作", "emoji": "💼" },
+    "todo": { "id": "clxxx...", "title": "Q1 报告" },
+    "createdAt": "2026-04-30T09:00:00.000Z"
+  }
+}
+```
+
+### 获取时间记录列表
+
+**请求**
+```
+GET /api/time-entries?date=2026-04-30
+Authorization: Bearer <your_token>
+```
+
+**查询参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| date | string | 指定日期筛选 (YYYY-MM-DD) |
+| startDate | string | 日期范围开始 |
+| endDate | string | 日期范围结束 |
+| categoryId | string | 分类筛选 |
+| todoId | string | 任务筛选 |
+
+### 获取日统计数据
+
+**请求**
+```
+GET /api/time-entries/daily?date=2026-04-30
+Authorization: Bearer <your_token>
+```
+
+**响应**
+```json
+{
+  "success": true,
+  "data": {
+    "date": "2026-04-30",
+    "entries": [...],
+    "stats": {
+      "totalDuration": 480,
+      "taskTime": 360,
+      "otherTime": 120,
+      "categoryDistribution": [
+        {
+          "categoryId": "clxxx...",
+          "categoryName": "工作",
+          "categoryEmoji": "💼",
+          "duration": 300
+        }
+      ]
+    }
+  }
+}
+```
+
+### 更新时间记录
+
+**请求**
+```
+PUT /api/time-entries/{id}
+Authorization: Bearer <your_token>
+```
+
+### 删除时间记录
+
+**请求**
+```
+DELETE /api/time-entries/{id}
+Authorization: Bearer <your_token>
+```
+
+---
+
+## 任务预计耗时
+
+任务创建/更新时可添加 `estimatedDuration` 字段：
+
+```json
+{
+  "title": "大型项目",
+  "startDate": "2026-04-01",
+  "dueDate": "2026-04-30",
+  "estimatedDuration": 2880  // 48小时 = 2天（分钟）
+}
+```
+
+**预设选项对应分钟数**
+
+| 选项 | 分钟数 |
+|------|--------|
+| 15分钟 | 15 |
+| 1小时 | 60 |
+| 2小时 | 120 |
+| 4小时 | 240 |
+| 8小时 | 480 |
+| 2天 | 2880 |
+| 1周 | 10080 |
+
+**用途**：`estimatedDuration >= 480`（>= 8小时/1工作日）的任务在日历/周视图显示跨天横跨框。

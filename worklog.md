@@ -2726,3 +2726,30 @@ Claude Code VSCode 扩展的 diff 显示功能需要精确匹配字符串，但�
 - `src/app/api/time-entries/route.ts` - 日期过滤逻辑修正
 - `src/app/api/time-entries/daily/route.ts` - 日期过滤逻辑修正
 - `src/app/api/time-entries/[id]/route.ts` - 更新逻辑修正
+
+---
+
+## 2026-04-30: 更新项目文档
+
+### 改动内容
+
+1. **更新需求说明书**
+   - 新增时间追踪模块完成状态
+   - 新增跨天横跨框进度状态
+   - 新增 2.6 时间追踪模块章节（时间记录、任务关联、预计耗时）
+
+2. **更新架构文档**
+   - 项目结构添加 TimeView、time/ 组件目录
+   - hooks 添加 use-time-entries.ts
+   - API 接口添加 5.12 时间追踪 API
+   - 数据模型添加 TimeEntry 模型、Todo 添加 estimatedDuration 字段
+
+3. **更新 API 文档**
+   - 新增时间追踪 API 章节
+   - 新增任务预计耗时字段说明
+   - 更新版本历史
+
+### 修改的文件
+- `upload/To Do List 需求说明书.md` - 添加时间追踪模块功能描述
+- `docs/ARCHITECTURE.md` - 添加时间追踪模块架构
+- `docs/API.md` - 新增时间记录 API 和预计耗时说明
