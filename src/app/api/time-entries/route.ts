@@ -85,7 +85,8 @@ export async function GET(request: NextRequest) {
 
       if (date) {
         conditions.push('t.date=?');
-        args.push(new Date(date).toISOString());
+        // 使用中午时间避免时区边界问题
+        args.push(new Date(`${date}T12:00:00`).toISOString());
       }
       if (categoryId) {
         conditions.push('t.categoryId=?');
@@ -97,7 +98,8 @@ export async function GET(request: NextRequest) {
       }
       if (startDate && endDate) {
         conditions.push('t.date>=? AND t.date<=?');
-        args.push(new Date(startDate).toISOString(), new Date(endDate).toISOString());
+        // 使用中午时间避免时区边界问题
+        args.push(new Date(`${startDate}T12:00:00`).toISOString(), new Date(`${endDate}T12:00:00`).toISOString());
       }
 
       const rows = await d1.all<Record<string, unknown>>(
@@ -113,13 +115,14 @@ export async function GET(request: NextRequest) {
     const db = await getDb();
     const where: Record<string, unknown> = { userId };
 
-    if (date) where.date = new Date(date);
+    // 使用中午时间避免时区边界问题
+    if (date) where.date = new Date(`${date}T12:00:00`);
     if (categoryId) where.categoryId = categoryId;
     if (todoId) where.todoId = todoId;
     if (startDate && endDate) {
       where.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+        gte: new Date(`${startDate}T12:00:00`),
+        lte: new Date(`${endDate}T12:00:00`),
       };
     }
 
@@ -169,13 +172,16 @@ export async function POST(request: NextRequest) {
       const now = new Date().toISOString();
       const entryId = crypto.randomUUID();
 
+      // 使用中午时间存储 date 字段，避免时区边界问题
+      const dateObj = new Date(`${validated.date}T12:00:00`);
+
       await d1.run(
         `INSERT INTO time_entries (id, title, description, date, startTime, endTime, duration, categoryId, todoId, userId, createdAt, updatedAt)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         entryId,
         validated.title,
         validated.description ?? null,
-        new Date(validated.date).toISOString(),
+        dateObj.toISOString(),
         startTimeObj.toISOString(),
         endTimeObj.toISOString(),
         duration,

@@ -37,6 +37,7 @@ export function OverdueView() {
     isMilestone: boolean;
     priority: number;
     status?: string;
+    estimatedDuration?: number | null;
   } | null>(null);
 
   const { data, isLoading } = useDailyTodos(getTodayString());

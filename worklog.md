@@ -2691,3 +2691,38 @@ Claude Code VSCode 扩展的 diff 显示功能需要精确匹配字符串，但�
 - `src/components/task/TaskForm.tsx` - 统一时间范围选项
 - `messages/zh.json` - 添加时间单位中文翻译
 - `messages/en.json` - 添加时间单位英文翻译
+
+---
+
+## 2026-04-30: Bug 修复 - 任务编辑保存、默认日期、时间记录时区
+
+### 背景
+用户反馈三个功能问题：
+1. 任务编辑无法正常保存 - estimatedDuration 字段丢失
+2. 新建任务默认日期错误 - 直接访问日视图时应支持 URL 参数指定日期
+3. 时间记录时区问题 - 时间显示不正确
+
+### 改动内容
+
+1. **修复任务编辑保存失败**
+   - 在 DayView.tsx、WeekView.tsx、OverdueView.tsx 的 editingTask 接口中添加 estimatedDuration 字段
+   - 原因：编辑任务时 estimatedDuration 未被包含在接口定义中，导致提交时变为 null 覆盖原有值
+
+2. **支持 URL 参数指定日视图日期**
+   - DayView.tsx 新增 useSearchParams 读取 URL 中的 `?date=YYYY-MM-DD` 参数
+   - 通过 useEffect 同步 URL 日期到 selectedDate
+   - 用户可通过 `/day?date=2026-05-01` 直接访问指定日期
+
+3. **修复时间记录时区问题**
+   - TimeEntryForm.tsx 的 combineDateAndTime 函数添加 toISOString() 转换
+   - 与 TaskForm.tsx 保持一致的时区处理方式（本地时间 → UTC）
+   - API 路由使用中午时间 (T12:00:00) 处理纯日期参数，避免时区边界问题
+
+### 修改的文件
+- `src/components/views/DayView.tsx` - 添加 estimatedDuration 到接口 + URL 参数支持
+- `src/components/views/WeekView.tsx` - 添加 estimatedDuration 到 TaskItem 接口
+- `src/components/views/OverdueView.tsx` - 添加 estimatedDuration 到 editingTask 接口
+- `src/components/time/TimeEntryForm.tsx` - combineDateAndTime 函数修复时区转换
+- `src/app/api/time-entries/route.ts` - 日期过滤逻辑修正
+- `src/app/api/time-entries/daily/route.ts` - 日期过滤逻辑修正
+- `src/app/api/time-entries/[id]/route.ts` - 更新逻辑修正

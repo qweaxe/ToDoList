@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format, parseISO, subDays, addDays } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertTriangle, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +43,18 @@ export function DayView() {
     isMilestone: boolean;
     priority: number;
     status?: string;
+    estimatedDuration?: number | null;
   } | null>(null);
+
+  // URL 参数支持 - 从 URL 读取 date 参数设置 selectedDate
+  const searchParams = useSearchParams();
+  const dateFromUrl = searchParams.get('date');
+
+  useEffect(() => {
+    if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) {
+      setSelectedDate(dateFromUrl);
+    }
+  }, [dateFromUrl, setSelectedDate]);
 
   const { data, isLoading } = useDailyTodos(selectedDate);
   const toggleMutation = useToggleTodo();

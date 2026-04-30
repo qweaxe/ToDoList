@@ -181,15 +181,18 @@ export async function PUT(
       }
       if (validated.date !== undefined) {
         updates.push('date=?');
-        args.push(new Date(validated.date).toISOString());
+        // 使用中午时间避免时区边界问题
+        args.push(new Date(`${validated.date}T12:00:00`).toISOString());
       }
       if (validated.startTime !== undefined) {
         updates.push('startTime=?');
-        args.push(new Date(validated.startTime).toISOString());
+        // startTime 已经是 UTC ISO 格式，直接存储
+        args.push(validated.startTime);
       }
       if (validated.endTime !== undefined) {
         updates.push('endTime=?');
-        args.push(new Date(validated.endTime).toISOString());
+        // endTime 已经是 UTC ISO 格式，直接存储
+        args.push(validated.endTime);
       }
       if (duration !== undefined) {
         updates.push('duration=?');
@@ -238,9 +241,18 @@ export async function PUT(
 
     if (validated.title !== undefined) updateData.title = validated.title;
     if (validated.description !== undefined) updateData.description = validated.description;
-    if (validated.date !== undefined) updateData.date = new Date(validated.date);
-    if (validated.startTime !== undefined) updateData.startTime = new Date(validated.startTime);
-    if (validated.endTime !== undefined) updateData.endTime = new Date(validated.endTime);
+    if (validated.date !== undefined) {
+      // 使用中午时间避免时区边界问题
+      updateData.date = new Date(`${validated.date}T12:00:00`);
+    }
+    if (validated.startTime !== undefined) {
+      // startTime 已经是 UTC ISO 格式
+      updateData.startTime = new Date(validated.startTime);
+    }
+    if (validated.endTime !== undefined) {
+      // endTime 已经是 UTC ISO 格式
+      updateData.endTime = new Date(validated.endTime);
+    }
     if (duration !== undefined) updateData.duration = duration;
     if (validated.categoryId !== undefined) updateData.categoryId = validated.categoryId;
     if (validated.todoId !== undefined) updateData.todoId = validated.todoId;
