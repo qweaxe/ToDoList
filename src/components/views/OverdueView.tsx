@@ -74,6 +74,7 @@ export function OverdueView() {
     isMilestone: boolean;
     priority: number;
     status?: string;
+    estimatedDuration?: number | null;
   }) => {
     setEditingTask(task);
     setIsFormOpen(true);

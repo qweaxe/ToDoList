@@ -2753,3 +2753,38 @@ Claude Code VSCode 扩展的 diff 显示功能需要精确匹配字符串，但�
 - `upload/To Do List 需求说明书.md` - 添加时间追踪模块功能描述
 - `docs/ARCHITECTURE.md` - 添加时间追踪模块架构
 - `docs/API.md` - 新增时间记录 API 和预计耗时说明
+
+---
+
+## 2026-05-01: 修复 estimatedDuration 无法保存的补充修复
+
+### 问题描述
+用户反馈预计耗时选择后实际无法保存，之前的修复不完整。
+
+### 根因分析
+通过深入调查发现 4 个数据流断裂点：
+
+1. **DayView.tsx handleEdit 参数类型缺失**
+   - editingTask 状态接口已有 estimatedDuration
+   - 但 handleEdit 函数参数类型中没有，导致传递时字段被截断
+
+2. **OverdueView.tsx handleEdit 参数类型缺失**
+   - 同样问题，handleEdit 参数类型不完整
+
+3. **todos/route.ts Prisma POST 路径缺失**
+   - D1 路径正确处理了 estimatedDuration
+   - 但 Prisma 路径的 db.todo.create data 中缺少该字段
+
+4. **todos/[id]/route.ts Prisma PUT 路径已正确处理**
+   - D1 路径正确
+   - Prisma 路径也有 estimatedDuration 处理（lines 229-231）
+
+### 改动内容
+- DayView.tsx handleEdit 参数类型添加 estimatedDuration?: number | null
+- OverdueView.tsx handleEdit 参数类型添加 estimatedDuration?: number | null
+- todos/route.ts Prisma create data 添加 estimatedDuration: validated.estimatedDuration ?? null
+
+### 修改的文件
+- `src/components/views/DayView.tsx` - handleEdit 参数添加 estimatedDuration
+- `src/components/views/OverdueView.tsx` - handleEdit 参数添加 estimatedDuration
+- `src/app/api/todos/route.ts` - Prisma create 添加 estimatedDuration 字段

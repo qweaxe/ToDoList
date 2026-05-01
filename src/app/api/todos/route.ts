@@ -239,6 +239,7 @@ export async function POST(request: NextRequest) {
         recurrenceRuleId,
         isMilestone: validated.isMilestone ?? false,
         priority: validated.priority ?? 0,
+        estimatedDuration: validated.estimatedDuration ?? null,
         userId,
       },
       include: { category: true, level: true, recurrenceRule: true },
