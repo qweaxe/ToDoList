@@ -46,6 +46,8 @@ import { createTodoSchema, type CreateTodoInput } from '@/types/api';
 import { useCategories } from '@/hooks/use-categories';
 import { useLevels } from '@/hooks/use-levels';
 import { useCreateTodo, useUpdateTodo } from '@/hooks/use-todos';
+import { useTodoReminders, useCreateReminder, useDeleteReminder } from '@/hooks/use-reminders';
+import { ReminderManager } from '@/components/reminder/ReminderManager';
 import { getTodayString } from '@/lib/date-utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -92,11 +94,22 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
   const [dueTime, setDueTime] = useState<string>('23:59');
   // 预计耗时状态（分钟）
   const [estimatedDuration, setEstimatedDuration] = useState<number | null>(null);
+  // 提醒状态
+  const [reminders, setReminders] = useState<Array<{
+    id?: string;
+    remindAt: Date;
+    type: string;
+    offset: number | null;
+  }>>([]);
 
   const { data: categoriesData } = useCategories();
   const { data: levelsData } = useLevels();
   const createMutation = useCreateTodo();
   const updateMutation = useUpdateTodo();
+  const createReminderMutation = useCreateReminder();
+
+  // 获取编辑任务的提醒列表
+  const { data: existingRemindersData } = useTodoReminders(initialData?.id || null);
 
   const categories = categoriesData?.data || [];
   const levels = levelsData?.data || [];
@@ -222,6 +235,8 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
         setDueTime(extractTimeFromISO(initialData.dueDate, true));
         // 设置预计耗时
         setEstimatedDuration(initialData.estimatedDuration || null);
+        // 重置提醒状态（编辑模式下会从 API 加载）
+        setReminders([]);
 
         // 解析子任务
         if (initialData.subTasks) {
@@ -253,9 +268,24 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
         setStartTime('00:00');
         setDueTime('23:59');
         setEstimatedDuration(null);
+        // 重置提醒状态
+        setReminders([]);
       }
     }
   }, [initialData, defaultDate, reset]);
+
+  // 编辑模式下加载现有提醒
+  useEffect(() => {
+    if (initialData?.id && existingRemindersData?.data) {
+      const loadedReminders = existingRemindersData.data.map((r) => ({
+        id: r.id,
+        remindAt: new Date(r.remindAt),
+        type: r.type,
+        offset: r.offset,
+      }));
+      setReminders(loadedReminders);
+    }
+  }, [initialData?.id, existingRemindersData]);
 
   // 添加子任务
   const addSubTask = () => {
@@ -313,8 +343,34 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
         id: initialData.id,
         data: submitData,
       });
+      // 更新提醒：先删除旧提醒，再创建新提醒
+      if (existingRemindersData?.data) {
+        for (const oldReminder of existingRemindersData.data) {
+          await fetch(`/api/reminders/${oldReminder.id}`, { method: 'DELETE' });
+        }
+      }
+      // 创建新提醒
+      for (const reminder of reminders) {
+        await createReminderMutation.mutateAsync({
+          todoId: initialData.id,
+          remindAt: reminder.remindAt.toISOString(),
+          type: reminder.type,
+          offset: reminder.offset ?? undefined,
+        });
+      }
     } else {
-      await createMutation.mutateAsync(submitData);
+      const result = await createMutation.mutateAsync(submitData) as { success: boolean; data?: { id: string } };
+      // 新建任务后创建提醒（需要任务 ID）
+      if (result?.success && result?.data?.id && reminders.length > 0) {
+        for (const reminder of reminders) {
+          await createReminderMutation.mutateAsync({
+            todoId: result.data.id,
+            remindAt: reminder.remindAt.toISOString(),
+            type: reminder.type,
+            offset: reminder.offset ?? undefined,
+          });
+        }
+      }
     }
 
     onClose();
@@ -645,6 +701,17 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             </div>
           </div>
         )}
+      </div>
+
+      {/* 提醒设置 */}
+      <div className="space-y-3 p-4 border rounded-lg">
+        <ReminderManager
+          reminders={reminders}
+          onChange={setReminders}
+          startDate={new Date(combineDateAndTime(startDate, startTime))}
+          dueDate={new Date(combineDateAndTime(dueDate, dueTime))}
+          disabled={isCompleted}
+        />
       </div>
 
       {/* 里程碑 */}
