@@ -2788,3 +2788,86 @@ Claude Code VSCode 扩展的 diff 显示功能需要精确匹配字符串，但�
 - `src/components/views/DayView.tsx` - handleEdit 参数添加 estimatedDuration
 - `src/components/views/OverdueView.tsx` - handleEdit 参数添加 estimatedDuration
 - `src/app/api/todos/route.ts` - Prisma create 添加 estimatedDuration 字段
+
+---
+
+## 2026-05-04: 修复 estimatedDuration 在日/周/月视图 API 中缺失导致显示为"未设置"
+
+### 问题描述
+用户修改了任务的预计耗时，数据库中有对应数据，但前端显示为"未设置"，且没有根据预计时间形成跨天任务标记。
+
+### 根因分析
+多个 API 端点的 D1 原生 SQL 查询中缺少 `estimatedDuration` 字段：
+
+| 端点 | 文件路径 | 问题 |
+|------|----------|------|
+| `/api/todos/daily` | `src/app/api/todos/daily/route.ts` | SQL SELECT 和 reshapeTodo 缺失 |
+| `/api/todos/weekly` | `src/app/api/todos/weekly/route.ts` | SQL SELECT 和 reshapeTodo 缺失 |
+| `/api/todos/monthly` | `src/app/api/todos/monthly/route.ts` | SQL SELECT 和 reshapeTodo 缺失 |
+
+数据流断点：
+```
+数据库 (estimatedDuration 有值)
+    ↓
+API (SQL SELECT 缺失该字段) ❌ BUG
+    ↓
+前端 (estimatedDuration = undefined)
+    ↓
+显示 "未设置"，跨天标记不显示
+```
+
+### 改动内容
+1. **daily/route.ts**
+   - `TODO_JOIN_FIELDS` 添加 `t.estimatedDuration`
+   - `reshapeTodo` 函数添加 `estimatedDuration: row.estimatedDuration`
+
+2. **weekly/route.ts**
+   - `TODO_JOIN_FIELDS` 添加 `t.estimatedDuration`
+   - `reshapeTodo` 函数添加 `estimatedDuration: row.estimatedDuration`
+
+3. **monthly/route.ts**
+   - `TODO_JOIN_FIELDS` 添加 `t.estimatedDuration`
+   - `reshapeTodo` 函数添加 `estimatedDuration: row.estimatedDuration`
+
+### 修改的文件
+- `src/app/api/todos/daily/route.ts` - D1 SQL 和 reshapeTodo 添加字段
+- `src/app/api/todos/weekly/route.ts` - D1 SQL 和 reshapeTodo 添加字段
+- `src/app/api/todos/monthly/route.ts` - D1 SQL 和 reshapeTodo 添加字段
+
+---
+
+## 2026-05-04: 启用任务提醒功能
+
+### 背景
+项目已有完整的提醒功能基础设施（数据库模型、API、Hooks、组件），但前端未集成，用户无法设置提醒。
+
+### 改动内容
+
+1. **MainLayout.tsx - 挂载通知权限提示**
+   - 导入 `NotificationPermissionPrompt` 组件
+   - 在布局底部渲染，引导用户开启浏览器通知权限
+
+2. **TaskForm.tsx - 集成提醒管理**
+   - 导入 `ReminderManager` 组件和提醒 Hooks
+   - 添加 `reminders` 状态管理提醒列表
+   - 编辑模式下使用 `useTodoReminders` 加载现有提醒
+   - 在表单中添加提醒设置区域（周期任务之后、里程碑之前）
+   - 提交时处理提醒：
+     - 新建任务：任务创建成功后，用返回的 ID 创建提醒
+     - 编辑任务：先删除旧提醒，再创建新提醒
+
+### 功能说明
+用户现在可以：
+- 创建任务时设置提醒（预设：任务开始时、截止时、提前5/15/30分钟、1/2小时、1天）
+- 设置自定义提醒时间
+- 编辑任务时修改提醒
+- 页面打开时自动收到浏览器通知提醒（需授权通知权限）
+
+### 提醒触发机制
+采用前端轮询方式：
+- `usePendingReminders` 每分钟检查待发送提醒
+- `useNotifications` 发送浏览器通知并标记已发送
+
+### 修改的文件
+- `src/components/layout/MainLayout.tsx` - 挂载通知权限提示
+- `src/components/task/TaskForm.tsx` - 集成提醒管理组件和逻辑
