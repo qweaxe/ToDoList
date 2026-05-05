@@ -2871,3 +2871,14 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 ### 修改的文件
 - `src/components/layout/MainLayout.tsx` - 挂载通知权限提示
 - `src/components/task/TaskForm.tsx` - 集成提醒管理组件和逻辑
+
+## 2026-05-05: filter 和 batch 端点添加 D1 原生 SQL 路径
+
+### 改动内容
+- `filter/route.ts` 完整重写：认证改为 `getApiSession`，新增 D1 SQL 路径（IS_EDGE 分支），包含 TODO_JOIN_FIELDS/reshapeTodo，动态拼接 categoryId/levelId 查询列
+- `batch/route.ts` 完整重写：扩展 Zod schema（新增 completedAt/startDate/dueDate），新增 delete 和 update 操作的 D1 SQL 路径，动态构建 IN 占位符和 SET 子句
+- 两个端点原先只有 Prisma 路径，生产环境（Cloudflare Workers）会因 Prisma 初始化 CPU 超限导致 503
+
+### 修改的文件
+- `src/app/api/todos/filter/route.ts` - 添加 D1 SQL 路径、认证升级、reshapeTodo
+- `src/app/api/todos/batch/route.ts` - 添加 D1 SQL 路径、扩展 Zod schema
