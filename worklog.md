@@ -2882,3 +2882,24 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 ### 修改的文件
 - `src/app/api/todos/filter/route.ts` - 添加 D1 SQL 路径、认证升级、reshapeTodo
 - `src/app/api/todos/batch/route.ts` - 添加 D1 SQL 路径、扩展 Zod schema
+
+## 2026-05-06: 修复新建任务默认日期和英文日期显示
+
+### 改动内容
+1. **修复新建任务默认日期问题**
+   - 用户在日视图选择 5.7 后新建任务，默认日期仍为今天而非选中日期
+   - TaskForm useEffect 仅跟踪 taskId 变化，defaultDate 变化时未重置表单
+   - 新增 initializedDefaultDate ref，在新建模式下 defaultDate 变化也触发重置
+
+2. **修复英文 locale 下日期仍显示中文格式**
+   - formatDateDisplay 硬编码 'yyyy年MM月dd日' 和 zhCN locale
+   - 改为接受可选 locale 参数，自动选择中文或英文格式
+   - 中文：yyyy年MM月dd日 | 英文：MMMM d, yyyy (如 May 6, 2025)
+   - DayView、Header、OverdueView 的 formatDateDisplay 调用传入 dateFnsLocale
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 新建任务时 defaultDate 变化触发表单重置
+- `src/lib/date-utils.ts` - formatDateDisplay 支持 locale 参数自动切换格式
+- `src/components/views/DayView.tsx` - 传入 dateFnsLocale
+- `src/components/layout/Header.tsx` - 传入 dateFnsLocale
+- `src/components/views/OverdueView.tsx` - 传入 dateFnsLocale

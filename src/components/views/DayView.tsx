@@ -19,7 +19,7 @@ import { BatchActionsToolbar } from '@/components/task/BatchActionsToolbar';
 import { useDailyTodos, useToggleTodo, useDeleteTodo, useUpdateCompletedAt, useUpdateSubTask } from '@/hooks/use-todos';
 import { useBatchSelection } from '@/hooks/use-batch-selection';
 import { useViewStore } from '@/hooks/use-view-store';
-import { getTodayString, formatDateDisplay, isDateBefore } from '@/lib/date-utils';
+import { getTodayString, formatDateDisplay } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
 export function DayView() {
@@ -172,7 +172,7 @@ export function DayView() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-4">
             <h1 className="text-xl sm:text-2xl font-bold">
-              {formatDateDisplay(selectedDate)}
+              {formatDateDisplay(selectedDate, undefined, dateFnsLocale)}
             </h1>
             {!isToday && (
               <Button variant="outline" size="sm" onClick={handleGoToToday} className="text-xs sm:text-sm">
@@ -268,7 +268,7 @@ export function DayView() {
                     {Object.entries(groupedOverdue || {}).map(([date, tasks]) => (
                       <div key={date} className="space-y-2">
                         <div className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 flex-wrap">
-                          <span className="font-medium">{formatDateDisplay(date)}</span>
+                          <span className="font-medium">{formatDateDisplay(date, undefined, dateFnsLocale)}</span>
                           <span className="text-destructive">
                             ({t('task.overdueDays', { days: Math.ceil((new Date(today).getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24)) })})
                           </span>

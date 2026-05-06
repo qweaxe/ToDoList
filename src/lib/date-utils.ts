@@ -48,7 +48,7 @@ import {
   getHours,
   getMinutes,
 } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS, Locale } from 'date-fns/locale';
 
 // ==================== 类型定义 ====================
 
@@ -105,11 +105,18 @@ export function toISOString(date: DateInput): string {
 }
 
 /**
- * 格式化日期为显示格式
+ * 格式化日期为显示格式（根据 locale 自动切换）
  */
-export function formatDateDisplay(date: DateInput, formatStr: string = 'yyyy年MM月dd日'): string {
+export function formatDateDisplay(date: DateInput, formatStr?: string, locale?: Locale): string {
   const d = toDate(date);
-  return format(d, formatStr, { locale: zhCN });
+  if (formatStr) {
+    return format(d, formatStr, { locale: locale || zhCN });
+  }
+  // 根据 locale 自动选择格式
+  if (locale === enUS) {
+    return format(d, 'MMMM d, yyyy', { locale: enUS });
+  }
+  return format(d, 'yyyy年MM月dd日', { locale: zhCN });
 }
 
 /**

@@ -201,16 +201,19 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     return localDate.toISOString();
   };
 
-  // 使用 ref 跟踪已初始化的任务 ID，避免重复重置
+  // 使用 ref 跟踪已初始化的任务 ID 和默认日期，避免重复重置
   const initializedTaskId = useRef<string | null>(null);
+  const initializedDefaultDate = useRef<string | undefined>(undefined);
 
-  // 初始化编辑数据 - 只在任务 ID 改变时重置
+  // 初始化编辑数据 - 只在任务 ID 或默认日期改变时重置
   useEffect(() => {
     const currentTaskId = initialData?.id || null;
 
-    // 只有当任务 ID 改变时才重置表单
-    if (currentTaskId !== initializedTaskId.current) {
+    // 任务 ID 改变时重置，或新建任务时默认日期改变也重置
+    if (currentTaskId !== initializedTaskId.current ||
+        (!initialData && defaultDate !== initializedDefaultDate.current)) {
       initializedTaskId.current = currentTaskId;
+      initializedDefaultDate.current = defaultDate;
 
       if (initialData) {
         // 提取日期部分（yyyy-MM-dd），避免 ISO datetime 格式导致的显示问题

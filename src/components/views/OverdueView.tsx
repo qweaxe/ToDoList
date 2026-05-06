@@ -190,7 +190,7 @@ export function OverdueView() {
                   >
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{formatDateDisplay(date)}</span>
+                      <span className="font-medium">{formatDateDisplay(date, undefined, dateFnsLocale)}</span>
                       <Badge variant="outline" className="text-destructive border-destructive/50">
                         {t('task.overdueDays', { days: overdueDays })}
                       </Badge>

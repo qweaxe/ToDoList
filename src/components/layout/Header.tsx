@@ -120,7 +120,7 @@ export function Header() {
           {(isHydrated && currentView === 'day') && (
             <div className="hidden sm:flex items-center gap-2">
               <span className="font-medium">
-                {formatDateDisplay(selectedDate)}
+                {formatDateDisplay(selectedDate, undefined, dateFnsLocale)}
               </span>
               {!isToday && (
                 <Button
