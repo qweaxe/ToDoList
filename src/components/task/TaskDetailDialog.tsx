@@ -297,8 +297,8 @@ export function TaskDetailDialog({
     if (task) {
       setEditTitle(task.title);
       setEditDescription(task.description || '');
-      setEditStartDate(task.startDate);
-      setEditDueDate(task.dueDate);
+      setEditStartDate(extractDateFromISO(task.startDate));
+      setEditDueDate(extractDateFromISO(task.dueDate));
       setEditCategoryId(task.categoryId || '');
       setEditLevelId(task.levelId || '');
       setEditSubTasks(parsedSubTasks);

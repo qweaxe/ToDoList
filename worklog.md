@@ -2903,3 +2903,23 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/components/views/DayView.tsx` - 传入 dateFnsLocale
 - `src/components/layout/Header.tsx` - 传入 dateFnsLocale
 - `src/components/views/OverdueView.tsx` - 传入 dateFnsLocale
+
+## 2026-05-07: 代码审查 bug 修复（8项）
+
+### 改动内容
+- Fix 1: TaskDetailDialog startEditing 将原始 ISO datetime 赋值给日期字段，改为使用 extractDateFromISO 转换为本地日期
+- Fix 2: Zod estimatedDuration max 限制从 10080（7天）改为 525600（约1年），匹配 UI 大时间选项
+- Fix 3: TaskForm 表单关闭时清除 initializedTaskId/initializedDefaultDate ref，避免重新打开时残留脏数据
+- Fix 4: TaskForm extractDateFromISO 从 split('T')[0]（UTC 日期）改为 new Date + format（本地日期）
+- Fix 5: use-view-store goToPreviousWeek 双重 subWeeks 导致跳2周，改为只减1周
+- Fix 6: formatDateShort/formatWeekday/formatMonth 添加可选 locale 参数，formatMonth 区分中英文格式
+- Fix 7: use-todos 所有 mutationFn 在 res.json() 前添加 res.ok 检查，服务器错误时抛出有意义的错误消息
+- Fix 8: TaskForm onSubmit 用 try/catch 包裹 mutation，只在成功时调用 onClose，服务器错误时保持表单打开
+
+### 修改的文件
+- `src/components/task/TaskDetailDialog.tsx` - startEditing 使用 extractDateFromISO
+- `src/components/task/TaskForm.tsx` - extractDateFromISO 本地日期转换、ref 清除、onSubmit 错误处理
+- `src/types/api.ts` - estimatedDuration max 改为 525600
+- `src/hooks/use-view-store.ts` - goToPreviousWeek 移除双重减法
+- `src/hooks/use-todos.ts` - 所有 mutationFn 添加 HTTP 状态验证
+- `src/lib/date-utils.ts` - formatDateShort/formatWeekday/formatMonth 添加 locale 参数

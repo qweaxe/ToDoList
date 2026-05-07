@@ -122,25 +122,28 @@ export function formatDateDisplay(date: DateInput, formatStr?: string, locale?: 
 /**
  * 格式化日期为简短格式
  */
-export function formatDateShort(date: DateInput): string {
+export function formatDateShort(date: DateInput, locale?: Locale): string {
   const d = toDate(date);
-  return format(d, 'MM/dd', { locale: zhCN });
+  return format(d, 'MM/dd', { locale: locale || zhCN });
 }
 
 /**
  * 格式化星期几
  */
-export function formatWeekday(date: DateInput): string {
+export function formatWeekday(date: DateInput, locale?: Locale): string {
   const d = toDate(date);
-  return format(d, 'EEEE', { locale: zhCN });
+  return format(d, 'EEEE', { locale: locale || zhCN });
 }
 
 /**
  * 格式化月份
  */
-export function formatMonth(date: DateInput): string {
+export function formatMonth(date: DateInput, locale?: Locale): string {
   const d = toDate(date);
-  return format(d, 'yyyy年MM月', { locale: zhCN });
+  if (locale === enUS) {
+    return format(d, 'MMMM yyyy', { locale: enUS });
+  }
+  return format(d, 'yyyy年MM月', { locale: locale || zhCN });
 }
 
 // ==================== 获取边界日期 ====================

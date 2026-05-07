@@ -162,6 +162,10 @@ export function useCreateTodo() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `Request failed with status ${res.status}` }));
+        throw new Error(errorData.error || `Request failed with status ${res.status}`);
+      }
       return res.json();
     },
     onSuccess: (result) => {
@@ -189,6 +193,10 @@ export function useUpdateTodo() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `Request failed with status ${res.status}` }));
+        throw new Error(errorData.error || `Request failed with status ${res.status}`);
+      }
       return res.json();
     },
     onSuccess: (result) => {
@@ -220,6 +228,11 @@ export function useToggleTodo() {
         body: JSON.stringify({ id }),
         signal: controller.signal,
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `Request failed with status ${res.status}` }));
+        throw new Error(errorData.error || `Request failed with status ${res.status}`);
+      }
 
       // 清理 controller
       mutationManager.clear(`toggle-${id}`);
@@ -446,6 +459,10 @@ export function useUpdateCompletedAt() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completedAt }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `Request failed with status ${res.status}` }));
+        throw new Error(errorData.error || `Request failed with status ${res.status}`);
+      }
       return res.json();
     },
     onSuccess: (result) => {
@@ -471,6 +488,10 @@ export function useDeleteTodo() {
       const res = await fetch(`/api/todos/${id}`, {
         method: 'DELETE',
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `Request failed with status ${res.status}` }));
+        throw new Error(errorData.error || `Request failed with status ${res.status}`);
+      }
       return res.json();
     },
     onSuccess: (result) => {
@@ -498,6 +519,10 @@ export function useBatchDeleteTodos() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete', ids }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `Request failed with status ${res.status}` }));
+        throw new Error(errorData.error || `Request failed with status ${res.status}`);
+      }
       return res.json();
     },
     onSuccess: (result) => {
@@ -525,6 +550,10 @@ export function useBatchUpdateTodos() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update', ids, data }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `Request failed with status ${res.status}` }));
+        throw new Error(errorData.error || `Request failed with status ${res.status}`);
+      }
       return res.json();
     },
     onSuccess: (result) => {
@@ -556,6 +585,11 @@ export function useUpdateSubTask() {
         body: JSON.stringify({ subTaskId, isDone }),
         signal: controller.signal,
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `Request failed with status ${res.status}` }));
+        throw new Error(errorData.error || `Request failed with status ${res.status}`);
+      }
 
       // 清理 controller
       mutationManager.clear(`subtask-${taskId}-${subTaskId}`);

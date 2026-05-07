@@ -146,10 +146,9 @@ export const useViewStore = create<ViewState>()(
 
       goToPreviousWeek: () => {
         const { weekStartDate } = get();
-        // weekStartDate 是 yyyy-MM-dd 格式，使用 parseISO 解析
         const date = weekStartDate.includes('T')
-          ? subWeeks(new Date(weekStartDate), 1)
-          : new Date(`${weekStartDate}T12:00:00`); // 使用中午时间避免时区边界问题
+          ? new Date(weekStartDate)
+          : new Date(`${weekStartDate}T12:00:00`);
         const prevDate = subWeeks(date, 1);
         set({ weekStartDate: format(prevDate, 'yyyy-MM-dd') });
       },

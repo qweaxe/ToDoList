@@ -144,10 +144,9 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
   // 从 ISO 字符串提取日期部分（yyyy-MM-dd）
   const extractDateFromISO = (isoString: string): string => {
     if (!isoString) return getTodayString();
-    // 如果已经是纯日期格式，直接返回
     if (!isoString.includes('T')) return isoString;
-    // 从 ISO datetime 提取日期部分
-    return isoString.split('T')[0];
+    const date = new Date(isoString);
+    return format(date, 'yyyy-MM-dd');
   };
 
   // 从 ISO 字符串提取时间部分
@@ -204,6 +203,14 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
   // 使用 ref 跟踪已初始化的任务 ID 和默认日期，避免重复重置
   const initializedTaskId = useRef<string | null>(null);
   const initializedDefaultDate = useRef<string | undefined>(undefined);
+
+  // 表单关闭时清除 ref，避免重新打开时残留脏数据
+  useEffect(() => {
+    if (!open) {
+      initializedTaskId.current = null;
+      initializedDefaultDate.current = undefined;
+    }
+  }, [open]);
 
   // 初始化编辑数据 - 只在任务 ID 或默认日期改变时重置
   useEffect(() => {
@@ -341,42 +348,47 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
       submitData.completedAt = `${completedAt}T00:00:00.000Z`;
     }
 
-    if (initialData) {
-      await updateMutation.mutateAsync({
-        id: initialData.id,
-        data: submitData,
-      });
-      // 更新提醒：先删除旧提醒，再创建新提醒
-      if (existingRemindersData?.data) {
-        for (const oldReminder of existingRemindersData.data) {
-          await fetch(`/api/reminders/${oldReminder.id}`, { method: 'DELETE' });
-        }
-      }
-      // 创建新提醒
-      for (const reminder of reminders) {
-        await createReminderMutation.mutateAsync({
-          todoId: initialData.id,
-          remindAt: reminder.remindAt.toISOString(),
-          type: reminder.type,
-          offset: reminder.offset ?? undefined,
+    try {
+      if (initialData) {
+        const result = await updateMutation.mutateAsync({
+          id: initialData.id,
+          data: submitData,
         });
-      }
-    } else {
-      const result = await createMutation.mutateAsync(submitData) as { success: boolean; data?: { id: string } };
-      // 新建任务后创建提醒（需要任务 ID）
-      if (result?.success && result?.data?.id && reminders.length > 0) {
+        if (!result?.success) return;
+        // 更新提醒：先删除旧提醒，再创建新提醒
+        if (existingRemindersData?.data) {
+          for (const oldReminder of existingRemindersData.data) {
+            await fetch(`/api/reminders/${oldReminder.id}`, { method: 'DELETE' });
+          }
+        }
+        // 创建新提醒
         for (const reminder of reminders) {
           await createReminderMutation.mutateAsync({
-            todoId: result.data.id,
+            todoId: initialData.id,
             remindAt: reminder.remindAt.toISOString(),
             type: reminder.type,
             offset: reminder.offset ?? undefined,
           });
         }
+      } else {
+        const result = await createMutation.mutateAsync(submitData) as { success: boolean; data?: { id: string } };
+        if (!result?.success) return;
+        // 新建任务后创建提醒（需要任务 ID）
+        if (result?.data?.id && reminders.length > 0) {
+          for (const reminder of reminders) {
+            await createReminderMutation.mutateAsync({
+              todoId: result.data.id,
+              remindAt: reminder.remindAt.toISOString(),
+              type: reminder.type,
+              offset: reminder.offset ?? undefined,
+            });
+          }
+        }
       }
+      onClose();
+    } catch {
+      return;
     }
-
-    onClose();
   };
 
   // 频率选项
