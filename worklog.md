@@ -2923,3 +2923,15 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/hooks/use-view-store.ts` - goToPreviousWeek 移除双重减法
 - `src/hooks/use-todos.ts` - 所有 mutationFn 添加 HTTP 状态验证
 - `src/lib/date-utils.ts` - formatDateShort/formatWeekday/formatMonth 添加 locale 参数
+
+## 2026-05-07: 添加 git push 前检查 WORKLOG.md 的 hook
+
+### 改动内容
+- 创建 `scripts/check-worklog.sh` 脚本，在 git push 前拦截并提醒更新 WORKLOG.md
+- 在 `.claude/settings.json` 中配置 PreToolUse hook，匹配 `Bash(git push *)` 命令
+- 修改 `.gitignore`，允许 `.claude/settings.json` 提交到仓库（其余 .claude 内容仍忽略）
+
+### 修改的文件
+- `scripts/check-worklog.sh` - 新增 hook 脚本
+- `.claude/settings.json` - 新增 PreToolUse hook 配置
+- `.gitignore` - 允许 .claude/settings.json 提交

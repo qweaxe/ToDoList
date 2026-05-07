@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git push *)",
+            "command": "bash scripts/check-worklog.sh",
+            "statusMessage": "检查 WORKLOG.md 是否已更新"
+          }
+        ]
+      }
+    ]
+  }
+}
