@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { format, parseISO } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
@@ -88,7 +88,6 @@ export function TaskDetailDialog({
   onDeleted,
 }: TaskDetailDialogProps) {
   const t = useTranslations('taskDetail');
-  const tCommon = useTranslations('common');
   const locale = useLocale();
   const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
   const [isEditing, setIsEditing] = useState(false);
@@ -103,6 +102,8 @@ export function TaskDetailDialog({
   // 时间选择器状态
   const [editStartTime, setEditStartTime] = useState<string>('00:00');
   const [editDueTime, setEditDueTime] = useState<string>('23:59');
+  // 预计耗时状态
+  const [editEstimatedDuration, setEditEstimatedDuration] = useState<number | null>(null);
 
   // 从 ISO 字符串提取日期部分（yyyy-MM-dd）
   const extractDateFromISO = (isoString: string): string => {
@@ -178,6 +179,7 @@ export function TaskDetailDialog({
       categoryId: task.categoryId || '',
       levelId: task.levelId || '',
       subTasks: parsedSubTasks,
+      estimatedDuration: task.estimatedDuration ?? null,
     };
   }, [task, parsedSubTasks]);
 
@@ -192,6 +194,7 @@ export function TaskDetailDialog({
       setEditCategoryId(initial.categoryId);
       setEditLevelId(initial.levelId);
       setEditSubTasks(initial.subTasks);
+      setEditEstimatedDuration(initial.estimatedDuration);
       // 重置时间
       setEditStartTime(extractTimeFromISO(initial.startDate, false));
       setEditDueTime(extractTimeFromISO(initial.dueDate, true));
@@ -218,6 +221,7 @@ export function TaskDetailDialog({
           categoryId: editCategoryId || undefined,
           levelId: editLevelId || undefined,
           subTasks: editSubTasks.length > 0 ? editSubTasks : undefined,
+          estimatedDuration: editEstimatedDuration,
         },
       },
       {
@@ -279,7 +283,9 @@ export function TaskDetailDialog({
   if (!open || !taskId) return null;
 
   const isCompleted = task?.status === 'completed';
-  const isCrossDay = task?.startDate !== task?.dueDate;
+  // 只有预计耗时 >= 1天（1440分钟）才显示跨天标记
+  // 未设置 estimatedDuration 时，不显示跨天标记
+  const isCrossDay = (task?.estimatedDuration ?? null) !== null && (task?.estimatedDuration ?? 0) >= 1440;
   const completedSubTasks = parsedSubTasks.filter((st) => st.isDone).length;
   const subTaskProgress =
     parsedSubTasks.length > 0
@@ -291,11 +297,12 @@ export function TaskDetailDialog({
     if (task) {
       setEditTitle(task.title);
       setEditDescription(task.description || '');
-      setEditStartDate(task.startDate);
-      setEditDueDate(task.dueDate);
+      setEditStartDate(extractDateFromISO(task.startDate));
+      setEditDueDate(extractDateFromISO(task.dueDate));
       setEditCategoryId(task.categoryId || '');
       setEditLevelId(task.levelId || '');
       setEditSubTasks(parsedSubTasks);
+      setEditEstimatedDuration(task.estimatedDuration ?? null);
       // 设置时间
       setEditStartTime(extractTimeFromISO(task.startDate, false));
       setEditDueTime(extractTimeFromISO(task.dueDate, true));
@@ -557,6 +564,34 @@ export function TaskDetailDialog({
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+              )}
+
+              {/* 预计耗时 */}
+              {isEditing && (
+                <div className="space-y-2">
+                  <Label>{t('estimatedDuration')}</Label>
+                  <Select
+                    value={editEstimatedDuration === null ? '__none__' : String(editEstimatedDuration)}
+                    onValueChange={(v) => setEditEstimatedDuration(v === '__none__' ? null : Number(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('noEstimatedDuration')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">{t('noEstimatedDuration')}</SelectItem>
+                      <SelectItem value="15">15 {t('minutes')}</SelectItem>
+                      <SelectItem value="60">1 {t('hour')}</SelectItem>
+                      <SelectItem value="120">2 {t('hours')}</SelectItem>
+                      <SelectItem value="240">4 {t('hours')}</SelectItem>
+                      <SelectItem value="480">8 {t('hours')}</SelectItem>
+                      <SelectItem value="2880">2 {t('days')}</SelectItem>
+                      <SelectItem value="10080">1 {t('week')}</SelectItem>
+                      <SelectItem value="43200">1 {t('month')}</SelectItem>
+                      <SelectItem value="129600">1 {t('quarter')}</SelectItem>
+                      <SelectItem value="259200">0.5 {t('year')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 

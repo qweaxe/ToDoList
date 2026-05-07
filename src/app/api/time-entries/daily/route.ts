@@ -72,7 +72,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const targetDate = new Date(dateParam);
+    // 使用中午时间避免时区边界问题
+    const targetDate = new Date(`${dateParam}T12:00:00`);
 
     if (IS_EDGE) {
       const d1 = await getD1Client();

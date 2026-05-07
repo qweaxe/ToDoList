@@ -2613,3 +2613,313 @@ Claude Code VSCode 扩展的 diff 显示功能需要精确匹配字符串，但�
 ### 修改的文件
 - `.editorconfig` - 新增编辑器配置
 - 174+ 个源文件 - 换行符 CRLF → LF
+
+---
+
+## 2026-04-29: 跨天任务横跨条功能（Phase 1）
+
+### 背景
+月视图和周视图存在以下显示问题：
+1. 跨天任务在每个日期单元格重复显示，造成视觉冗余
+2. 移动端字体太小，内容难以阅读
+
+### 改动内容
+
+1. **新增类型定义**
+   - `src/types/cross-day-span.ts`: CrossDaySpan 接口和 shouldShowSpanningBar 函数
+   - 基于 estimatedDuration 判断是否显示横跨条（>= 1440分钟显示）
+
+2. **新增计算逻辑**
+   - `src/lib/cross-day-utils.ts`: 横跨条计算和行分配算法
+   - computeCalendarSpans(): 从任务数据提取跨天信息
+   - assignRowsToSpans(): 贪心算法避免重叠
+   - calculateSpanPosition(): 计算位置（left/width/top/height）
+   - getCrossWeekSpanFragments(): 处理跨周任务分段渲染
+
+3. **新增组件**
+   - `src/components/calendar/CalendarSpanBar.tsx`: 单条横跨条组件
+   - `src/components/calendar/CalendarSpanLayer.tsx`: 横跨条覆盖层组件
+   - 使用 ResizeObserver 测量单元格尺寸
+
+4. **集成到日历视图**
+   - `src/components/calendar/CalendarGrid.tsx`: 
+     - 新增 showSpanBars 参数
+     - 过滤已显示横跨条的任务避免重复
+   - `src/components/views/CalendarView.tsx`:
+     - 通过环境变量 NEXT_PUBLIC_ENABLE_SPAN_BARS 控制功能开关
+
+5. **Feature Flag 设计**
+   - 使用环境变量控制功能开关
+   - 未设置 NEXT_PUBLIC_ENABLE_SPAN_BARS 时功能默认关闭
+   - 可按环境（Production/Preview）独立控制
+
+### 使用说明
+1. 本功能在 `preview` 分支启用，预览环境可测试
+2. 测试稳定后合并到 `feat/cloudflare-deploy` 分支，正式环境启用
+3. 仅对 estimatedDuration >= 1440分钟（1天）的跨天任务显示横跨条
+4. 未设置 estimatedDuration 的跨天任务默认显示横跨条
+
+### 修改的文件
+- `src/types/cross-day-span.ts` - 新增类型定义
+- `src/lib/cross-day-utils.ts` - 新增计算逻辑
+- `src/components/calendar/CalendarSpanBar.tsx` - 新增横跨条组件
+- `src/components/calendar/CalendarSpanLayer.tsx` - 新增覆盖层组件
+- `src/components/calendar/CalendarGrid.tsx` - 集成横跨条功能
+- `src/components/views/CalendarView.tsx` - 添加 Feature Flag
+
+## 2026-04-29: 修复预计耗时编辑保存和优化时间范围选项
+
+### 改动内容
+1. **修复 TaskDetailDialog 预计耗时无法保存的问题**
+   - 添加 editEstimatedDuration 状态变量
+   - 在 getInitialEditValues 中初始化 estimatedDuration
+   - 在 startEditing 和 resetEdit 中正确设置值
+   - 在 handleSave 中将 estimatedDuration 包含在更新请求中
+   - 添加预计耗时选择器 UI（编辑模式下显示）
+
+2. **统一预计耗时时间范围选项**
+   - TaskForm 和 TaskDetailDialog 使用相同的时间范围
+   - 新范围：15分钟、1小时、2小时、4小时、8小时、2天、1周、1月、1季度、半年
+   - 覆盖从快速小任务到大型项目的常见场景
+
+3. **添加国际化翻译**
+   - 在 task 和 taskDetail 两个命名空间添加 week、month、quarter、year 翻译
+   - 中英文翻译文件同步更新
+
+### 修改的文件
+- `src/components/task/TaskDetailDialog.tsx` - 修复预计耗时编辑保存，添加选择器 UI
+- `src/components/task/TaskForm.tsx` - 统一时间范围选项
+- `messages/zh.json` - 添加时间单位中文翻译
+- `messages/en.json` - 添加时间单位英文翻译
+
+---
+
+## 2026-04-30: Bug 修复 - 任务编辑保存、默认日期、时间记录时区
+
+### 背景
+用户反馈三个功能问题：
+1. 任务编辑无法正常保存 - estimatedDuration 字段丢失
+2. 新建任务默认日期错误 - 直接访问日视图时应支持 URL 参数指定日期
+3. 时间记录时区问题 - 时间显示不正确
+
+### 改动内容
+
+1. **修复任务编辑保存失败**
+   - 在 DayView.tsx、WeekView.tsx、OverdueView.tsx 的 editingTask 接口中添加 estimatedDuration 字段
+   - 原因：编辑任务时 estimatedDuration 未被包含在接口定义中，导致提交时变为 null 覆盖原有值
+
+2. **支持 URL 参数指定日视图日期**
+   - DayView.tsx 新增 useSearchParams 读取 URL 中的 `?date=YYYY-MM-DD` 参数
+   - 通过 useEffect 同步 URL 日期到 selectedDate
+   - 用户可通过 `/day?date=2026-05-01` 直接访问指定日期
+
+3. **修复时间记录时区问题**
+   - TimeEntryForm.tsx 的 combineDateAndTime 函数添加 toISOString() 转换
+   - 与 TaskForm.tsx 保持一致的时区处理方式（本地时间 → UTC）
+   - API 路由使用中午时间 (T12:00:00) 处理纯日期参数，避免时区边界问题
+
+### 修改的文件
+- `src/components/views/DayView.tsx` - 添加 estimatedDuration 到接口 + URL 参数支持
+- `src/components/views/WeekView.tsx` - 添加 estimatedDuration 到 TaskItem 接口
+- `src/components/views/OverdueView.tsx` - 添加 estimatedDuration 到 editingTask 接口
+- `src/components/time/TimeEntryForm.tsx` - combineDateAndTime 函数修复时区转换
+- `src/app/api/time-entries/route.ts` - 日期过滤逻辑修正
+- `src/app/api/time-entries/daily/route.ts` - 日期过滤逻辑修正
+- `src/app/api/time-entries/[id]/route.ts` - 更新逻辑修正
+
+---
+
+## 2026-04-30: 更新项目文档
+
+### 改动内容
+
+1. **更新需求说明书**
+   - 新增时间追踪模块完成状态
+   - 新增跨天横跨框进度状态
+   - 新增 2.6 时间追踪模块章节（时间记录、任务关联、预计耗时）
+
+2. **更新架构文档**
+   - 项目结构添加 TimeView、time/ 组件目录
+   - hooks 添加 use-time-entries.ts
+   - API 接口添加 5.12 时间追踪 API
+   - 数据模型添加 TimeEntry 模型、Todo 添加 estimatedDuration 字段
+
+3. **更新 API 文档**
+   - 新增时间追踪 API 章节
+   - 新增任务预计耗时字段说明
+   - 更新版本历史
+
+### 修改的文件
+- `upload/To Do List 需求说明书.md` - 添加时间追踪模块功能描述
+- `docs/ARCHITECTURE.md` - 添加时间追踪模块架构
+- `docs/API.md` - 新增时间记录 API 和预计耗时说明
+
+---
+
+## 2026-05-01: 修复 estimatedDuration 无法保存的补充修复
+
+### 问题描述
+用户反馈预计耗时选择后实际无法保存，之前的修复不完整。
+
+### 根因分析
+通过深入调查发现 4 个数据流断裂点：
+
+1. **DayView.tsx handleEdit 参数类型缺失**
+   - editingTask 状态接口已有 estimatedDuration
+   - 但 handleEdit 函数参数类型中没有，导致传递时字段被截断
+
+2. **OverdueView.tsx handleEdit 参数类型缺失**
+   - 同样问题，handleEdit 参数类型不完整
+
+3. **todos/route.ts Prisma POST 路径缺失**
+   - D1 路径正确处理了 estimatedDuration
+   - 但 Prisma 路径的 db.todo.create data 中缺少该字段
+
+4. **todos/[id]/route.ts Prisma PUT 路径已正确处理**
+   - D1 路径正确
+   - Prisma 路径也有 estimatedDuration 处理（lines 229-231）
+
+### 改动内容
+- DayView.tsx handleEdit 参数类型添加 estimatedDuration?: number | null
+- OverdueView.tsx handleEdit 参数类型添加 estimatedDuration?: number | null
+- todos/route.ts Prisma create data 添加 estimatedDuration: validated.estimatedDuration ?? null
+
+### 修改的文件
+- `src/components/views/DayView.tsx` - handleEdit 参数添加 estimatedDuration
+- `src/components/views/OverdueView.tsx` - handleEdit 参数添加 estimatedDuration
+- `src/app/api/todos/route.ts` - Prisma create 添加 estimatedDuration 字段
+
+---
+
+## 2026-05-04: 修复 estimatedDuration 在日/周/月视图 API 中缺失导致显示为"未设置"
+
+### 问题描述
+用户修改了任务的预计耗时，数据库中有对应数据，但前端显示为"未设置"，且没有根据预计时间形成跨天任务标记。
+
+### 根因分析
+多个 API 端点的 D1 原生 SQL 查询中缺少 `estimatedDuration` 字段：
+
+| 端点 | 文件路径 | 问题 |
+|------|----------|------|
+| `/api/todos/daily` | `src/app/api/todos/daily/route.ts` | SQL SELECT 和 reshapeTodo 缺失 |
+| `/api/todos/weekly` | `src/app/api/todos/weekly/route.ts` | SQL SELECT 和 reshapeTodo 缺失 |
+| `/api/todos/monthly` | `src/app/api/todos/monthly/route.ts` | SQL SELECT 和 reshapeTodo 缺失 |
+
+数据流断点：
+```
+数据库 (estimatedDuration 有值)
+    ↓
+API (SQL SELECT 缺失该字段) ❌ BUG
+    ↓
+前端 (estimatedDuration = undefined)
+    ↓
+显示 "未设置"，跨天标记不显示
+```
+
+### 改动内容
+1. **daily/route.ts**
+   - `TODO_JOIN_FIELDS` 添加 `t.estimatedDuration`
+   - `reshapeTodo` 函数添加 `estimatedDuration: row.estimatedDuration`
+
+2. **weekly/route.ts**
+   - `TODO_JOIN_FIELDS` 添加 `t.estimatedDuration`
+   - `reshapeTodo` 函数添加 `estimatedDuration: row.estimatedDuration`
+
+3. **monthly/route.ts**
+   - `TODO_JOIN_FIELDS` 添加 `t.estimatedDuration`
+   - `reshapeTodo` 函数添加 `estimatedDuration: row.estimatedDuration`
+
+### 修改的文件
+- `src/app/api/todos/daily/route.ts` - D1 SQL 和 reshapeTodo 添加字段
+- `src/app/api/todos/weekly/route.ts` - D1 SQL 和 reshapeTodo 添加字段
+- `src/app/api/todos/monthly/route.ts` - D1 SQL 和 reshapeTodo 添加字段
+
+---
+
+## 2026-05-04: 启用任务提醒功能
+
+### 背景
+项目已有完整的提醒功能基础设施（数据库模型、API、Hooks、组件），但前端未集成，用户无法设置提醒。
+
+### 改动内容
+
+1. **MainLayout.tsx - 挂载通知权限提示**
+   - 导入 `NotificationPermissionPrompt` 组件
+   - 在布局底部渲染，引导用户开启浏览器通知权限
+
+2. **TaskForm.tsx - 集成提醒管理**
+   - 导入 `ReminderManager` 组件和提醒 Hooks
+   - 添加 `reminders` 状态管理提醒列表
+   - 编辑模式下使用 `useTodoReminders` 加载现有提醒
+   - 在表单中添加提醒设置区域（周期任务之后、里程碑之前）
+   - 提交时处理提醒：
+     - 新建任务：任务创建成功后，用返回的 ID 创建提醒
+     - 编辑任务：先删除旧提醒，再创建新提醒
+
+### 功能说明
+用户现在可以：
+- 创建任务时设置提醒（预设：任务开始时、截止时、提前5/15/30分钟、1/2小时、1天）
+- 设置自定义提醒时间
+- 编辑任务时修改提醒
+- 页面打开时自动收到浏览器通知提醒（需授权通知权限）
+
+### 提醒触发机制
+采用前端轮询方式：
+- `usePendingReminders` 每分钟检查待发送提醒
+- `useNotifications` 发送浏览器通知并标记已发送
+
+### 修改的文件
+- `src/components/layout/MainLayout.tsx` - 挂载通知权限提示
+- `src/components/task/TaskForm.tsx` - 集成提醒管理组件和逻辑
+
+## 2026-05-05: filter 和 batch 端点添加 D1 原生 SQL 路径
+
+### 改动内容
+- `filter/route.ts` 完整重写：认证改为 `getApiSession`，新增 D1 SQL 路径（IS_EDGE 分支），包含 TODO_JOIN_FIELDS/reshapeTodo，动态拼接 categoryId/levelId 查询列
+- `batch/route.ts` 完整重写：扩展 Zod schema（新增 completedAt/startDate/dueDate），新增 delete 和 update 操作的 D1 SQL 路径，动态构建 IN 占位符和 SET 子句
+- 两个端点原先只有 Prisma 路径，生产环境（Cloudflare Workers）会因 Prisma 初始化 CPU 超限导致 503
+
+### 修改的文件
+- `src/app/api/todos/filter/route.ts` - 添加 D1 SQL 路径、认证升级、reshapeTodo
+- `src/app/api/todos/batch/route.ts` - 添加 D1 SQL 路径、扩展 Zod schema
+
+## 2026-05-06: 修复新建任务默认日期和英文日期显示
+
+### 改动内容
+1. **修复新建任务默认日期问题**
+   - 用户在日视图选择 5.7 后新建任务，默认日期仍为今天而非选中日期
+   - TaskForm useEffect 仅跟踪 taskId 变化，defaultDate 变化时未重置表单
+   - 新增 initializedDefaultDate ref，在新建模式下 defaultDate 变化也触发重置
+
+2. **修复英文 locale 下日期仍显示中文格式**
+   - formatDateDisplay 硬编码 'yyyy年MM月dd日' 和 zhCN locale
+   - 改为接受可选 locale 参数，自动选择中文或英文格式
+   - 中文：yyyy年MM月dd日 | 英文：MMMM d, yyyy (如 May 6, 2025)
+   - DayView、Header、OverdueView 的 formatDateDisplay 调用传入 dateFnsLocale
+
+### 修改的文件
+- `src/components/task/TaskForm.tsx` - 新建任务时 defaultDate 变化触发表单重置
+- `src/lib/date-utils.ts` - formatDateDisplay 支持 locale 参数自动切换格式
+- `src/components/views/DayView.tsx` - 传入 dateFnsLocale
+- `src/components/layout/Header.tsx` - 传入 dateFnsLocale
+- `src/components/views/OverdueView.tsx` - 传入 dateFnsLocale
+
+## 2026-05-07: 代码审查 bug 修复（8项）
+
+### 改动内容
+- Fix 1: TaskDetailDialog startEditing 将原始 ISO datetime 赋值给日期字段，改为使用 extractDateFromISO 转换为本地日期
+- Fix 2: Zod estimatedDuration max 限制从 10080（7天）改为 525600（约1年），匹配 UI 大时间选项
+- Fix 3: TaskForm 表单关闭时清除 initializedTaskId/initializedDefaultDate ref，避免重新打开时残留脏数据
+- Fix 4: TaskForm extractDateFromISO 从 split('T')[0]（UTC 日期）改为 new Date + format（本地日期）
+- Fix 5: use-view-store goToPreviousWeek 双重 subWeeks 导致跳2周，改为只减1周
+- Fix 6: formatDateShort/formatWeekday/formatMonth 添加可选 locale 参数，formatMonth 区分中英文格式
+- Fix 7: use-todos 所有 mutationFn 在 res.json() 前添加 res.ok 检查，服务器错误时抛出有意义的错误消息
+- Fix 8: TaskForm onSubmit 用 try/catch 包裹 mutation，只在成功时调用 onClose，服务器错误时保持表单打开
+
+### 修改的文件
+- `src/components/task/TaskDetailDialog.tsx` - startEditing 使用 extractDateFromISO
+- `src/components/task/TaskForm.tsx` - extractDateFromISO 本地日期转换、ref 清除、onSubmit 错误处理
+- `src/types/api.ts` - estimatedDuration max 改为 525600
+- `src/hooks/use-view-store.ts` - goToPreviousWeek 移除双重减法
+- `src/hooks/use-todos.ts` - 所有 mutationFn 添加 HTTP 状态验证
+- `src/lib/date-utils.ts` - formatDateShort/formatWeekday/formatMonth 添加 locale 参数

@@ -55,6 +55,7 @@ interface TaskItem {
   priority: number;
   category?: { id: string; name: string; emoji?: string | null } | null;
   level?: { id: string; name: string; value: number } | null;
+  estimatedDuration?: number | null;
 }
 
 interface DraggableTaskCardProps {

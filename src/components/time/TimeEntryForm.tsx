@@ -81,9 +81,10 @@ function extractTimeFromISO(isoString: string): string {
   return format(date, 'HH:mm');
 }
 
-// 合并日期和时间
+// 合并日期和时间（本地时间 → UTC）
 function combineDateAndTime(dateStr: string, timeStr: string): string {
-  return `${dateStr}T${timeStr}:00`;
+  const localDate = new Date(`${dateStr}T${timeStr}:00`);
+  return localDate.toISOString();
 }
 
 export function TimeEntryForm({ open, onClose, initialData, date }: TimeEntryFormProps) {

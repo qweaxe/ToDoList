@@ -46,6 +46,8 @@ import { createTodoSchema, type CreateTodoInput } from '@/types/api';
 import { useCategories } from '@/hooks/use-categories';
 import { useLevels } from '@/hooks/use-levels';
 import { useCreateTodo, useUpdateTodo } from '@/hooks/use-todos';
+import { useTodoReminders, useCreateReminder, useDeleteReminder } from '@/hooks/use-reminders';
+import { ReminderManager } from '@/components/reminder/ReminderManager';
 import { getTodayString } from '@/lib/date-utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -92,11 +94,22 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
   const [dueTime, setDueTime] = useState<string>('23:59');
   // 预计耗时状态（分钟）
   const [estimatedDuration, setEstimatedDuration] = useState<number | null>(null);
+  // 提醒状态
+  const [reminders, setReminders] = useState<Array<{
+    id?: string;
+    remindAt: Date;
+    type: string;
+    offset: number | null;
+  }>>([]);
 
   const { data: categoriesData } = useCategories();
   const { data: levelsData } = useLevels();
   const createMutation = useCreateTodo();
   const updateMutation = useUpdateTodo();
+  const createReminderMutation = useCreateReminder();
+
+  // 获取编辑任务的提醒列表
+  const { data: existingRemindersData } = useTodoReminders(initialData?.id || null);
 
   const categories = categoriesData?.data || [];
   const levels = levelsData?.data || [];
@@ -131,10 +144,9 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
   // 从 ISO 字符串提取日期部分（yyyy-MM-dd）
   const extractDateFromISO = (isoString: string): string => {
     if (!isoString) return getTodayString();
-    // 如果已经是纯日期格式，直接返回
     if (!isoString.includes('T')) return isoString;
-    // 从 ISO datetime 提取日期部分
-    return isoString.split('T')[0];
+    const date = new Date(isoString);
+    return format(date, 'yyyy-MM-dd');
   };
 
   // 从 ISO 字符串提取时间部分
@@ -188,16 +200,27 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     return localDate.toISOString();
   };
 
-  // 使用 ref 跟踪已初始化的任务 ID，避免重复重置
+  // 使用 ref 跟踪已初始化的任务 ID 和默认日期，避免重复重置
   const initializedTaskId = useRef<string | null>(null);
+  const initializedDefaultDate = useRef<string | undefined>(undefined);
 
-  // 初始化编辑数据 - 只在任务 ID 改变时重置
+  // 表单关闭时清除 ref，避免重新打开时残留脏数据
+  useEffect(() => {
+    if (!open) {
+      initializedTaskId.current = null;
+      initializedDefaultDate.current = undefined;
+    }
+  }, [open]);
+
+  // 初始化编辑数据 - 只在任务 ID 或默认日期改变时重置
   useEffect(() => {
     const currentTaskId = initialData?.id || null;
 
-    // 只有当任务 ID 改变时才重置表单
-    if (currentTaskId !== initializedTaskId.current) {
+    // 任务 ID 改变时重置，或新建任务时默认日期改变也重置
+    if (currentTaskId !== initializedTaskId.current ||
+        (!initialData && defaultDate !== initializedDefaultDate.current)) {
       initializedTaskId.current = currentTaskId;
+      initializedDefaultDate.current = defaultDate;
 
       if (initialData) {
         // 提取日期部分（yyyy-MM-dd），避免 ISO datetime 格式导致的显示问题
@@ -222,6 +245,8 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
         setDueTime(extractTimeFromISO(initialData.dueDate, true));
         // 设置预计耗时
         setEstimatedDuration(initialData.estimatedDuration || null);
+        // 重置提醒状态（编辑模式下会从 API 加载）
+        setReminders([]);
 
         // 解析子任务
         if (initialData.subTasks) {
@@ -253,9 +278,24 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
         setStartTime('00:00');
         setDueTime('23:59');
         setEstimatedDuration(null);
+        // 重置提醒状态
+        setReminders([]);
       }
     }
   }, [initialData, defaultDate, reset]);
+
+  // 编辑模式下加载现有提醒
+  useEffect(() => {
+    if (initialData?.id && existingRemindersData?.data) {
+      const loadedReminders = existingRemindersData.data.map((r) => ({
+        id: r.id,
+        remindAt: new Date(r.remindAt),
+        type: r.type,
+        offset: r.offset,
+      }));
+      setReminders(loadedReminders);
+    }
+  }, [initialData?.id, existingRemindersData]);
 
   // 添加子任务
   const addSubTask = () => {
@@ -308,16 +348,47 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
       submitData.completedAt = `${completedAt}T00:00:00.000Z`;
     }
 
-    if (initialData) {
-      await updateMutation.mutateAsync({
-        id: initialData.id,
-        data: submitData,
-      });
-    } else {
-      await createMutation.mutateAsync(submitData);
+    try {
+      if (initialData) {
+        const result = await updateMutation.mutateAsync({
+          id: initialData.id,
+          data: submitData,
+        });
+        if (!result?.success) return;
+        // 更新提醒：先删除旧提醒，再创建新提醒
+        if (existingRemindersData?.data) {
+          for (const oldReminder of existingRemindersData.data) {
+            await fetch(`/api/reminders/${oldReminder.id}`, { method: 'DELETE' });
+          }
+        }
+        // 创建新提醒
+        for (const reminder of reminders) {
+          await createReminderMutation.mutateAsync({
+            todoId: initialData.id,
+            remindAt: reminder.remindAt.toISOString(),
+            type: reminder.type,
+            offset: reminder.offset ?? undefined,
+          });
+        }
+      } else {
+        const result = await createMutation.mutateAsync(submitData) as { success: boolean; data?: { id: string } };
+        if (!result?.success) return;
+        // 新建任务后创建提醒（需要任务 ID）
+        if (result?.data?.id && reminders.length > 0) {
+          for (const reminder of reminders) {
+            await createReminderMutation.mutateAsync({
+              todoId: result.data.id,
+              remindAt: reminder.remindAt.toISOString(),
+              type: reminder.type,
+              offset: reminder.offset ?? undefined,
+            });
+          }
+        }
+      }
+      onClose();
+    } catch {
+      return;
     }
-
-    onClose();
   };
 
   // 频率选项
@@ -470,15 +541,16 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">{t('task.noDuration')}</SelectItem>
-              {/* 预设值：15m/30m/1h/2h/4h/1d/2d/3d */}
               <SelectItem value="15">15 {t('task.minutes')}</SelectItem>
-              <SelectItem value="30">30 {t('task.minutes')}</SelectItem>
               <SelectItem value="60">1 {t('task.hour')}</SelectItem>
               <SelectItem value="120">2 {t('task.hours')}</SelectItem>
               <SelectItem value="240">4 {t('task.hours')}</SelectItem>
-              <SelectItem value="480">1 {t('task.day')}</SelectItem>
-              <SelectItem value="960">2 {t('task.days')}</SelectItem>
-              <SelectItem value="1440">3 {t('task.days')}</SelectItem>
+              <SelectItem value="480">8 {t('task.hours')}</SelectItem>
+              <SelectItem value="2880">2 {t('task.days')}</SelectItem>
+              <SelectItem value="10080">1 {t('task.week')}</SelectItem>
+              <SelectItem value="43200">1 {t('task.month')}</SelectItem>
+              <SelectItem value="129600">1 {t('task.quarter')}</SelectItem>
+              <SelectItem value="259200">0.5 {t('task.year')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -644,6 +716,17 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             </div>
           </div>
         )}
+      </div>
+
+      {/* 提醒设置 */}
+      <div className="space-y-3 p-4 border rounded-lg">
+        <ReminderManager
+          reminders={reminders}
+          onChange={setReminders}
+          startDate={new Date(combineDateAndTime(startDate, startTime))}
+          dueDate={new Date(combineDateAndTime(dueDate, dueTime))}
+          disabled={isCompleted}
+        />
       </div>
 
       {/* 里程碑 */}

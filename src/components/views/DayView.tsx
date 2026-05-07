@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format, parseISO, subDays, addDays } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertTriangle, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +19,7 @@ import { BatchActionsToolbar } from '@/components/task/BatchActionsToolbar';
 import { useDailyTodos, useToggleTodo, useDeleteTodo, useUpdateCompletedAt, useUpdateSubTask } from '@/hooks/use-todos';
 import { useBatchSelection } from '@/hooks/use-batch-selection';
 import { useViewStore } from '@/hooks/use-view-store';
-import { getTodayString, formatDateDisplay, isDateBefore } from '@/lib/date-utils';
+import { getTodayString, formatDateDisplay } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
 export function DayView() {
@@ -42,7 +43,18 @@ export function DayView() {
     isMilestone: boolean;
     priority: number;
     status?: string;
+    estimatedDuration?: number | null;
   } | null>(null);
+
+  // URL 参数支持 - 从 URL 读取 date 参数设置 selectedDate
+  const searchParams = useSearchParams();
+  const dateFromUrl = searchParams.get('date');
+
+  useEffect(() => {
+    if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) {
+      setSelectedDate(dateFromUrl);
+    }
+  }, [dateFromUrl, setSelectedDate]);
 
   const { data, isLoading } = useDailyTodos(selectedDate);
   const toggleMutation = useToggleTodo();
@@ -101,6 +113,7 @@ export function DayView() {
     isMilestone: boolean;
     priority: number;
     status?: string;
+    estimatedDuration?: number | null;
   }) => {
     setEditingTask(task);
     setIsFormOpen(true);
@@ -159,7 +172,7 @@ export function DayView() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-4">
             <h1 className="text-xl sm:text-2xl font-bold">
-              {formatDateDisplay(selectedDate)}
+              {formatDateDisplay(selectedDate, undefined, dateFnsLocale)}
             </h1>
             {!isToday && (
               <Button variant="outline" size="sm" onClick={handleGoToToday} className="text-xs sm:text-sm">
@@ -255,7 +268,7 @@ export function DayView() {
                     {Object.entries(groupedOverdue || {}).map(([date, tasks]) => (
                       <div key={date} className="space-y-2">
                         <div className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 flex-wrap">
-                          <span className="font-medium">{formatDateDisplay(date)}</span>
+                          <span className="font-medium">{formatDateDisplay(date, undefined, dateFnsLocale)}</span>
                           <span className="text-destructive">
                             ({t('task.overdueDays', { days: Math.ceil((new Date(today).getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24)) })})
                           </span>

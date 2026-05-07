@@ -131,6 +131,7 @@ src/
 │   │   ├── YearlyView.tsx        # 年度视图
 │   │   ├── OverdueView.tsx       # 历史待办视图
 │   │   ├── TaskListView.tsx      # 任务列表视图
+│   │   ├── TimeView.tsx          # 时间追踪视图
 │   │   └── SettingsView.tsx      # 设置视图
 │   ├── task/                     # 任务相关组件
 │   │   ├── TaskCard.tsx          # 任务卡片
@@ -138,6 +139,11 @@ src/
 │   │   ├── TaskDetailDialog.tsx  # 任务详情弹窗
 │   │   ├── TaskListDialog.tsx    # 任务列表弹窗（统计点击）
 │   │   └── BatchActionsToolbar.tsx # 批量操作工具栏
+│   ├── time/                     # 时间追踪组件
+│   │   ├── TimeView.tsx          # 时间追踪视图
+│   │   ├── TimeEntryForm.tsx     # 时间记录表单
+│   │   ├── TimeEntryCard.tsx     # 时间记录卡片
+│   │   └── TimeStatsCard.tsx     # 时间统计卡片
 │   ├── calendar/                 # 日历相关组件
 │   │   ├── CalendarGrid.tsx      # 日历网格
 │   │   ├── CalendarCell.tsx      # 日历单元格
@@ -179,7 +185,8 @@ src/
 │   ├── use-toast.ts              # Toast 提示 Hook
 │   ├── use-reminders.ts          # 提醒数据 Hook
 │   ├── use-notifications.ts      # 浏览器通知 Hook
-│   └── use-inbox.ts              # 捕获箱数据 Hook
+│   ├── use-inbox.ts              # 捕获箱数据 Hook
+│   └── use-time-entries.ts       # 时间记录数据 Hook
 │
 ├── lib/
 │   ├── db.ts                     # Prisma 客户端（D1 适配）
@@ -307,11 +314,15 @@ model Todo {
   // 元数据
   priority    Int      @default(0)
   isMilestone Boolean  @default(false)
+  estimatedDuration Int? // 预计耗时（分钟），用于区分跨天工作和长截止期短耗时
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // 提醒关联
   reminders Reminder[]
+  
+  // 时间记录关联
+  timeEntries TimeEntry[]
 }
 
 // 周期规则
@@ -377,6 +388,37 @@ model InboxItem {
 
   @@index([userId, createdAt])
   @@index([userId, convertedToTodoId])
+}
+
+// 时间记录条目
+model TimeEntry {
+  id          String   @id @default(cuid())
+  title       String   // 活动名称
+  description String?  // 详细描述
+
+  // 时间维度
+  date        DateTime // 记录日期
+  startTime   DateTime // 开始时间
+  endTime     DateTime // 结束时间
+  duration    Int      // 持续时长（分钟，计算字段）
+
+  // 可选关联 Todo
+  todoId      String?
+  todo        Todo?    @relation(fields: [todoId], references: [id], onDelete: SetNull)
+
+  // 用户和分类关联
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([date])
+  @@index([categoryId])
+  @@index([todoId])
 }
 ```
 
@@ -509,6 +551,17 @@ model InboxItem {
 | PUT | `/api/inbox/:id` | 更新条目内容 |
 | DELETE | `/api/inbox/:id` | 删除条目 |
 | POST | `/api/inbox/:id/convert` | 转化为正式任务 |
+
+### 5.12 时间追踪 API
+
+| 方法 | 端点 | 描述 |
+|------|------|------|
+| GET | `/api/time-entries` | 获取时间记录列表（支持日期筛选） |
+| POST | `/api/time-entries` | 创建时间记录 |
+| GET | `/api/time-entries/:id` | 获取单条时间记录 |
+| PUT | `/api/time-entries/:id` | 更新时间记录 |
+| DELETE | `/api/time-entries/:id` | 删除时间记录 |
+| GET | `/api/time-entries/daily?date=` | 获取日统计数据 |
 
 ---
 

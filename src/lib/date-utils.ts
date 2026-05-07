@@ -48,7 +48,7 @@ import {
   getHours,
   getMinutes,
 } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS, Locale } from 'date-fns/locale';
 
 // ==================== 类型定义 ====================
 
@@ -105,35 +105,45 @@ export function toISOString(date: DateInput): string {
 }
 
 /**
- * 格式化日期为显示格式
+ * 格式化日期为显示格式（根据 locale 自动切换）
  */
-export function formatDateDisplay(date: DateInput, formatStr: string = 'yyyy年MM月dd日'): string {
+export function formatDateDisplay(date: DateInput, formatStr?: string, locale?: Locale): string {
   const d = toDate(date);
-  return format(d, formatStr, { locale: zhCN });
+  if (formatStr) {
+    return format(d, formatStr, { locale: locale || zhCN });
+  }
+  // 根据 locale 自动选择格式
+  if (locale === enUS) {
+    return format(d, 'MMMM d, yyyy', { locale: enUS });
+  }
+  return format(d, 'yyyy年MM月dd日', { locale: zhCN });
 }
 
 /**
  * 格式化日期为简短格式
  */
-export function formatDateShort(date: DateInput): string {
+export function formatDateShort(date: DateInput, locale?: Locale): string {
   const d = toDate(date);
-  return format(d, 'MM/dd', { locale: zhCN });
+  return format(d, 'MM/dd', { locale: locale || zhCN });
 }
 
 /**
  * 格式化星期几
  */
-export function formatWeekday(date: DateInput): string {
+export function formatWeekday(date: DateInput, locale?: Locale): string {
   const d = toDate(date);
-  return format(d, 'EEEE', { locale: zhCN });
+  return format(d, 'EEEE', { locale: locale || zhCN });
 }
 
 /**
  * 格式化月份
  */
-export function formatMonth(date: DateInput): string {
+export function formatMonth(date: DateInput, locale?: Locale): string {
   const d = toDate(date);
-  return format(d, 'yyyy年MM月', { locale: zhCN });
+  if (locale === enUS) {
+    return format(d, 'MMMM yyyy', { locale: enUS });
+  }
+  return format(d, 'yyyy年MM月', { locale: locale || zhCN });
 }
 
 // ==================== 获取边界日期 ====================
