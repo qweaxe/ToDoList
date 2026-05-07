@@ -2935,3 +2935,12 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `scripts/check-worklog.sh` - 新增 hook 脚本
 - `.claude/settings.json` - 新增 PreToolUse hook 配置
 - `.gitignore` - 允许 .claude/settings.json 提交
+
+## 2026-05-07: 改进 worklog hook 为智能检查模式
+
+### 改动内容
+- 修改 `scripts/check-worklog.sh`，从无条件拦截改为检查最近一次提交是否包含 WORKLOG.md 改动
+- 如果最近提交已包含 WORKLOG.md，允许 push；否则拦截并提醒
+
+### 修改的文件
+- `scripts/check-worklog.sh` - 改为智能检查逻辑
