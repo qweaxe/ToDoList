@@ -2,7 +2,7 @@
 export type TodoStatus = 'pending' | 'in_progress' | 'completed';
 
 // 任务类型枚举（动态计算）
-export type TaskType = 'basic' | 'cross_day' | 'multi_step' | 'cycle';
+export type TaskType = 'basic' | 'cross_day' | 'multi_step' | 'cycle' | 'milestone';
 
 // 周期频率
 export type Frequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' | 'CUSTOM';

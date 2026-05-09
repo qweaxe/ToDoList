@@ -550,5 +550,15 @@
     "selectTask": "选择任务",
     "noLinkedTask": "不关联任务",
     "timeOrderError": "开始时间必须早于结束时间"
+  },
+  "dayFilter": {
+    "type_basic": "基础",
+    "type_cross_day": "跨天",
+    "type_multi_step": "多步骤",
+    "type_cycle": "周期",
+    "type_milestone": "里程碑",
+    "allCategories": "全分类",
+    "allLevels": "全等级",
+    "clearFilter": "清除筛选"
   }
 }

@@ -2944,3 +2944,21 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 
 ### 修改的文件
 - `scripts/check-worklog.sh` - 改为智能检查逻辑
+
+## 2026-05-09: DayView 任务类型筛选功能
+
+### 改动内容
+- 扩展 TaskType 类型添加 milestone（基础/跨天/多步骤/周期/里程碑）
+- 新建 `use-task-type.ts` 任务类型检测工具（getTaskTypes、matchesTaskType、applyFilters）
+- 新建 `DayViewFilter.tsx` 筛选栏组件（任务类型按钮组 + 分类下拉 + 等级下拉 + 清除筛选）
+- 修改 DayView 添加筛选状态和筛选逻辑，pending/completed 列表使用 filtered 版本
+- 逾期(overdue)区域不参与筛选，始终显示
+- 添加 dayFilter i18n 翻译（zh/en）
+
+### 修改的文件
+- `src/types/index.ts` - 扩展 TaskType 添加 milestone
+- `src/hooks/use-task-type.ts` - 新建：任务类型检测和筛选逻辑
+- `src/components/task/DayViewFilter.tsx` - 新建：筛选栏UI组件
+- `src/components/views/DayView.tsx` - 添加筛选状态、筛选逻辑、渲染筛选栏
+- `messages/zh.json` - 添加 dayFilter 翻译
+- `messages/en.json` - 添加 dayFilter 翻译

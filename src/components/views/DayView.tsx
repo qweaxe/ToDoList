@@ -16,7 +16,11 @@ import { Calendar } from '@/components/ui/calendar';
 import { TaskCard } from '@/components/task/TaskCard';
 import { TaskForm } from '@/components/task/TaskForm';
 import { BatchActionsToolbar } from '@/components/task/BatchActionsToolbar';
+import { DayViewFilter } from '@/components/task/DayViewFilter';
 import { useDailyTodos, useToggleTodo, useDeleteTodo, useUpdateCompletedAt, useUpdateSubTask } from '@/hooks/use-todos';
+import { useCategories } from '@/hooks/use-categories';
+import { useLevels } from '@/hooks/use-levels';
+import { applyFilters, type FilterState } from '@/hooks/use-task-type';
 import { useBatchSelection } from '@/hooks/use-batch-selection';
 import { useViewStore } from '@/hooks/use-view-store';
 import { getTodayString, formatDateDisplay } from '@/lib/date-utils';
@@ -45,6 +49,7 @@ export function DayView() {
     status?: string;
     estimatedDuration?: number | null;
   } | null>(null);
+  const [filters, setFilters] = useState<FilterState>({ taskTypes: [], categoryId: null, levelId: null });
 
   // URL 参数支持 - 从 URL 读取 date 参数设置 selectedDate
   const searchParams = useSearchParams();
@@ -61,6 +66,8 @@ export function DayView() {
   const deleteMutation = useDeleteTodo();
   const updateCompletedAtMutation = useUpdateCompletedAt();
   const updateSubTaskMutation = useUpdateSubTask();
+  const { data: categoriesData } = useCategories();
+  const { data: levelsData } = useLevels();
 
   // 批量选择功能
   const allTaskIds = useMemo(() => {
@@ -71,6 +78,17 @@ export function DayView() {
   }, [data?.data]);
 
   const batchSelection = useBatchSelection({ totalCount: allTaskIds.length });
+
+  // 筛选后的任务列表
+  const filteredPending = useMemo(() => {
+    if (!data?.data) return [];
+    return applyFilters(data.data.today.pending, filters);
+  }, [data?.data?.today?.pending, filters]);
+
+  const filteredCompleted = useMemo(() => {
+    if (!data?.data) return [];
+    return applyFilters(data.data.today.completed, filters);
+  }, [data?.data?.today?.completed, filters]);
 
   const today = getTodayString();
   const isToday = selectedDate === today;
@@ -234,6 +252,16 @@ export function DayView() {
         </div>
       </div>
 
+      {/* 筛选栏 */}
+      {!isLoading && (data?.data?.today?.total ?? 0) > 0 && (
+        <DayViewFilter
+          filters={filters}
+          onFiltersChange={setFilters}
+          categories={categoriesData?.data || []}
+          levels={levelsData?.data || []}
+        />
+      )}
+
       {isLoading ? (
         <div className="space-y-4">
           <Skeleton className="h-32" />
@@ -243,14 +271,14 @@ export function DayView() {
       ) : (
         <div className="space-y-6">
           {/* 历史待办区域 */}
-          {data?.data.overdueCount > 0 && (
+          {(data?.data?.overdueCount ?? 0) > 0 && (
             <Card className="border-destructive/50 overflow-hidden">
               <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive flex-shrink-0" />
                     <span className="truncate">{t('task.overdue')}</span>
-                    <Badge variant="destructive" className="flex-shrink-0">{data.data.overdueCount}</Badge>
+                    <Badge variant="destructive" className="flex-shrink-0">{data?.data?.overdueCount ?? 0}</Badge>
                   </CardTitle>
                   <Button
                     variant="ghost"
@@ -330,7 +358,7 @@ export function DayView() {
           {/* 待完成任务 */}
           <div>
             <h2 className="text-base sm:text-lg font-semibold mb-3">{t('task.pending')}</h2>
-            {data?.data.today.pending.length === 0 ? (
+            {filteredPending.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="py-8 text-center text-muted-foreground">
                   {t('task.noPendingTasks')}
@@ -338,7 +366,7 @@ export function DayView() {
               </Card>
             ) : (
               <div className="space-y-2">
-                {data?.data.today.pending.map((task) => (
+                {filteredPending.map((task) => (
                   <TaskCard
                     key={task.id}
                     task={task}
@@ -357,13 +385,13 @@ export function DayView() {
           </div>
 
           {/* 已完成任务 */}
-          {data?.data.today.completed.length > 0 && (
+          {filteredCompleted.length > 0 && (
             <div>
               <h2 className="text-base sm:text-lg font-semibold mb-3 text-muted-foreground">
                 {t('task.completed')}
               </h2>
               <div className={cn('space-y-2', !batchSelection.isSelectMode && 'opacity-60')}>
-                {data?.data.today.completed.map((task) => (
+                {filteredCompleted.map((task) => (
                   <TaskCard
                     key={task.id}
                     task={task}

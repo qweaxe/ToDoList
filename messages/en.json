@@ -551,5 +551,15 @@
     "selectTask": "Select Task",
     "noLinkedTask": "No Linked Task",
     "timeOrderError": "Start time must be earlier than end time"
+  },
+  "dayFilter": {
+    "type_basic": "Basic",
+    "type_cross_day": "Cross-day",
+    "type_multi_step": "Multi-step",
+    "type_cycle": "Recurring",
+    "type_milestone": "Milestone",
+    "allCategories": "All Categories",
+    "allLevels": "All Levels",
+    "clearFilter": "Clear Filter"
   }
 }
