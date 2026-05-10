@@ -2962,3 +2962,12 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/components/views/DayView.tsx` - 添加筛选状态、筛选逻辑、渲染筛选栏
 - `messages/zh.json` - 添加 dayFilter 翻译
 - `messages/en.json` - 添加 dayFilter 翻译
+
+## 2026-05-10: 修复筛选后统计数字和批量选择不一致问题
+
+### 改动内容
+- 修改统计卡片（总计/待完成/已完成）使用筛选后的数据而非原始数据
+- 修改批量选择范围使用筛选后的任务 ID 列表，全选只选中可见任务
+
+### 修改的文件
+- `src/components/views/DayView.tsx` - 统计数字和批量选择改用 filteredTaskIds/filteredPending/filteredCompleted

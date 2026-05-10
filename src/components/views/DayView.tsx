@@ -70,15 +70,6 @@ export function DayView() {
   const { data: levelsData } = useLevels();
 
   // 批量选择功能
-  const allTaskIds = useMemo(() => {
-    if (!data?.data) return [];
-    const pending = data.data.today.pending.map(t => t.id);
-    const completed = data.data.today.completed.map(t => t.id);
-    return [...pending, ...completed];
-  }, [data?.data]);
-
-  const batchSelection = useBatchSelection({ totalCount: allTaskIds.length });
-
   // 筛选后的任务列表
   const filteredPending = useMemo(() => {
     if (!data?.data) return [];
@@ -89,6 +80,15 @@ export function DayView() {
     if (!data?.data) return [];
     return applyFilters(data.data.today.completed, filters);
   }, [data?.data?.today?.completed, filters]);
+
+  // 筛选后的 ID 列表（供批量选择使用）
+  const filteredTaskIds = useMemo(() => {
+    const pending = filteredPending.map(t => t.id);
+    const completed = filteredCompleted.map(t => t.id);
+    return [...pending, ...completed];
+  }, [filteredPending, filteredCompleted]);
+
+  const batchSelection = useBatchSelection({ totalCount: filteredTaskIds.length });
 
   const today = getTodayString();
   const isToday = selectedDate === today;
@@ -202,7 +202,7 @@ export function DayView() {
           {/* 右侧按钮组 */}
           <div className="flex items-center gap-2">
             {/* 批量选择按钮 - 仅当有任务时显示 */}
-            {allTaskIds.length > 0 && (
+            {filteredTaskIds.length > 0 && (
               <Button
                 variant={batchSelection.isSelectMode ? 'default' : 'outline'}
                 size="sm"
@@ -328,7 +328,7 @@ export function DayView() {
             <Card>
               <CardContent className="pt-4 sm:pt-6 px-2 sm:px-6">
                 <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-bold">{data?.data.today.total || 0}</div>
+                  <div className="text-2xl sm:text-3xl font-bold">{filteredTaskIds.length}</div>
                   <div className="text-xs sm:text-sm text-muted-foreground">{t('task.total')}</div>
                 </div>
               </CardContent>
@@ -337,7 +337,7 @@ export function DayView() {
               <CardContent className="pt-4 sm:pt-6 px-2 sm:px-6">
                 <div className="text-center">
                   <div className="text-2xl sm:text-3xl font-bold text-yellow-500">
-                    {data?.data.today.pending.length || 0}
+                    {filteredPending.length}
                   </div>
                   <div className="text-xs sm:text-sm text-muted-foreground">{t('task.pending')}</div>
                 </div>
@@ -347,7 +347,7 @@ export function DayView() {
               <CardContent className="pt-4 sm:pt-6 px-2 sm:px-6">
                 <div className="text-center">
                   <div className="text-2xl sm:text-3xl font-bold text-green-500">
-                    {data?.data.today.completedCount || 0}
+                    {filteredCompleted.length}
                   </div>
                   <div className="text-xs sm:text-sm text-muted-foreground">{t('task.completed')}</div>
                 </div>
@@ -442,12 +442,12 @@ export function DayView() {
       {batchSelection.isSelectMode && (
         <BatchActionsToolbar
           selectedCount={batchSelection.selectedCount}
-          totalCount={allTaskIds.length}
+          totalCount={filteredTaskIds.length}
           selectedIds={batchSelection.getSelectedIds()}
-          allIds={allTaskIds}
+          allIds={filteredTaskIds}
           isAllSelected={batchSelection.isAllSelected}
           isPartialSelected={batchSelection.isPartialSelected}
-          onSelectAll={() => batchSelection.selectAll(allTaskIds)}
+          onSelectAll={() => batchSelection.selectAll(filteredTaskIds)}
           onDeselectAll={batchSelection.deselectAll}
           onExit={batchSelection.exitSelectMode}
         />
