@@ -67,7 +67,6 @@ src/
 │   ├── page.tsx                  # 根页面重定向
 │   ├── layout.tsx                # 根布局
 │   ├── globals.css               # 全局样式
-│   ├── middleware.ts             # 国际化中间件
 │   └── api/                      # API Routes
 │       ├── route.ts              # 根 API（健康检查）
 │       ├── auth/                 # 认证相关 API
@@ -189,8 +188,8 @@ src/
 │   └── use-time-entries.ts       # 时间记录数据 Hook
 │
 ├── lib/
-│   ├── db.ts                     # Prisma 客户端（D1 适配）
-│   ├── d1.ts                     # D1 原生客户端
+│   ├── db.ts                     # Prisma 客户端（开发环境）
+│   ├── d1.ts                     # D1 原生客户端 + IS_EDGE 常量（生产环境）
 │   ├── auth.ts                   # NextAuth 配置
 │   ├── password.ts               # 密码加密（Web crypto API）
 │   ├── admin.ts                  # 管理员权限检查
@@ -216,7 +215,7 @@ src/
 │   ├── api.ts                    # API 类型定义
 │   └── next-auth.d.ts            # NextAuth 类型扩展
 │
-├── middleware.ts                 # Next.js 中间件（认证+i18n）
+├── middleware.ts                 # Next.js 中间件（i18n 路由）
 │
 └── messages/                     # 国际化翻译文件
     ├── en.json                   # 英文翻译
@@ -238,10 +237,10 @@ prisma/
 model User {
   id                      String    @id @default(cuid())
   username                String    @unique
-  password                String    // bcrypt 加密存储
+  password                String    // PBKDF2 加密存储（Web Crypto API）
   name                    String?   // 显示名称
   securityQuestion        String?   // 密保问题
-  securityAnswer          String?   // 密保答案（bcrypt 加密存储）
+  securityAnswer          String?   // 密保答案（PBKDF2 加密存储）
   securityAnswerAttempts  Int       @default(0)
   securityAnswerLockedAt  DateTime?
   createdAt               DateTime  @default(now())
@@ -253,6 +252,7 @@ model User {
   recurrenceRules  RecurrenceRule[]
   apiKeys          ApiKey[]
   inboxItems       InboxItem[]
+  timeEntries      TimeEntry[]
 }
 
 // 任务分类
@@ -428,12 +428,24 @@ model TimeEntry {
 
 | 任务类型 | 判定条件 |
 |----------|----------|
-| 基础任务 | `startDate === dueDate` 且无子任务 |
-| 跨天任务 | `startDate !== dueDate` |
+| 基础任务 | `startDate === dueDate` 且无子任务且非周期且非里程碑 |
+| 跨天任务 | `estimatedDuration !== null && estimatedDuration >= 1440` |
 | 多步骤任务 | `subTasks` 字段有内容 |
 | 周期任务 | `isCycleTask === true` |
+| 里程碑 | `isMilestone === true` |
 
 **注意**：一个任务可以同时属于多个类型（如：跨天+多步骤）
+
+### 4.3 IS_EDGE 双路径数据库架构
+
+项目采用 `IS_EDGE` 常量（定义于 `src/lib/d1.ts`，值为 `process.env.NODE_ENV !== 'development'`）在开发与生产环境之间切换数据库访问路径：
+
+- **开发环境**（`IS_EDGE = false`）：使用 **Prisma ORM**，通过 `src/lib/db.ts` 的 `PrismaClient` 访问本地 SQLite 数据库，支持完整的类型安全查询。
+- **生产环境**（`IS_EDGE = true`）：使用 **D1Client** 原生 SQL，绕过 Prisma 初始化开销，直接通过 Cloudflare D1 binding 执行 SQL 查询。
+
+`D1Client` 类（`src/lib/d1.ts`）提供 `all()`、`first()`、`run()` 三个方法，分别对应查询多行、查询单行、执行写操作。生产环境的查询结果通过 `reshapeTodo()` 等函数将 D1 返回的原始行对象映射为与 Prisma 查询结果一致的结构，确保前端代码无需感知底层差异。
+
+此双路径架构影响 21+ 个 API 路由文件，每个路由均根据 `IS_EDGE` 选择 `db`（Prisma）或 `d1`（D1Client）执行数据库操作。
 
 ---
 
@@ -607,6 +619,8 @@ model User {
   todos            Todo[]
   recurrenceRules  RecurrenceRule[]
   apiKeys          ApiKey[]
+  inboxItems       InboxItem[]
+  timeEntries      TimeEntry[]
 }
 ```
 
@@ -632,11 +646,10 @@ model User {
 
 ```typescript
 // API 路由中的权限验证示例
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthSession } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getAuthSession();
   
   if (!session?.user) {
     return NextResponse.json(
@@ -663,15 +676,17 @@ export async function GET(request: NextRequest) {
 
 ### 6.7 路由保护
 
+中间件仅处理 i18n 路由，认证保护在 API 路由层面通过 `getAuthSession()` 实现。
+
 ```typescript
-// middleware.ts
-export { default } withAuth;
+// src/middleware.ts — 仅处理国际化路由
+import createMiddleware from 'next-intl/middleware';
+import { routing } from './i18n/routing';
+
+export default createMiddleware(routing);
 
 export const config = {
-  matcher: [
-    // 保护所有路由，除了登录/注册页
-    '/((?!api/auth|login|register|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/', '/(zh|en)/:path*']
 };
 ```
 
@@ -832,7 +847,7 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 ### 10.2 缓存策略
 
 1. 首次访问时从 API 拉取当年数据
-2. 存入 PostgreSQL 数据库
+2. 存入 SQLite/D1 数据库
 3. 后续请求直接读缓存
 4. 跨年时自动拉取新年数据
 
@@ -1049,11 +1064,14 @@ export async function getDb() {
   }
   
   // 生产环境：D1 binding
-  const { env } = await import('cloudflare:workers');
+  const { getRequestContext } = await import('@cloudflare/next-on-pages');
+  const { env } = getRequestContext();
   const adapter = new PrismaD1(env.DB);
   return new PrismaClient({ adapter });
 }
 ```
+
+生产环境还提供 `D1Client`（`src/lib/d1.ts`）用于直接执行原生 SQL，绕过 Prisma 初始化开销。通过 `IS_EDGE` 常量（`process.env.NODE_ENV !== 'development'`），21+ 个 API 路由在 Prisma ORM 与 D1Client 原生 SQL 之间切换。详见 4.3 节。
 
 ### 16.4 密码加密适配
 

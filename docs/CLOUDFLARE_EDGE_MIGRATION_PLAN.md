@@ -1,7 +1,18 @@
 # Cloudflare Edge Runtime 迁移计划
 
-> 状态：待执行  
-> 背景：next-auth v4 和 Prisma 标准客户端均不兼容 Cloudflare Workers edge runtime，需要全面升级。
+> **状态：已完成** — Plan B（D1 方案）已被选择并实施完毕。Plan A（Supabase edge）因 WebSocket/pg 兼容问题未被采用。
+>
+> 以下为最终实施情况：
+> - ✅ next-auth v5 已升级并配置完成（`src/auth.ts` + `src/lib/auth.ts`）
+> - ✅ bcryptjs 已替换为 PBKDF2（Web Crypto API）
+> - ✅ Prisma schema 已改为 SQLite（`provider = "sqlite"`）
+> - ✅ `@prisma/adapter-d1` 已安装并集成
+> - ✅ 所有 API 路由已添加 `export const runtime = 'edge'`
+> - ✅ `wrangler.toml` 已配置（项目名 `todolist-cf`，D1 binding 已绑定）
+> - ✅ `next.config.ts` 已添加 `images: { unoptimized: true }`
+> - ✅ `src/lib/db.ts` 实现了 D1/Prisma 双路径切换
+> - ✅ `src/lib/d1.ts` 提供了 D1Client + IS_EDGE 双模式
+> - ✅ crypto-browserify polyfill 已清理
 
 ---
 
@@ -300,11 +311,14 @@ git checkout dev/vercel
 git push origin dev/vercel
 ```
 
-当前 `feat/cloudflare-deploy` 分支状态：
+## 当前分支状态（已完成）
+
+`feat/cloudflare-deploy` 分支最终实施结果：
+- ✅ next-auth v5 已升级完成
+- ✅ Prisma D1 adapter 已配置并工作
+- ✅ bcryptjs 已替换为 PBKDF2
 - ✅ 所有 API 路由已添加 `export const runtime = 'edge'`
-- ✅ bcryptjs 已替换为 PBKDF2（`src/lib/password.ts`）
-- ✅ `wrangler.toml` 已配置
-- ✅ `next.config.ts` 已添加图片配置
-- ❌ next-auth v4 未升级（当前阻塞点）
-- ❌ Prisma 未配置 edge adapter（待验证）
-- ❌ crypto-browserify 等无效 polyfill 需清理
+- ✅ wrangler.toml 已配置（todolist-cf，D1 binding）
+- ✅ next.config.ts 已添加图片配置
+- ✅ crypto-browserify polyfill 已清理
+- ✅ IS_EDGE 双路径数据库访问已实现

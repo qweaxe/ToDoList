@@ -1,5 +1,18 @@
 # Cloudflare 全栈部署迁移计划
 
+> **状态：已完成** — Plan B（D1 方案）已被选择并实施。此文档保留作为历史记录。
+>
+> 实际迁移结果与本文档原计划有多处差异：
+> - 最终选择了 **Plan B：Cloudflare D1** 而非原计划的 Supabase PostgreSQL
+> - Prisma schema 从 PostgreSQL 改为 SQLite
+> - next-auth 已升级到 v5（不再是 v4）
+> - bcryptjs 已替换为 PBKDF2（Web Crypto API）
+> - 所有 API 路由已添加 `export const runtime = 'edge'`
+> - 图片优化使用 `images: { unoptimized: true }` 而非自定义 loader
+> - 数据库连接使用 `@prisma/adapter-d1` + D1Client 双路径
+>
+> 详见 [CLOUDFLARE_EDGE_MIGRATION_PLAN.md](./CLOUDFLARE_EDGE_MIGRATION_PLAN.md) 了解最终实施方案。
+
 ## 一、迁移目标
 
 ### 1.1 核心目标

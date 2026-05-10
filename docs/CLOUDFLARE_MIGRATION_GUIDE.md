@@ -1,32 +1,33 @@
 # Cloudflare 迁移操作指南
 
-本文档详细说明从 Vercel 迁移到 Cloudflare 的具体操作步骤。
+> **注意**：此指南最初设计为继续使用 Supabase PostgreSQL，但最终项目选择了 **Plan B（Cloudflare D1 SQLite）**。以下文档中与 Supabase/PostgreSQL 相关的内容已过时，实际实施请参考 [CLOUDFLARE_EDGE_MIGRATION_PLAN.md](./CLOUDFLARE_EDGE_MIGRATION_PLAN.md) 和 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+>
+> 关键变更：
+> - 数据库从 PostgreSQL 改为 SQLite/D1，不再使用 Supabase
+> - 环境变量中 `DATABASE_URL` 为本地 SQLite 文件路径，`DIRECT_URL` 已废弃
+> - 生产环境 D1 通过 Cloudflare binding 注入，不通过 `DATABASE_URL`
+> - 密码加密从 bcryptjs 改为 PBKDF2（Web Crypto API）
 
 ---
 
-## 一、前置准备（需要你手动操作）
+## 一、前置准备
 
-### 1.1 数据库配置（继续使用 Supabase）
+### 1.1 数据库配置（Cloudflare D1）
 
-**无需迁移数据库**，继续使用现有 Supabase，只需确认连接池配置：
+**已从 Supabase 迁移到 Cloudflare D1**（SQLite）。本地开发使用 `file:./dev.db`，生产环境使用 D1 binding。
 
-1. 登录 Supabase Dashboard
-2. 进入项目 → Settings → Database
-3. 找到 Connection string → Connection pooling
-4. **记录连接字符串**：
-   - `DATABASE_URL`：使用 Pooler 连接（端口 6543，Transaction 模式）
-   - `DIRECT_URL`：使用直连（端口 5432，用于迁移）
+1. 创建 D1 数据库：
+   ```bash
+   npx wrangler d1 create todolist-db
+   ```
 
-**连接字符串格式**：
-```
-# 连接池（用于应用）
-DATABASE_URL="postgresql://postgres:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
+2. 将返回的 `database_id` 写入 `wrangler.toml`
 
-# 直连（用于 Prisma 迁移）
-DIRECT_URL="postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres"
-```
-
-> **注意**：如果现有 `.env.local` 已有正确配置，无需更改。
+3. 本地 `.env.local` 配置：
+   ```env
+   DATABASE_URL="file:./dev.db"
+   NEXTAUTH_SECRET="your-secret-key"
+   ```
 
 ### 1.2 创建 Cloudflare 账号
 

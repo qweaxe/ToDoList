@@ -12,8 +12,9 @@
 4. [任务写入接口](#任务写入接口)
 5. [增量同步接口](#增量同步接口)
 6. [现有数据接口](#现有数据接口)
-7. [错误处理](#错误处理)
-8. [调用示例](#调用示例)
+7. [其他端点概览](#其他端点概览)
+8. [错误处理](#错误处理)
+9. [调用示例](#调用示例)
 
 ---
 
@@ -292,6 +293,8 @@ Content-Type: application/json
 | isMilestone | boolean | 否 | 是否为里程碑 |
 | isCycleTask | boolean | 否 | 是否为周期任务 |
 | priority | number | 否 | 优先级（默认 0） |
+| estimatedDuration | number | 否 | 预计耗时（分钟），如 60=1小时、480=8小时 |
+| completedAt | string | 否 | 完成日期时间 (ISO datetime)，通常由 toggle 端点自动设置 |
 | subTasks | array | 否 | 子任务列表 |
 | recurrenceRule | object | 否 | 周期规则（仅当 isCycleTask=true 时有效） |
 
@@ -346,12 +349,11 @@ Content-Type: application/json
 ```json
 {
   "title": "更新后的标题",
-  "status": "in_progress",
   "dueDate": "2026-04-20"
 }
 ```
 
-> 所有字段均为可选，只传需要更新的字段
+> 所有字段均为可选，只传需要更新的字段。**注意**：`status` 字段不支持通过此端点更新，要改变任务状态请使用 `POST /api/todos/toggle` 端点。
 
 **响应**
 ```json
@@ -360,7 +362,6 @@ Content-Type: application/json
   "data": {
     "id": "clxxx...",
     "title": "更新后的标题",
-    "status": "in_progress",
     "dueDate": "2026-04-20",
     ...
   }
@@ -604,39 +605,55 @@ GET /api/todos
 Authorization: Bearer <your_token>
 ```
 
+**查询参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| status | string | 否 | 状态筛选 (pending/in_progress/completed) |
+| categoryId | string | 否 | 分类 ID 筛选 |
+| levelId | string | 否 | 等级 ID 筛选 |
+| startDate | string | 否 | 日期范围开始 (YYYY-MM-DD)，需配合 endDate 使用 |
+| endDate | string | 否 | 日期范围结束 (YYYY-MM-DD)，需配合 startDate 使用 |
+| isMilestone | string | 否 | 是否里程碑筛选 ("true" 仅返回里程碑任务) |
+
 ### 获取日视图数据
+
+> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
 
 ```
 GET /api/todos/daily?date=2026-04-02
-Authorization: Bearer <your_token>
 ```
 
 ### 获取周视图数据
 
+> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
+
 ```
-GET /api/todos/weekly?startDate=2026-03-30
-Authorization: Bearer <your_token>
+GET /api/todos/weekly?date=2026-03-30
 ```
 
 ### 获取月视图数据
 
+> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
+
 ```
 GET /api/todos/monthly?year=2026&month=4
-Authorization: Bearer <your_token>
 ```
 
 ### 获取年度统计
 
+> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
+
 ```
 GET /api/todos/yearly?year=2026
-Authorization: Bearer <your_token>
 ```
 
 ### 获取分类列表
 
+> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
+
 ```
 GET /api/categories
-Authorization: Bearer <your_token>
 ```
 
 ### 获取等级列表
@@ -645,6 +662,62 @@ Authorization: Bearer <your_token>
 GET /api/levels
 ```
 > 此接口无需认证
+
+---
+
+## 其他端点概览
+
+以下端点组已在应用中实现，此处仅作概览，详细文档后续补充。
+
+### 认证端点（仅 Session 认证）
+
+| 端点 | 说明 |
+|------|------|
+| POST /api/auth/register | 用户注册 |
+| POST /api/auth/change-password | 修改密码 |
+| POST /api/auth/forgot-password | 忘记密码（发送重置邮件） |
+| POST /api/auth/reset-password | 重置密码 |
+| GET/POST /api/auth/security-question | 密保问题管理 |
+| GET/POST /api/auth/[...nextauth] | NextAuth 登录/登出等端点 |
+
+### 捕获箱端点（仅 Session 认证）
+
+| 端点 | 说明 |
+|------|------|
+| GET /api/inbox | 获取捕获箱列表 |
+| POST /api/inbox | 创建捕获箱条目 |
+| GET /api/inbox/count | 获取未处理条目数 |
+| PUT /api/inbox/{id} | 更新捕获箱条目 |
+| DELETE /api/inbox/{id} | 删除捕获箱条目 |
+| POST /api/inbox/{id}/convert | 将捕获箱条目转化为任务 |
+
+### 提醒端点（仅 Session 认证）
+
+| 端点 | 说明 |
+|------|------|
+| GET /api/reminders/pending | 获取待发送提醒列表 |
+| DELETE /api/reminders/{id} | 删除提醒 |
+| POST /api/reminders/{id}/sent | 标记提醒已发送 |
+
+### 分类 CRUD 端点（仅 Session 认证）
+
+| 端点 | 说明 |
+|------|------|
+| GET /api/categories | 获取分类列表（已在上文记录） |
+| POST /api/categories | 创建分类 |
+| GET /api/categories/{id} | 获取单个分类详情 |
+| PUT /api/categories/{id} | 更新分类 |
+| DELETE /api/categories/{id} | 删除分类 |
+
+### 任务其他端点
+
+| 端点 | 说明 |
+|------|------|
+| GET /api/todos/filter | 按分类/等级筛选任务 |
+| GET /api/todos/quarterly | 获取季度里程碑任务 |
+| PUT /api/todos/{id}/subtask | 更新任务子任务 |
+| GET /api/todos/{id}/reminders | 获取任务关联提醒 |
+| POST /api/todos/{id}/reminders | 为任务创建提醒 |
 
 ---
 

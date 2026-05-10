@@ -2971,3 +2971,29 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 
 ### 修改的文件
 - `src/components/views/DayView.tsx` - 统计数字和批量选择改用 filteredTaskIds/filteredPending/filteredCompleted
+
+## 2026-05-10: 全面审查并修正项目文档与代码库不符
+
+### 改动内容
+- 重写 README.md：数据库从 PostgreSQL/Supabase 改为 SQLite/D1，补全认证/i18n/捕获箱/时间记录/提醒/API Key 等缺失功能，修正目录结构和部署指引
+- 重写 DEPLOYMENT.md：从 Vercel+Supabase 部署改为 Cloudflare Pages+D1 部署，补全 NEXTAUTH_SECRET 等环境变量，修正 seed 端点需认证的说明
+- 更新 .env.example：从 Supabase PostgreSQL 格式改为本地 SQLite+认证配置
+- 更新 CLOUDFLARE_MIGRATION.md：添加"已完成"状态头部，说明实际选择了 Plan B（D1）而非原计划
+- 更新 CLOUDFLARE_EDGE_MIGRATION_PLAN.md：状态从"待执行"改为"已完成"，更新所有阻塞项为已完成
+- 更新 CLOUDFLARE_MIGRATION_GUIDE.md：添加过时说明头部，指出 Supabase 环境变量部分已不适用
+- 修复 ARCHITECTURE.md：添加 IS_EDGE 双路径架构描述，修正 middleware/auth/cross_day/密码注释/文件路径/D1 连接机制/数据模型关联
+- 修复 API.md：修正 5 个端点的认证描述（仅 Session 不支持 Bearer），修正 weekly 参数名，修正 PUT status 不可更新，补全缺失端点概览
+- 修复 TODO_PLAN.md：批量操作 UI 标记从"部分完成"改为"已完成"，补全 14 个计划外功能
+- 更新 TEST_CASES.md：添加数据库迁移说明和缺失覆盖提示
+
+### 修改的文件
+- `README.md` - 全面重写
+- `.env.example` - 更新为 SQLite+认证配置
+- `docs/DEPLOYMENT.md` - 全面重写为 Cloudflare D1
+- `docs/CLOUDFLARE_MIGRATION.md` - 添加状态头部
+- `docs/CLOUDFLARE_EDGE_MIGRATION_PLAN.md` - 更新状态和完成项
+- `docs/CLOUDFLARE_MIGRATION_GUIDE.md` - 添加过时说明头部
+- `docs/ARCHITECTURE.md` - 10 项修正
+- `docs/API.md` - 6 项修正
+- `docs/TODO_PLAN.md` - 批量操作状态修正 + 补全计划外功能
+- `docs/TEST_CASES.md` - 添加迁移和覆盖提示

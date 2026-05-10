@@ -1,25 +1,33 @@
 # To Do List 部署指南
 
-本文档详细说明如何将 To Do List 部署到 Vercel + Supabase 架构。
+本文档详细说明如何将 To Do List 部署到 Cloudflare Pages + D1 架构。
 
 ---
 
 ## 📋 架构概览
 
 ```
-┌─────────────────────────────────┐
-│           Vercel                │
-│  ┌───────────┐ ┌─────────────┐  │
-│  │  前端     │ │  API Routes │  │
-│  └───────────┘ └─────────────┘  │
-└─────────────────────────────────┘
+┌──────────────────────────────────────┐
+│         Cloudflare Pages             │
+│  ┌───────────┐  ┌─────────────────┐  │
+│  │  前端     │  │  API Routes     │  │
+│  │  (Edge)   │  │  (Edge Runtime) │  │
+│  └───────────┘  └─────────────────┘  │
+└──────────────────────────────────────┘
               │
               ▼
-     ┌─────────────────┐
-     │ Supabase        │
-     │ PostgreSQL      │
-     └─────────────────┘
+     ┌──────────────────┐
+     │ Cloudflare D1    │
+     │ (SQLite 边缘DB)  │
+     └──────────────────┘
 ```
+
+### 双路径架构
+
+- **开发环境**：Prisma ORM + 本地 SQLite（`file:./dev.db`）
+- **生产环境**：D1Client 原生 SQL + Cloudflare D1 binding（Edge Runtime）
+
+API 路由通过 `IS_EDGE` 判断运行环境，自动切换数据库访问方式。
 
 ---
 
@@ -27,140 +35,139 @@
 
 ### 前置条件
 
-- [ ] GitHub 账号
-- [ ] Vercel 账号（可用 GitHub 登录）
-- [ ] Supabase 账号（可用 GitHub 登录）
-- [ ] 本地开发环境：Bun 或 Node.js 18+
+- [ ] Cloudflare 账号（用于 Pages + D1）
+- [ ] Node.js 18+ 或 Bun
+- [ ] Wrangler CLI（`npm install -g wrangler`）
 
 ---
 
-## 第一阶段：Supabase 设置
+## 第一阶段：本地开发环境配置
 
-### 1.1 创建 Supabase 项目
-
-1. 访问 [supabase.com](https://supabase.com) 并登录
-2. 点击 **New Project** 创建新项目
-3. 填写项目信息：
-   - **Name**: `To Do List` (或您喜欢的名称)
-   - **Database Password**: 设置一个强密码（请保存好）
-   - **Region**: 选择 `Northeast Asia (Tokyo)` 或 `Southeast Asia (Singapore)` 以获得较好的国内访问速度
-4. 点击 **Create new project**，等待项目创建完成（约 2 分钟）
-
-### 1.2 获取数据库连接字符串
-
-1. 项目创建完成后，进入项目控制台
-2. 点击左侧 **Project Settings** (齿轮图标)
-3. 选择 **Database**
-4. 在 **Connection string** 部分：
-   - 选择 **URI** 标签
-   - 选择 **Mode: Session** 或 **Transaction** (推荐 Transaction)
-   - 复制连接字符串
-
-连接字符串格式如下：
-```
-postgresql://postgres.[PROJECT_ID]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
-```
-
-### 1.3 配置本地环境变量
-
-1. 复制环境变量模板：
-   ```bash
-   cp .env.example .env.local
-   ```
-
-2. 编辑 `.env.local`，填入实际的数据库连接字符串：
-   ```env
-   DATABASE_URL="postgresql://postgres.xxxxx:your-password@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
-   ```
-
----
-
-## 第二阶段：本地开发环境配置
-
-### 2.1 安装依赖
+### 1.1 安装依赖
 
 ```bash
+git clone https://github.com/qweaxe/ToDoList.git
+cd ToDoList
 bun install
 ```
 
-### 2.2 生成 Prisma Client
+### 1.2 配置环境变量
 
 ```bash
-bun run db:generate
+cp .env.example .env.local
 ```
 
-### 2.3 推送数据库 Schema
+编辑 `.env.local`：
+
+```env
+# 本地开发使用 SQLite 文件数据库
+DATABASE_URL="file:./dev.db"
+
+# NextAuth 密钥（必需，用于 JWT 签名）
+NEXTAUTH_SECRET="your-secret-key-here"
+
+# 本地开发 URL
+NEXTAUTH_URL="http://localhost:3000"
+
+# 管理员用户 ID（可选，逗号分隔）
+# ADMIN_USER_IDS=""
+```
+
+### 1.3 初始化数据库
 
 ```bash
+# 生成 Prisma Client
+bun run db:generate
+
+# 同步 Schema 到本地 SQLite
 bun run db:push
 ```
 
-这会将 Prisma schema 同步到 Supabase 数据库，创建所有必要的表。
-
-### 2.4 初始化种子数据（可选）
-
-启动开发服务器后，访问以下地址初始化默认数据：
-```
-http://localhost:3000/api/seed
-```
-
-这会创建默认的任务分类和等级。
-
-### 2.5 启动开发服务器
+### 1.4 启动开发服务器
 
 ```bash
 bun run dev
 ```
 
-访问 [http://localhost:3000](http://localhost:3000) 验证应用正常运行。
+访问 [http://localhost:3000](http://localhost:3000) 注册用户并验证应用正常。
+
+### 1.5 初始化种子数据
+
+注册登录后，访问 `/api/seed` 初始化默认分类和等级。**注意：此端点需要认证，匿名访问会被拒绝。**
 
 ---
 
-## 第三阶段：Vercel 部署
+## 第二阶段：Cloudflare D1 设置
 
-### 3.1 推送代码到 GitHub
+### 2.1 登录 Wrangler
 
-1. 创建 GitHub 仓库（如果还没有）
-2. 推送代码：
-   ```bash
-   git add .
-   git commit -m "feat: migrate to PostgreSQL"
-   git push origin main
-   ```
+```bash
+wrangler login
+```
 
-### 3.2 在 Vercel 导入项目
+### 2.2 创建 D1 数据库
 
-1. 访问 [vercel.com](https://vercel.com) 并登录
-2. 点击 **Add New...** → **Project**
-3. 选择 **Import Git Repository**
-4. 选择您的 GitHub 仓库
-5. 配置项目：
-   - **Framework Preset**: Next.js (自动检测)
-   - **Root Directory**: `./`
-   - **Build Command**: `bun run build` (默认)
-   - **Output Directory**: `.next` (默认)
+```bash
+wrangler d1 create todolist-db
+```
 
-### 3.3 配置环境变量
+记下输出中的 `database_id`，更新 `wrangler.toml` 中的 `database_id` 字段。
 
-在 Vercel 项目设置中添加环境变量：
+### 2.3 初始化 D1 Schema
 
-1. 展开 **Environment Variables** 部分
-2. 添加以下变量：
+```bash
+# 方式一：通过 Prisma 迁移生成 SQL
+bun run db:migrate
 
-| Name | Value | Environment |
-|------|-------|-------------|
-| `DATABASE_URL` | 您的 Supabase 连接字符串 | Production, Preview, Development |
+# 方式二：直接在 D1 执行 Schema
+wrangler d1 execute todolist-db --file=./prisma/migrations/000_init/migration.sql
+```
 
-3. 点击 **Deploy** 开始部署
+---
 
-### 3.4 等待部署完成
+## 第三阶段：Cloudflare Pages 部署
 
-Vercel 会自动：
-- 安装依赖
-- 构建 Next.js 应用
-- 部署到全球边缘网络
+### 3.1 构建项目
 
-部署完成后，您会获得一个 `xxx.vercel.app` 的域名。
+```bash
+bun run build:cf
+```
+
+这会使用 `@cloudflare/next-on-pages` 将 Next.js 构建转为 Cloudflare Pages 兼容格式。
+
+### 3.2 本地预览（可选）
+
+```bash
+bun run preview:cf
+```
+
+使用 Wrangler 在本地模拟 Cloudflare Pages + D1 环境。
+
+### 3.3 部署到 Cloudflare
+
+```bash
+bun run deploy:cf
+```
+
+或手动部署：
+
+```bash
+wrangler pages deploy .vercel/output/static --project-name=todolist-cf
+```
+
+### 3.4 配置 Cloudflare 环境变量
+
+在 Cloudflare Dashboard 中设置：
+
+**Pages → todolist-cf → Settings → Environment variables**
+
+| Name | Value | 说明 |
+|------|-------|------|
+| `NEXTAUTH_SECRET` | （Secret 类型） | JWT 签名密钥，必填 |
+| `NEXTAUTH_URL` | `https://todolist-cf.pages.dev` | 应用 URL |
+| `ADMIN_USER_IDS` | （可选） | 管理员用户 ID |
+
+**注意**：`NEXTAUTH_SECRET` 必须设为 Secret 类型（加密存储），不要用普通文本变量。
 
 ---
 
@@ -168,59 +175,59 @@ Vercel 会自动：
 
 ### 4.1 访问应用
 
-访问 Vercel 提供的域名，验证：
+访问 Cloudflare Pages 提供的域名，验证：
+
 - [ ] 页面正常加载
+- [ ] 可以注册/登录
 - [ ] 可以创建任务
 - [ ] 可以查看日历
 - [ ] 数据持久化正常
 
 ### 4.2 初始化生产环境数据
 
-首次部署后，访问以下地址初始化数据：
-```
-https://your-app.vercel.app/api/seed
-```
+登录后访问 `/api/seed` 初始化默认分类和等级。
 
 ---
 
 ## 🔧 常见问题
 
-### Q1: 数据库连接失败
+### Q1: D1 数据库连接失败
 
-**症状**: `Can't reach database server`
+**症状**: `D1_CLIENT_ERROR` 或数据查询返回空
 
 **解决方案**:
-1. 检查 `DATABASE_URL` 是否正确
-2. 确认 Supabase 项目状态是否为 Active
-3. 检查密码中的特殊字符是否需要 URL 编码
+1. 确认 `wrangler.toml` 中 `database_id` 正确
+2. 确认 D1 Schema 已初始化（`wrangler d1 execute`）
+3. 检查 Cloudflare Dashboard 中 D1 绑定配置
 
-### Q2: Prisma 迁移错误
+### Q2: Edge Runtime 兼容性问题
 
-**症状**: `Prisma schema validation error`
+**症状**: 构建报错 `edge runtime does not support nodejs api`
+
+**解决方案**:
+1. `wrangler.toml` 必须包含 `nodejs_compat` flag
+2. 确认没有使用 Node.js 专属 API（如 `fs`、`crypto`）
+3. 密码加密使用 Web Crypto API（PBKDF2），不使用 bcryptjs
+
+### Q3: 认证相关错误
+
+**症状**: 登录失败或 JWT 错误
+
+**解决方案**:
+1. 确认 `NEXTAUTH_SECRET` 已设为 Secret 类型
+2. 确认 `NEXTAUTH_URL` 与实际访问域名一致
+3. 本地开发时确保 `.env.local` 中 `NEXTAUTH_SECRET` 已填写
+
+### Q4: 本地 Cloudflare 预览失败
 
 **解决方案**:
 ```bash
-# 重新生成 Prisma Client
-bun run db:generate
+# 先构建
+bun run build:cf
 
-# 强制同步 schema（开发环境）
-bun run db:push
+# 再预览（需要本地 D1 绑定）
+bun run dev:cf
 ```
-
-### Q3: Vercel 构建失败
-
-**症状**: Build failed in Vercel
-
-**解决方案**:
-1. 检查 Vercel 构建日志
-2. 确认环境变量已正确设置
-3. 本地运行 `bun run build` 测试构建
-
-### Q4: 国内访问 Vercel 较慢
-
-**解决方案**:
-1. 考虑绑定自定义域名
-2. 或使用 Cloudflare Pages 作为替代方案
 
 ---
 
@@ -228,8 +235,8 @@ bun run db:push
 
 | 服务 | 免费额度 | 个人使用预估 |
 |------|---------|-------------|
-| Supabase | 500MB 数据库, 1GB 文件存储 | ✅ 足够 |
-| Vercel | 100GB 带宽/月 | ✅ 足够 |
+| Cloudflare D1 | 5GB 存储, 5M 读/天, 100K 写/天 | ✅ 足够 |
+| Cloudflare Pages | 500 构建/月, 无限带宽 | ✅ 足够 |
 | **总计** | **$0/月** | |
 
 ---
@@ -238,26 +245,25 @@ bun run db:push
 
 ### 数据库备份
 
-Supabase 免费版不提供自动备份，建议定期手动导出数据：
+Cloudflare D1 支持导出：
 
-1. Supabase 控制台 → Database → Backups
-2. 或使用 `pg_dump` 命令行工具
+```bash
+wrangler d1 export todolist-db --output=backup.sql
+```
 
 ### 更新部署
 
-每次推送到 `main` 分支，Vercel 会自动重新部署：
-
 ```bash
-git add .
-git commit -m "your changes"
-git push origin main
+# 构建并部署
+bun run build:cf
+bun run deploy:cf
 ```
 
 ---
 
 ## 📚 相关文档
 
-- [Supabase 文档](https://supabase.com/docs)
-- [Vercel 文档](https://vercel.com/docs)
-- [Prisma PostgreSQL 指南](https://www.prisma.io/docs/concepts/database-connectors/postgresql)
-- [Next.js 部署文档](https://nextjs.org/docs/deployment)
+- [Cloudflare Pages 文档](https://developers.cloudflare.com/pages)
+- [Cloudflare D1 文档](https://developers.cloudflare.com/d1)
+- [next-on-pages 适配器](https://github.com/cloudflare/next-on-pages)
+- [架构文档](./ARCHITECTURE.md)

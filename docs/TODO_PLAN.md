@@ -123,14 +123,14 @@
 | 5.4 | 节假日服务 | ✅ 已完成（阶段三） |
 | 5.5 | 日历节假日标记 | ✅ 已完成（阶段三） |
 | 5.6 | 批量删除 API | ✅ 已完成（阶段二） |
-| 5.7 | 批量操作 UI | ⏳ 部分完成（API已就绪，UI待完善） |
+| 5.7 | 批量操作 UI | ✅ 已完成（BatchActionsToolbar + use-batch-selection） |
 | 5.8 | 任务详情模态框 | ✅ 已完成 |
 | 5.9 | 子任务状态持久化 | ✅ 已完成 |
 
 ### 交付物
 - ✅ 完整的周期任务功能（同步服务已实现）
 - ✅ 节假日显示功能
-- ⏳ 批量操作功能（API完成，UI待完善）
+- ✅ 批量操作功能（BatchActionsToolbar，支持批量删除/更新/完成/改分类/改等级/改日期）
 - ✅ 子任务状态持久化
 - ✅ 任务详情模态框
 
@@ -171,6 +171,18 @@
 | 历史待办专属视图 | ✅ 完成 | OverdueView 组件，支持查看所有过期任务并跳转 |
 | 任务完成日期编辑 | ✅ 完成 | 支持修改任务的完成日期 |
 | 自定义图标上传 | ✅ 完成 | 分类图标上传功能（EmojiPicker 支持图片上传） |
+| 用户认证系统 | ✅ 完成 | 注册/登录/密码修改/密保问题找回（NextAuth v5 + JWT） |
+| 国际化 | ✅ 完成 | 中文/英文双语（next-intl），自动 locale 路由 |
+| 捕获箱 | ✅ 完成 | InboxView + 快速记录 + 一键转任务 |
+| 时间记录 | ✅ 完成 | TimeView + 时间录入 + 每日统计 |
+| 任务提醒 | ✅ 完成 | ReminderManager + 通知推送 + 预设提醒时间 |
+| API 密钥管理 | ✅ 完成 | ApiKeyManager + Bearer Token 认证 |
+| 数据导出/备份 | ✅ 完成 | /api/export/todos + /api/export/backup + /api/sync |
+| 管理员功能 | ✅ 完成 | /api/admin/check + 节假日管理 |
+| 任务类型筛选 | ✅ 完成 | DayViewFilter（按类型/分类/等级筛选） |
+| 系统信息 | ✅ 完成 | SystemInfo（版本、环境、构建时间） |
+| 缓存管理 | ✅ 完成 | CacheManager（清除 localStorage/TanStack Query） |
+| 语言切换 | ✅ 完成 | LanguageSwitcher（zh/en） |
 
 ---
 
