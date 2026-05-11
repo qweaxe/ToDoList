@@ -2997,3 +2997,16 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `docs/API.md` - 6 项修正
 - `docs/TODO_PLAN.md` - 批量操作状态修正 + 补全计划外功能
 - `docs/TEST_CASES.md` - 添加迁移和覆盖提示
+
+## 2026-05-11: DayView 筛选范围扩展 — 历史待办(overdue)区域也参与筛选
+
+### 改动内容
+- overdue 区域默认跟随筛选条件（类型/分类/等级），Badge 数量随筛选结果更新
+- 当筛选激活时，overdue CardHeader 新增「显示全部逾期」切换按钮，用户可临时查看所有逾期任务
+- 切换日期时自动重置 showAllOverdue 状态
+- 添加 dayFilter i18n 翻译（showAllOverdue / showFiltered）
+
+### 修改的文件
+- `src/components/views/DayView.tsx` - 添加 filteredOverdue、displayedOverdue、showAllOverdue 逻辑和切换按钮
+- `messages/zh.json` - 添加 showAllOverdue/showFiltered 翻译
+- `messages/en.json` - 添加 showAllOverdue/showFiltered 翻译

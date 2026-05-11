@@ -559,6 +559,8 @@
     "type_milestone": "里程碑",
     "allCategories": "全分类",
     "allLevels": "全等级",
-    "clearFilter": "清除筛选"
+    "clearFilter": "清除筛选",
+    "showAllOverdue": "显示全部逾期",
+    "showFiltered": "仅显示筛选结果"
   }
 }

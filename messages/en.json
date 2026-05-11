@@ -560,6 +560,8 @@
     "type_milestone": "Milestone",
     "allCategories": "All Categories",
     "allLevels": "All Levels",
-    "clearFilter": "Clear Filter"
+    "clearFilter": "Clear Filter",
+    "showAllOverdue": "Show all overdue",
+    "showFiltered": "Show filtered only"
   }
 }

@@ -50,6 +50,7 @@ export function DayView() {
     estimatedDuration?: number | null;
   } | null>(null);
   const [filters, setFilters] = useState<FilterState>({ taskTypes: [], categoryId: null, levelId: null });
+  const [showAllOverdue, setShowAllOverdue] = useState(false);
 
   // URL 参数支持 - 从 URL 读取 date 参数设置 selectedDate
   const searchParams = useSearchParams();
@@ -81,6 +82,16 @@ export function DayView() {
     return applyFilters(data.data.today.completed, filters);
   }, [data?.data?.today?.completed, filters]);
 
+  const filteredOverdue = useMemo(() => {
+    if (!data?.data) return [];
+    return applyFilters(data.data.overdue, filters);
+  }, [data?.data?.overdue, filters]);
+
+  const hasActiveFilters = filters.taskTypes.length > 0 || filters.categoryId || filters.levelId;
+
+  // overdue 区域：默认跟随筛选，用户可切换显示全部
+  const displayedOverdue = showAllOverdue ? (data?.data?.overdue ?? []) : filteredOverdue;
+
   // 筛选后的 ID 列表（供批量选择使用）
   const filteredTaskIds = useMemo(() => {
     const pending = filteredPending.map(t => t.id);
@@ -97,24 +108,27 @@ export function DayView() {
     if (date) {
       const dateStr = format(date, 'yyyy-MM-dd');
       setSelectedDate(dateStr);
+      setShowAllOverdue(false);
     }
   };
 
   const handleGoToToday = () => {
     setSelectedDate(today);
+    setShowAllOverdue(false);
   };
 
   const handlePrevDay = () => {
-    // selectedDate 是 yyyy-MM-dd 格式，使用 parseISO 解析并添加中午时间避免时区边界问题
     const current = parseISO(`${selectedDate}T12:00:00`);
     const prevDay = subDays(current, 1);
     setSelectedDate(format(prevDay, 'yyyy-MM-dd'));
+    setShowAllOverdue(false);
   };
 
   const handleNextDay = () => {
     const current = parseISO(`${selectedDate}T12:00:00`);
     const nextDay = addDays(current, 1);
     setSelectedDate(format(nextDay, 'yyyy-MM-dd'));
+    setShowAllOverdue(false);
   };
 
   const handleEdit = (task: {
@@ -170,7 +184,7 @@ export function DayView() {
     const d = new Date(iso);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
-  const groupedOverdue = data?.data.overdue.reduce(
+  const groupedOverdue = displayedOverdue.reduce(
     (acc, task) => {
       const date = getDateLocal(task.dueDate);
       if (!acc[date]) {
@@ -179,7 +193,7 @@ export function DayView() {
       acc[date].push(task);
       return acc;
     },
-    {} as Record<string, typeof data.data.overdue>
+    {} as Record<string, typeof displayedOverdue>
   );
 
   return (
@@ -278,16 +292,28 @@ export function DayView() {
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive flex-shrink-0" />
                     <span className="truncate">{t('task.overdue')}</span>
-                    <Badge variant="destructive" className="flex-shrink-0">{data?.data?.overdueCount ?? 0}</Badge>
+                    <Badge variant="destructive" className="flex-shrink-0">{displayedOverdue.length}</Badge>
                   </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleViewAllOverdue}
-                    className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    {t('task.viewAll')} →
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {hasActiveFilters && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAllOverdue(!showAllOverdue)}
+                        className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        {showAllOverdue ? t('dayFilter.showFiltered') : t('dayFilter.showAllOverdue')}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleViewAllOverdue}
+                      className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {t('task.viewAll')} →
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
