@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
@@ -12,16 +12,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskCard } from '@/components/task/TaskCard';
 import { TaskForm } from '@/components/task/TaskForm';
+import { DayViewFilter } from '@/components/task/DayViewFilter';
 import { useDailyTodos, useToggleTodo, useDeleteTodo, useUpdateCompletedAt, useUpdateSubTask } from '@/hooks/use-todos';
+import { useCategories } from '@/hooks/use-categories';
+import { useLevels } from '@/hooks/use-levels';
+import { applyFilters, type FilterState } from '@/hooks/use-task-type';
 import { useViewStore } from '@/hooks/use-view-store';
 import { getTodayString, formatDateDisplay } from '@/lib/date-utils';
+
+const DEFAULT_FILTERS: FilterState = { taskTypes: [], categoryId: null, levelId: null };
 
 export function OverdueView() {
   const t = useTranslations();
   const locale = useLocale();
   const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
 
-  const { setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
+  const { setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth, overdueFilter, setOverdueFilter } = useViewStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<{
     id: string;
@@ -40,13 +46,30 @@ export function OverdueView() {
     estimatedDuration?: number | null;
   } | null>(null);
 
+  // 从 store 读取跳转时传入的筛选状态作为初始值，然后清空 store 中的临时字段
+  const [filters, setFilters] = useState<FilterState>(overdueFilter ?? DEFAULT_FILTERS);
+  const [showAllOverdue, setShowAllOverdue] = useState(false);
+
+  useEffect(() => {
+    if (overdueFilter) {
+      setOverdueFilter(null);
+    }
+  }, [overdueFilter, setOverdueFilter]);
+
+  const hasActiveFilters = filters.taskTypes.length > 0 || filters.categoryId || filters.levelId;
+
   const { data, isLoading } = useDailyTodos(getTodayString());
+  const categoriesData = useCategories();
+  const levelsData = useLevels();
   const toggleMutation = useToggleTodo();
   const deleteMutation = useDeleteTodo();
   const updateCompletedAtMutation = useUpdateCompletedAt();
   const updateSubTaskMutation = useUpdateSubTask();
 
   const today = getTodayString();
+
+  const categories = categoriesData.data?.data ?? [];
+  const levels = levelsData.data?.data ?? [];
 
   const handleToggle = (id: string) => {
     toggleMutation.mutate(id);
@@ -80,18 +103,15 @@ export function OverdueView() {
     setIsFormOpen(true);
   };
 
-  // 子任务状态切换
   const handleSubTaskToggle = (taskId: string, subTaskId: string, isDone: boolean) => {
     updateSubTaskMutation.mutate({ taskId, subTaskId, isDone });
   };
 
-  // 关闭编辑表单
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingTask(null);
   };
 
-  // 跳转到任务创建日期的那一天
   const handleJumpToDate = (date: string) => {
     setSelectedDate(date);
     const d = new Date(date);
@@ -100,17 +120,24 @@ export function OverdueView() {
     setCurrentView('day');
   };
 
-  // 返回今日视图
   const handleGoBack = () => {
     setCurrentView('day');
   };
 
-  // 按日期分组历史待办（将 UTC 转换为本地日期）
+  // 筛选 overdue 数据
+  const filteredOverdue = useMemo(() => {
+    const overdue = data?.data?.overdue ?? [];
+    return applyFilters(overdue, filters);
+  }, [data?.data?.overdue, filters]);
+
+  const displayedOverdue = showAllOverdue ? (data?.data?.overdue ?? []) : filteredOverdue;
+
+  // 按日期分组显示的 overdue（将 UTC 转换为本地日期）
   const getDateLocal = (iso: string) => {
     const d = new Date(iso);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
-  const groupedOverdue = data?.data.overdue.reduce(
+  const groupedOverdue = displayedOverdue.reduce(
     (acc, task) => {
       const date = getDateLocal(task.dueDate);
       if (!acc[date]) {
@@ -119,10 +146,9 @@ export function OverdueView() {
       acc[date].push(task);
       return acc;
     },
-    {} as Record<string, typeof data.data.overdue>
+    {} as Record<string, typeof displayedOverdue>
   );
 
-  // 按日期排序（从最远到最近）
   const sortedDates = groupedOverdue
     ? Object.keys(groupedOverdue).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
     : [];
@@ -143,7 +169,28 @@ export function OverdueView() {
             )}
           </div>
         </div>
+        {/* 篮选 toggle 按钮 */}
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAllOverdue(!showAllOverdue)}
+            className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+          >
+            {showAllOverdue ? t('overdue.showFiltered') : t('overdue.showAllOverdue')}
+          </Button>
+        )}
       </div>
+
+      {/* 筛选器 */}
+      {!isLoading && (data?.data?.overdueCount ?? 0) > 0 && (
+        <DayViewFilter
+          filters={filters}
+          onFiltersChange={setFilters}
+          categories={categories}
+          levels={levels}
+        />
+      )}
 
       {/* 提示信息 */}
       <Card className="mb-6 border-destructive/30 bg-destructive/5">
@@ -173,7 +220,7 @@ export function OverdueView() {
           </CardContent>
         </Card>
       ) : (
-        <ScrollArea className="h-[calc(100vh-220px)]">
+        <ScrollArea className="h-[calc(100vh-280px)]">
           <div className="space-y-6 pr-2 sm:pr-4">
             {sortedDates.map((date) => {
               const tasks = groupedOverdue![date];

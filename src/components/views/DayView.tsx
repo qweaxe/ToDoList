@@ -31,7 +31,7 @@ export function DayView() {
   const locale = useLocale();
   const dateFnsLocale = locale === 'zh' ? zhCN : enUS;
 
-  const { selectedDate, setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth } = useViewStore();
+  const { selectedDate, setSelectedDate, setCurrentView, setCalendarYear, setCalendarMonth, setOverdueFilter } = useViewStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<{
     id: string;
@@ -176,6 +176,7 @@ export function DayView() {
 
   // 跳转到历史待办专属页面
   const handleViewAllOverdue = () => {
+    setOverdueFilter(hasActiveFilters ? filters : null);
     setCurrentView('overdue');
   };
 
@@ -311,7 +312,7 @@ export function DayView() {
                       onClick={handleViewAllOverdue}
                       className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
                     >
-                      {t('task.viewAll')} →
+                      {hasActiveFilters ? t('dayFilter.viewAllFiltered') : t('task.viewAll')} →
                     </Button>
                   </div>
                 </div>

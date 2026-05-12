@@ -231,7 +231,7 @@ export async function POST(request: Request) {
    - 检查安全性问题
 
 5. **文档更新**
-   - 更新 `worklog.md` 记录改动
+   - 更新 `WORKLOG.md` 记录改动
    - 如有架构变更，更新 `ARCHITECTURE.md`
 
 ### 即使小功能也要思考

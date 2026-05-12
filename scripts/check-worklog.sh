@@ -3,7 +3,7 @@
 # 按照 CLAUDE.md 中的工作流要求，WORKLOG.md 必须包含在每次提交中
 
 # 检查最近一次提交是否修改了 WORKLOG.md
-if git log -1 --name-only --format="" | grep -q "WORKLOG.md\|worklog.md"; then
+if git log -1 --name-only --format="" | grep -q "WORKLOG.md"; then
   # WORKLOG.md 已在最近提交中更新，允许 push
   exit 0
 else

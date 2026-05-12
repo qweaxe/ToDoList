@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { format, addWeeks, subWeeks } from 'date-fns';
 import { getTodayString } from '@/lib/date-utils';
+import type { FilterState } from '@/hooks/use-task-type';
 
 // 视图类型
 export type ViewType = 'day' | 'calendar' | 'week' | 'quarter' | 'year' | 'settings' | 'overdue' | 'task-list' | 'inbox' | 'time';
@@ -46,6 +47,9 @@ interface ViewState {
   // 任务列表筛选条件
   taskListFilter: TaskListFilter | null;
 
+  // 历史待办筛选条件（跳转时临时传递）
+  overdueFilter: FilterState | null;
+
   // 侧边栏是否展开（移动端）
   sidebarOpen: boolean;
 
@@ -63,6 +67,7 @@ interface ViewState {
   setYearlyYear: (year: number) => void;
   setSettingsTab: (tab: SettingsTab) => void;
   setTaskListFilter: (filter: TaskListFilter | null) => void;
+  setOverdueFilter: (filter: FilterState | null) => void;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
 
@@ -98,6 +103,7 @@ export const useViewStore = create<ViewState>()(
       yearlyYear: 1970,
       settingsTab: 'categories',
       taskListFilter: null,
+      overdueFilter: null,
       sidebarOpen: false,
       _hydrated: false,
 
@@ -112,6 +118,7 @@ export const useViewStore = create<ViewState>()(
       setYearlyYear: (year) => set({ yearlyYear: year }),
       setSettingsTab: (tab) => set({ settingsTab: tab }),
       setTaskListFilter: (filter) => set({ taskListFilter: filter }),
+      setOverdueFilter: (filter) => set({ overdueFilter: filter }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 

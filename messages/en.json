@@ -109,7 +109,9 @@
     "noOverdue": "Great! No overdue tasks!",
     "returnToday": "Return to Today",
     "tasksCount": "{count} tasks →",
-    "jumpToDate": "Jump to task date"
+    "jumpToDate": "Jump to task date",
+    "showAllOverdue": "Show all overdue",
+    "showFiltered": "Show filtered only"
   },
   "settings": {
     "title": "Settings",
@@ -562,6 +564,7 @@
     "allLevels": "All Levels",
     "clearFilter": "Clear Filter",
     "showAllOverdue": "Show all overdue",
-    "showFiltered": "Show filtered only"
+    "showFiltered": "Show filtered only",
+    "viewAllFiltered": "View filtered overdue"
   }
 }
