@@ -50,6 +50,11 @@ interface ViewState {
   // 历史待办筛选条件（跳转时临时传递）
   overdueFilter: FilterState | null;
 
+  // PiP 悬浮窗状态
+  pipWindowOpen: boolean;
+  floatingPanelOpen: boolean;
+  floatingPanelPosition: { x: number; y: number };
+
   // 侧边栏是否展开（移动端）
   sidebarOpen: boolean;
 
@@ -68,6 +73,9 @@ interface ViewState {
   setSettingsTab: (tab: SettingsTab) => void;
   setTaskListFilter: (filter: TaskListFilter | null) => void;
   setOverdueFilter: (filter: FilterState | null) => void;
+  setPipWindowOpen: (open: boolean) => void;
+  setFloatingPanelOpen: (open: boolean) => void;
+  setFloatingPanelPosition: (pos: { x: number; y: number }) => void;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
 
@@ -104,6 +112,9 @@ export const useViewStore = create<ViewState>()(
       settingsTab: 'categories',
       taskListFilter: null,
       overdueFilter: null,
+      pipWindowOpen: false,
+      floatingPanelOpen: false,
+      floatingPanelPosition: { x: 0, y: -200 },
       sidebarOpen: false,
       _hydrated: false,
 
@@ -119,6 +130,9 @@ export const useViewStore = create<ViewState>()(
       setSettingsTab: (tab) => set({ settingsTab: tab }),
       setTaskListFilter: (filter) => set({ taskListFilter: filter }),
       setOverdueFilter: (filter) => set({ overdueFilter: filter }),
+      setPipWindowOpen: (open) => set({ pipWindowOpen: open }),
+      setFloatingPanelOpen: (open) => set({ floatingPanelOpen: open }),
+      setFloatingPanelPosition: (pos) => set({ floatingPanelPosition: pos }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 

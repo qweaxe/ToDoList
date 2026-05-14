@@ -565,5 +565,15 @@
     "showAllOverdue": "显示全部逾期",
     "showFiltered": "仅显示筛选结果",
     "viewAllFiltered": "查看筛选范围全部"
+  },
+  "pip": {
+    "openPip": "打开悬浮待办",
+    "closePip": "关闭悬浮窗",
+    "openPanel": "打开待办面板",
+    "closePanel": "关闭面板",
+    "addPlaceholder": "添加任务...",
+    "add": "添加",
+    "noTasks": "今天没有任务",
+    "pipUnsupported": "当前浏览器不支持悬浮窗，使用应用内面板代替"
   }
 }

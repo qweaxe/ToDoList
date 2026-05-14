@@ -566,5 +566,15 @@
     "showAllOverdue": "Show all overdue",
     "showFiltered": "Show filtered only",
     "viewAllFiltered": "View filtered overdue"
+  },
+  "pip": {
+    "openPip": "Open floating todo",
+    "closePip": "Close floating window",
+    "openPanel": "Open todo panel",
+    "closePanel": "Close panel",
+    "addPlaceholder": "Add a task...",
+    "add": "Add",
+    "noTasks": "No tasks today",
+    "pipUnsupported": "PiP not supported in this browser, using in-app panel instead"
   }
 }

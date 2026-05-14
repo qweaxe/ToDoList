@@ -6,6 +6,7 @@ import { Sidebar } from './Sidebar';
 import { Footer } from './Footer';
 import { SecurityBanner } from './SecurityBanner';
 import { QuickCaptureButton } from '@/components/inbox/QuickCaptureButton';
+import { FloatTodoButton } from '@/components/pip/FloatTodoButton';
 import { NotificationPermissionPrompt } from '@/components/reminder/NotificationPermissionPrompt';
 
 interface MainLayoutProps {
@@ -29,6 +30,8 @@ export function MainLayout({ children }: MainLayoutProps) {
       </div>
       {/* 全局捕获按钮 */}
       <QuickCaptureButton />
+      {/* 悬浮待办按钮 */}
+      <FloatTodoButton />
       {/* 通知权限提示 */}
       <NotificationPermissionPrompt />
     </div>

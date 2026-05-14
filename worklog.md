@@ -3026,3 +3026,40 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/components/views/OverdueView.tsx` - 引入 DayViewFilter、applyFilters、筛选逻辑和 toggle 按钮
 - `messages/zh.json` - 新增 dayFilter.viewAllFiltered、overdue.showAllOverdue/showFiltered 翻译
 - `messages/en.json` - 新增 dayFilter.viewAllFiltered、overdue.showAllOverdue/showFiltered 翻译
+
+## 2026-05-14: 画中画悬浮待办窗 (Document PiP) 功能
+
+### 改动内容
+
+1. **PiP 窗口核心模块**
+   - 新建 `pip-types.ts`：精简任务数据结构和跨窗口消息协议定义
+   - 新建 `broadcast-sync.ts`：BroadcastChannel 跨窗口同步模块
+   - 新建 `pip-styles.ts`：PiP 窗口纯 CSS 样式（注入到独立 document）
+   - 新建 `PiPMiniApp.ts`：vanilla JS 迷你应用，在 PiP 窗口渲染任务列表、checkbox 切换、快速添加
+   - 新建 `PiPManager.ts`：生命周期管理器（打开/关闭/数据同步），Chrome 116+ Document PiP API
+
+2. **触发按钮和回退面板**
+   - 新建 `FloatTodoButton.tsx`：左下角悬浮按钮，Chrome 打开 PiP 窗口，其他浏览器显示浮动面板
+   - 新建 `FloatingPanel.tsx`：非 Chrome 回退方案，可拖拽、可折叠，在应用内显示迷你待办列表
+
+3. **集成修改**
+   - MainLayout.tsx：添加 FloatTodoButton
+   - use-view-store.ts：新增 pipWindowOpen、floatingPanelOpen、floatingPanelPosition 状态
+   - messages/zh.json/en.json：新增 pip 命名空间翻译
+
+4. **浏览器兼容**
+   - Chrome 116+：使用 Document Picture-in-Picture API 创建置顶悬浮窗
+   - 其他浏览器：回退到应用内浮动面板（可拖拽可折叠）
+
+### 修改的文件
+- `src/components/pip/pip-types.ts` - 新增类型定义
+- `src/components/pip/broadcast-sync.ts` - 新增跨窗口同步
+- `src/components/pip/pip-styles.ts` - 新增 PiP 窗口样式
+- `src/components/pip/PiPMiniApp.ts` - 新增迷你应用
+- `src/components/pip/PiPManager.ts` - 新增管理器
+- `src/components/pip/FloatTodoButton.tsx` - 新增触发按钮
+- `src/components/pip/FloatingPanel.tsx` - 新增回退面板
+- `src/components/layout/MainLayout.tsx` - 添加 FloatTodoButton
+- `src/hooks/use-view-store.ts` - 新增 PiP 状态字段
+- `messages/zh.json` - 新增 pip 翻译
+- `messages/en.json` - 新增 pip 翻译
