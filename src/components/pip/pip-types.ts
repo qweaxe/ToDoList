@@ -34,7 +34,7 @@ export type MainToPipMessage =
 // PiP 窗口 → 主窗口的消息
 export type PipToMainMessage =
   | { type: 'PIP_READY' }
-  | { type: 'TASK_TOGGLE'; taskId: string }
+  | { type: 'TASK_TOGGLE'; taskId: string; newStatus: string }
   | { type: 'TASK_CREATED'; task: PipTaskItem }
   | { type: 'PIP_CLOSED' }
   | { type: 'PONG' }

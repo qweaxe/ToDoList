@@ -355,7 +355,7 @@ export class PiPMiniApp {
         return;
       }
       // 通知主窗口
-      this.syncChannel.sendToMain({ type: 'TASK_TOGGLE', taskId });
+      this.syncChannel.sendToMain({ type: 'TASK_TOGGLE', taskId, newStatus });
     } catch {
       // 回滚
       task.status = newStatus === 'completed' ? 'pending' : 'completed';

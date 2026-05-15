@@ -200,8 +200,39 @@ export class PiPManager {
           // PiP 窗口准备好，发送初始数据
           break;
         case 'TASK_TOGGLE':
-          // PiP 窗口切换了任务，刷新主窗口的查询缓存
-          if (this.queryClient) {
+          // PiP 窗口切换了任务，乐观更新主窗口缓存 + invalidate
+          if (this.queryClient && message.taskId && message.newStatus) {
+            const taskId = message.taskId;
+            const newStatus = message.newStatus;
+            const queries = this.queryClient.getQueriesData({ queryKey: ['todos'] });
+
+            queries.forEach(([queryKey, data]: [unknown, unknown]) => {
+              if (!data) return;
+
+              const updateTodoInData = (obj: unknown): unknown => {
+                if (!obj || typeof obj !== 'object') return obj;
+                if (Array.isArray(obj)) return obj.map(item => updateTodoInData(item));
+                const record = obj as Record<string, unknown>;
+
+                if (record.id === taskId && typeof record.status === 'string') {
+                  const today = new Date().toISOString().split('T')[0];
+                  return {
+                    ...record,
+                    status: newStatus,
+                    completedAt: newStatus === 'completed' ? today : null,
+                  };
+                }
+
+                const result: Record<string, unknown> = {};
+                for (const key in record) {
+                  result[key] = updateTodoInData(record[key]);
+                }
+                return result;
+              };
+
+              this.queryClient.setQueryData(queryKey, updateTodoInData(data));
+            });
+
             this.queryClient.invalidateQueries({ queryKey: ['todos'] });
           }
           break;

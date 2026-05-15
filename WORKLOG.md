@@ -3162,3 +3162,13 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/components/pip/FloatTodoButton.tsx` - 传入 categories/levels 数据给 PiPManager
 - `src/components/pip/FloatingPanel.tsx` - 增加 category + level 选择器
 - `src/hooks/use-todos.ts` - useToggleTodo onSuccess 中调用 PiPManager.sendTaskToggle
+
+## 2026-05-15: PiP 悬浮窗 toggle 乐观同步修复
+
+### 改动内容
+- 修复 PiP 悬浮窗勾选任务后主窗口不即时更新：TASK_TOGGLE 消息增加 newStatus 字段，主窗口收到后执行乐观缓存更新（递归遍历 queryClient 所有 todos 数据直接修改 status/completedAt），再 invalidate 确保最终一致
+
+### 修改的文件
+- `src/components/pip/pip-types.ts` - PipToMainMessage TASK_TOGGLE 增加 newStatus 字段
+- `src/components/pip/PiPMiniApp.ts` - handleToggleTask 发消息携带 newStatus
+- `src/components/pip/PiPManager.ts` - TASK_TOGGLE handler 从单纯 invalidate 改为乐观更新 + invalidate
