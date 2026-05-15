@@ -6,11 +6,24 @@ import { PictureInPicture2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDailyTodos } from '@/hooks/use-todos';
+import { useCategories } from '@/hooks/use-categories';
+import { useLevels } from '@/hooks/use-levels';
 import { useViewStore } from '@/hooks/use-view-store';
 import { cn } from '@/lib/utils';
 import { PiPManager, getPipManager } from './PiPManager';
+import { PipCategory, PipLevel } from './pip-types';
 import { todoToPipTask } from './broadcast-sync';
 import { FloatingPanel } from './FloatingPanel';
+
+// 将 Category 数据转换为 PipCategory
+function categoryToPipCategory(cat: { id: string; name: string; emoji: string | null }): PipCategory {
+  return { id: cat.id, name: cat.name, emoji: cat.emoji };
+}
+
+// 将 Level 数据转换为 PipLevel
+function levelToPipLevel(level: { id: string; name: string; value: number }): PipLevel {
+  return { id: level.id, name: level.name, value: level.value };
+}
 
 // 悬浮待办按钮 - 触发 PiP 窗口或回退浮动面板
 export function FloatTodoButton() {
@@ -19,6 +32,8 @@ export function FloatTodoButton() {
   const { selectedDate, pipWindowOpen, floatingPanelOpen, setPipWindowOpen, setFloatingPanelOpen } = useViewStore();
 
   const { data: dailyData } = useDailyTodos(selectedDate);
+  const { data: categoriesData } = useCategories();
+  const { data: levelsData } = useLevels();
   const [isPipSupported, setIsPipSupported] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -51,10 +66,15 @@ export function FloatTodoButton() {
         ]
       : [];
 
+    const categories = categoriesData?.data?.map(categoryToPipCategory) ?? [];
+    const levels = levelsData?.data?.map(levelToPipLevel) ?? [];
+
     const manager = getPipManager();
     const success = await manager.openPipWindow(
       queryClient,
       tasks,
+      categories,
+      levels,
       selectedDate,
       () => setPipWindowOpen(false) // PiP 关闭回调
     );
@@ -62,7 +82,7 @@ export function FloatTodoButton() {
     if (success) {
       setPipWindowOpen(true);
     }
-  }, [isPipSupported, pipWindowOpen, floatingPanelOpen, dailyData, selectedDate, queryClient, setPipWindowOpen, setFloatingPanelOpen]);
+  }, [isPipSupported, pipWindowOpen, floatingPanelOpen, dailyData, categoriesData, levelsData, selectedDate, queryClient, setPipWindowOpen, setFloatingPanelOpen]);
 
   // 当主窗口数据变化时，向 PiP 窗口推送更新
   useEffect(() => {
@@ -77,8 +97,11 @@ export function FloatTodoButton() {
         ]
       : [];
 
-    manager.sendDataRefresh(tasks);
-  }, [dailyData, pipWindowOpen, isPipSupported]);
+    const categories = categoriesData?.data?.map(categoryToPipCategory) ?? [];
+    const levels = levelsData?.data?.map(levelToPipLevel) ?? [];
+
+    manager.sendDataRefresh(tasks, categories, levels);
+  }, [dailyData, categoriesData, levelsData, pipWindowOpen, isPipSupported]);
 
   // 主窗口刷新时确保 PiP 状态同步
   useEffect(() => {

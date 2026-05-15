@@ -1,36 +1,33 @@
 // PiP 窗口样式 - 纯 CSS，不依赖 Tailwind 构建链
 // 作为字符串常量注入到 PiP 窗口的 document.head
+// 暗色模式通过 .dark class 控制（由主窗口 THEME_CHANGE 消息驱动）
 
 export const pipStyles = `
 :root {
   --pip-bg: #ffffff;
-  --pip-bg-dark: #09090b;
   --pip-text: #18181b;
-  --pip-text-dark: #fafafa;
   --pip-muted: #71717a;
-  --pip-muted-dark: #a1a1aa;
   --pip-border: #e4e4e7;
-  --pip-border-dark: #27272a;
   --pip-accent: #3b82f6;
   --pip-success: #22c55e;
   --pip-danger: #ef4444;
   --pip-hover: #f4f4f5;
-  --pip-hover-dark: #18181b;
   --pip-card: #ffffff;
-  --pip-card-dark: #18181b;
   --pip-radius: 8px;
   --pip-checkbox-size: 18px;
+  --pip-input-bg: #ffffff;
+  --pip-select-bg: #f4f4f5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --pip-bg: var(--pip-bg-dark);
-    --pip-text: var(--pip-text-dark);
-    --pip-muted: var(--pip-muted-dark);
-    --pip-border: var(--pip-border-dark);
-    --pip-hover: var(--pip-hover-dark);
-    --pip-card: var(--pip-card-dark);
-  }
+.dark {
+  --pip-bg: #09090b;
+  --pip-text: #fafafa;
+  --pip-muted: #a1a1aa;
+  --pip-border: #27272a;
+  --pip-hover: #18181b;
+  --pip-card: #18181b;
+  --pip-input-bg: #18181b;
+  --pip-select-bg: #27272a;
 }
 
 * {
@@ -55,7 +52,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--pip-border);
   background: var(--pip-card);
 }
@@ -80,6 +77,37 @@ body {
   fill: var(--pip-accent);
 }
 
+.pip-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pip-pin-btn {
+  background: none;
+  border: none;
+  color: var(--pip-accent);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  transition: color 0.15s;
+}
+
+.pip-pin-btn.unpinned {
+  color: var(--pip-muted);
+}
+
+.pip-pin-btn:hover {
+  background: var(--pip-hover);
+}
+
 .pip-close-btn {
   background: none;
   border: none;
@@ -99,6 +127,20 @@ body {
 .pip-close-btn:hover {
   background: var(--pip-hover);
   color: var(--pip-text);
+}
+
+.pip-stats {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--pip-muted);
+  display: flex;
+  gap: 8px;
+}
+
+.pip-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .pip-task-list {
@@ -200,19 +242,19 @@ body {
   color: #16a34a;
 }
 
-@media (prefers-color-scheme: dark) {
-  .pip-task-level.high {
-    background: #451a1a;
-    color: #fca5a5;
-  }
-  .pip-task-level.medium {
-    background: #422006;
-    color: #fde047;
-  }
-  .pip-task-level.low {
-    background: #052e16;
-    color: #86efac;
-  }
+.dark .pip-task-level.high {
+  background: #451a1a;
+  color: #fca5a5;
+}
+
+.dark .pip-task-level.medium {
+  background: #422006;
+  color: #fde047;
+}
+
+.dark .pip-task-level.low {
+  background: #052e16;
+  color: #86efac;
 }
 
 .pip-empty {
@@ -227,11 +269,17 @@ body {
 
 .pip-add-bar {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
   padding: 8px 12px;
   border-top: 1px solid var(--pip-border);
   background: var(--pip-card);
+}
+
+.pip-add-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .pip-add-input {
@@ -240,7 +288,7 @@ body {
   border-radius: var(--pip-radius);
   padding: 6px 10px;
   font-size: 13px;
-  background: var(--pip-bg);
+  background: var(--pip-input-bg);
   color: var(--pip-text);
   outline: none;
   font-family: inherit;
@@ -252,6 +300,23 @@ body {
 
 .pip-add-input::placeholder {
   color: var(--pip-muted);
+}
+
+.pip-add-select {
+  border: 1px solid var(--pip-border);
+  border-radius: var(--pip-radius);
+  padding: 6px 8px;
+  font-size: 12px;
+  background: var(--pip-select-bg);
+  color: var(--pip-text);
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.pip-add-select:focus {
+  border-color: var(--pip-accent);
 }
 
 .pip-add-btn {
@@ -274,20 +339,6 @@ body {
 .pip-add-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.pip-stats {
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--pip-muted);
-  display: flex;
-  gap: 8px;
-}
-
-.pip-stats span {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
 }
 
 .pip-loading {

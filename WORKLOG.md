@@ -3143,3 +3143,22 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/components/inbox/ConvertToTodoDialog.tsx` - 硬编码中文→i18n
 - `messages/zh.json`, `messages/en.json` - 新增 selectDate key
 - `docs/DEPLOYMENT.md` - D1 schema 初始化路径修正
+
+## 2026-05-15: PiP 悬浮窗 5 个问题修复
+
+### 改动内容
+- 修复 PiP 窗口黑色背景问题：改为 class-based 暗色模式（`.dark` class），主窗口通过 THEME_CHANGE 消息同步主题
+- 修复主界面 toggle 不同步到 PiP：在 useToggleTodo onSuccess 中发送 TASK_TOGGLE 消息到 PiP
+- 增强 PiP add task：从仅 title 输入改为 title + category 下拉 + level 下拉，FloatingPanel 同步增强
+- 修复 PiP add task 不同步回主界面：TASK_CREATED 消息改为携带完整 PipTaskItem 数据，不再只发 title
+- 修复置顶偶发失效：移除 pagehide 直接触发 cleanup，改为心跳机制（PING/PONG），连续 3 次 PING 无 PONG 判定窗口死亡
+- 新增置顶控制按钮：PiP 窗口顶部 pin icon 按钮，点击可切换置顶状态
+
+### 修改的文件
+- `src/components/pip/pip-types.ts` - 新增 PipCategory/PipLevel 类型、THEME_CHANGE/PING/PONG/PIN_TOGGLE 消息、TASK_CREATED payload 改为完整 task
+- `src/components/pip/pip-styles.ts` - 替换 media query 为 class-based 暗色模式，新增 select 下拉/置顶按钮/add bar 两行布局样式
+- `src/components/pip/PiPMiniApp.ts` - init 传入 isDark，处理 THEME_CHANGE/TASK_TOGGLE/PING，add bar 增加 category+level select，TASK_CREATED 发完整 task，置顶按钮 DOM
+- `src/components/pip/PiPManager.ts` - openPipWindow 传入 categories/levels/isDark，sendDataRefresh/sendTaskToggle/focusPipWindow，心跳机制，主题 MutationObserver 监听
+- `src/components/pip/FloatTodoButton.tsx` - 传入 categories/levels 数据给 PiPManager
+- `src/components/pip/FloatingPanel.tsx` - 增加 category + level 选择器
+- `src/hooks/use-todos.ts` - useToggleTodo onSuccess 中调用 PiPManager.sendTaskToggle

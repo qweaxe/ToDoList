@@ -315,6 +315,18 @@ export function useToggleTodo() {
 
       if (result.success) {
         toast.success(result.data?.status === 'completed' ? 'Task completed' : 'Task restored');
+
+        // 同步 toggle 状态到 PiP 悬浮窗
+        try {
+          const { getPipManager } = require('@/components/pip/PiPManager');
+          const pipManager = getPipManager();
+          if (pipManager.isOpen()) {
+            pipManager.sendTaskToggle(
+              result.data?.id ?? '',
+              result.data?.status ?? 'pending'
+            );
+          }
+        } catch {}
       } else {
         toast.error(result.error || 'Operation failed');
       }

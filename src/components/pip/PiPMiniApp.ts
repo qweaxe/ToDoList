@@ -1,7 +1,7 @@
 // PiP 窗口迷你应用 - 纯 vanilla JS，在 PiP 窗口的独立 document 中运行
 // 不使用 React，因为 PiP 窗口无法进行 hydration
 
-import { PipTaskItem } from './pip-types';
+import { PipTaskItem, PipCategory, PipLevel } from './pip-types';
 import { PipSyncChannel } from './broadcast-sync';
 import { pipStyles } from './pip-styles';
 
@@ -9,14 +9,20 @@ export class PiPMiniApp {
   private pipWindow: Window;
   private syncChannel: PipSyncChannel;
   private tasks: PipTaskItem[] = [];
+  private categories: PipCategory[] = [];
+  private levels: PipLevel[] = [];
   private date: string = '';
   private isLoading: boolean = true;
+  private isPinned: boolean = true;
 
   // DOM 元素引用
   private taskListEl: HTMLElement | null = null;
   private statsEl: HTMLElement | null = null;
   private addInputEl: HTMLInputElement | null = null;
   private addBtnEl: HTMLButtonElement | null = null;
+  private categorySelectEl: HTMLSelectElement | null = null;
+  private levelSelectEl: HTMLSelectElement | null = null;
+  private pinBtnEl: HTMLButtonElement | null = null;
 
   constructor(pipWindow: Window, syncChannel: PipSyncChannel) {
     this.pipWindow = pipWindow;
@@ -24,8 +30,13 @@ export class PiPMiniApp {
   }
 
   // 初始化迷你应用：注入样式、构建 DOM、绑定事件
-  init() {
+  init(initialIsDark: boolean = false) {
     const doc = this.pipWindow.document;
+
+    // 应用初始主题
+    if (initialIsDark) {
+      doc.documentElement.classList.add('dark');
+    }
 
     // 注入 CSS
     const styleEl = doc.createElement('style');
@@ -50,7 +61,14 @@ export class PiPMiniApp {
         <span>Todo List</span>
         <span class="pip-header-date" id="pip-date"></span>
       </div>
-      <button class="pip-close-btn" id="pip-close-btn" title="Close">&#x2715;</button>
+      <div class="pip-header-actions">
+        <button class="pip-pin-btn pinned" id="pip-pin-btn" title="Toggle pin">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14">
+            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" fill="currentColor"/>
+          </svg>
+        </button>
+        <button class="pip-close-btn" id="pip-close-btn" title="Close">&#x2715;</button>
+      </div>
     `;
     body.appendChild(header);
 
@@ -68,18 +86,31 @@ export class PiPMiniApp {
     body.appendChild(taskList);
     this.taskListEl = taskList;
 
-    // 快速添加栏
+    // 快速添加栏（标题 + 分类/等级）
     const addBar = doc.createElement('div');
     addBar.className = 'pip-add-bar';
     addBar.innerHTML = `
-      <input class="pip-add-input" id="pip-add-input" type="text" placeholder="Add a task..." />
-      <button class="pip-add-btn" id="pip-add-btn">Add</button>
+      <div class="pip-add-row">
+        <input class="pip-add-input" id="pip-add-input" type="text" placeholder="Add a task..." />
+        <button class="pip-add-btn" id="pip-add-btn">Add</button>
+      </div>
+      <div class="pip-add-row">
+        <select class="pip-add-select" id="pip-category-select" title="Category">
+          <option value="">-- cat --</option>
+        </select>
+        <select class="pip-add-select" id="pip-level-select" title="Priority">
+          <option value="">-- pri --</option>
+        </select>
+      </div>
     `;
     body.appendChild(addBar);
 
     // 获取元素引用
     this.addInputEl = doc.getElementById('pip-add-input') as HTMLInputElement;
     this.addBtnEl = doc.getElementById('pip-add-btn') as HTMLButtonElement;
+    this.categorySelectEl = doc.getElementById('pip-category-select') as HTMLSelectElement;
+    this.levelSelectEl = doc.getElementById('pip-level-select') as HTMLSelectElement;
+    this.pinBtnEl = doc.getElementById('pip-pin-btn') as HTMLButtonElement;
     const closeBtn = doc.getElementById('pip-close-btn');
     const dateEl = doc.getElementById('pip-date');
 
@@ -88,6 +119,9 @@ export class PiPMiniApp {
       this.syncChannel.sendToMain({ type: 'PIP_CLOSED' });
       this.pipWindow.close();
     });
+
+    // 绑定置顶按钮
+    this.pinBtnEl?.addEventListener('click', () => this.handlePinToggle());
 
     // 绑定快速添加
     this.addBtnEl?.addEventListener('click', () => this.handleCreateTask());
@@ -108,28 +142,43 @@ export class PiPMiniApp {
       switch (message.type) {
         case 'INIT':
           this.tasks = message.tasks;
+          this.categories = message.categories;
+          this.levels = message.levels;
           this.date = message.date;
           this.isLoading = false;
+          if (message.isDark !== undefined) {
+            this.applyTheme(message.isDark);
+          }
           if (dateEl) dateEl.textContent = this.formatDateFromString(message.date);
+          this.renderCategoryOptions();
+          this.renderLevelOptions();
           this.render();
           break;
         case 'DATA_REFRESH':
           this.tasks = message.tasks;
+          this.categories = message.categories;
+          this.levels = message.levels;
           this.isLoading = false;
+          this.renderCategoryOptions();
+          this.renderLevelOptions();
           this.render();
           break;
         case 'TASK_TOGGLE':
-          // MainToPip 的 TASK_TOGGLE 有 newStatus；PipToMain 的没有
           if ('newStatus' in message) {
             this.handleToggleFromMain(message.taskId, message.newStatus as string);
           }
           break;
         case 'TASK_CREATED':
-          // MainToPip 的 TASK_CREATED 有 task；PipToMain 的只有 title
           if ('task' in message) {
             this.tasks.push(message.task as PipTaskItem);
             this.render();
           }
+          break;
+        case 'THEME_CHANGE':
+          this.applyTheme(message.isDark);
+          break;
+        case 'PING':
+          this.syncChannel.sendToMain({ type: 'PONG' });
           break;
       }
     });
@@ -144,6 +193,30 @@ export class PiPMiniApp {
     this.renderLoading();
   }
 
+  // 应用主题
+  private applyTheme(isDark: boolean) {
+    const html = this.pipWindow.document.documentElement;
+    if (isDark) {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+  }
+
+  // 处理置顶按钮点击
+  private handlePinToggle() {
+    this.isPinned = !this.isPinned;
+    if (this.pinBtnEl) {
+      this.pinBtnEl.className = this.isPinned ? 'pip-pin-btn pinned' : 'pip-pin-btn unpinned';
+    }
+    // 通知主窗口置顶状态变化
+    this.syncChannel.sendToMain({ type: 'PIN_TOGGLE', isPinned: this.isPinned });
+    // 尝试 focus 窗口以恢复置顶效果
+    if (this.isPinned) {
+      this.pipWindow.focus();
+    }
+  }
+
   // 更新任务数据（由 PiPManager 调用）
   updateTasks(tasks: PipTaskItem[]) {
     this.tasks = tasks;
@@ -156,6 +229,26 @@ export class PiPMiniApp {
     this.date = date;
     const dateEl = this.pipWindow.document.getElementById('pip-date');
     if (dateEl) dateEl.textContent = this.formatDateFromString(date);
+  }
+
+  // 更新分类下拉选项
+  private renderCategoryOptions() {
+    if (!this.categorySelectEl) return;
+    let html = '<option value="">-- cat --</option>';
+    for (const cat of this.categories) {
+      html += `<option value="${cat.id}">${cat.emoji || ''} ${cat.name}</option>`;
+    }
+    this.categorySelectEl.innerHTML = html;
+  }
+
+  // 更新等级下拉选项
+  private renderLevelOptions() {
+    if (!this.levelSelectEl) return;
+    let html = '<option value="">-- pri --</option>';
+    for (const level of this.levels) {
+      html += `<option value="${level.id}">${level.name}</option>`;
+    }
+    this.levelSelectEl.innerHTML = html;
   }
 
   // 渲染任务列表
@@ -289,6 +382,12 @@ export class PiPMiniApp {
     this.addInputEl.value = '';
 
     const today = new Date().toISOString().split('T')[0];
+    const categoryId = this.categorySelectEl?.value || undefined;
+    const levelId = this.levelSelectEl?.value || undefined;
+
+    // 重置选择器
+    if (this.categorySelectEl) this.categorySelectEl.value = '';
+    if (this.levelSelectEl) this.levelSelectEl.value = '';
 
     try {
       const res = await fetch('/api/todos', {
@@ -299,16 +398,27 @@ export class PiPMiniApp {
           startDate: today,
           dueDate: today,
           priority: 0,
+          categoryId,
+          levelId,
         }),
       });
 
       if (res.ok) {
         const result: any = await res.json();
         if (result.success && result.data) {
-          // 通知主窗口
-          this.syncChannel.sendToMain({ type: 'TASK_CREATED', title });
-          // 重新获取数据以拿到完整任务信息
-          this.fetchDailyTodos();
+          // 构造 PipTaskItem 发回主窗口
+          const pipTask: PipTaskItem = {
+            id: result.data.id,
+            title: result.data.title,
+            status: result.data.status === 'completed' ? 'completed' : 'pending',
+            categoryEmoji: result.data.category?.emoji ?? null,
+            levelValue: result.data.level?.value ?? null,
+          };
+          // 通知主窗口（发完整 task 数据，不再只发 title）
+          this.syncChannel.sendToMain({ type: 'TASK_CREATED', task: pipTask });
+          // 本地也加入新任务
+          this.tasks.push(pipTask);
+          this.render();
         }
       }
     } catch {
@@ -372,10 +482,12 @@ export class PiPMiniApp {
 
   // 销毁迷你应用
   destroy() {
-    // DOM 清理由 PiP 窗口关闭时自动完成
     this.taskListEl = null;
     this.statsEl = null;
     this.addInputEl = null;
     this.addBtnEl = null;
+    this.categorySelectEl = null;
+    this.levelSelectEl = null;
+    this.pinBtnEl = null;
   }
 }

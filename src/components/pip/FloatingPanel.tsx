@@ -7,10 +7,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useDailyTodos, useToggleTodo, useCreateTodo } from '@/hooks/use-todos';
+import { useCategories } from '@/hooks/use-categories';
+import { useLevels } from '@/hooks/use-levels';
 import { useViewStore } from '@/hooks/use-view-store';
 import { cn } from '@/lib/utils';
-import { todoToPipTask } from './broadcast-sync';
 
 // 非 Chrome 浏览器的回退浮动面板
 // 可拖拽、可折叠，在应用内显示迷你待办列表
@@ -19,10 +27,14 @@ export function FloatingPanel() {
   const { selectedDate, floatingPanelOpen, floatingPanelPosition, setFloatingPanelOpen, setFloatingPanelPosition } = useViewStore();
 
   const { data: dailyData, isLoading } = useDailyTodos(selectedDate);
+  const { data: categoriesData } = useCategories();
+  const { data: levelsData } = useLevels();
   const toggleTodo = useToggleTodo();
   const createTodo = useCreateTodo();
 
   const [addInput, setAddInput] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
 
@@ -30,6 +42,9 @@ export function FloatingPanel() {
   const pending = dailyData?.data?.today?.pending ?? [];
   const completed = dailyData?.data?.today?.completed ?? [];
   const allTasks = [...pending, ...completed];
+
+  const categories = categoriesData?.data ?? [];
+  const levels = levelsData?.data ?? [];
 
   // 拖拽逻辑
   const handleDragStart = useCallback((e: React.PointerEvent) => {
@@ -74,14 +89,18 @@ export function FloatingPanel() {
         startDate: selectedDate,
         dueDate: selectedDate,
         priority: 0,
+        categoryId: selectedCategory || undefined,
+        levelId: selectedLevel || undefined,
       },
       {
         onSuccess: () => {
           setAddInput('');
+          setSelectedCategory('');
+          setSelectedLevel('');
         },
       }
     );
-  }, [addInput, createTodo, selectedDate]);
+  }, [addInput, createTodo, selectedDate, selectedCategory, selectedLevel]);
 
   // 折叠/展开
   const handleToggleCollapse = useCallback(() => {
@@ -218,27 +237,55 @@ export function FloatingPanel() {
       </ScrollArea>
 
       {/* 快速添加 */}
-      <div className="flex items-center gap-2 px-3 py-2 border-t">
-        <Input
-          value={addInput}
-          onChange={(e) => setAddInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              handleCreate();
-            }
-          }}
-          placeholder={t('addPlaceholder')}
-          className="h-8 text-sm"
-        />
-        <Button
-          size="sm"
-          onClick={handleCreate}
-          disabled={!addInput.trim() || createTodo.isPending}
-          className="h-8"
-        >
-          {t('add')}
-        </Button>
+      <div className="px-3 py-2 border-t space-y-2">
+        <div className="flex items-center gap-2">
+          <Input
+            value={addInput}
+            onChange={(e) => setAddInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleCreate();
+              }
+            }}
+            placeholder={t('addPlaceholder')}
+            className="h-8 text-sm"
+          />
+          <Button
+            size="sm"
+            onClick={handleCreate}
+            disabled={!addInput.trim() || createTodo.isPending}
+            className="h-8"
+          >
+            {t('add')}
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="h-7 text-xs">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map(cat => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.emoji} {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+            <SelectTrigger className="h-7 text-xs">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              {levels.map(level => (
+                <SelectItem key={level.id} value={level.id}>
+                  {level.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );
