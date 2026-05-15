@@ -2,7 +2,8 @@ export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getAuthSession } from '@/lib/auth';
+import { getApiSession } from '@/lib/api-auth';
+import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 // DELETE /api/reminders/[id] - 删除提醒
 export async function DELETE(
@@ -10,18 +11,52 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = await getDb();
-    const session = await getAuthSession();
+    const authResult = await getApiSession(request);
 
-    if (!session?.user?.id) {
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = authResult.userId;
     const { id } = await params;
+
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+
+      const reminder = await d1.first<any>(
+        `SELECT r.id, r.todoId, t.userId
+         FROM reminders r
+         JOIN todos t ON r.todoId = t.id
+         WHERE r.id = ?`,
+        id
+      );
+
+      if (!reminder) {
+        return NextResponse.json(
+          { success: false, error: '提醒不存在' },
+          { status: 404 }
+        );
+      }
+
+      if (reminder.userId !== userId) {
+        return NextResponse.json(
+          { success: false, error: '无权操作' },
+          { status: 403 }
+        );
+      }
+
+      await d1.run('DELETE FROM reminders WHERE id = ?', id);
+
+      return NextResponse.json({
+        success: true,
+        message: '提醒已删除',
+      });
+    }
+
+    const db = await getDb();
 
     // 验证提醒属于用户
     const reminder = await db.reminder.findFirst({

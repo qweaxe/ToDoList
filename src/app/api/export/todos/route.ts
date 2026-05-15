@@ -10,10 +10,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { format } from 'date-fns';
 import { getApiSession } from '@/lib/api-auth';
 import { getDb } from '@/lib/db';
+import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 export async function GET(request: NextRequest) {
   try {
-    const db = await getDb();
     // 支持 Bearer Token 和 Session 双重认证
     const authResult = await getApiSession(request);
     if (!authResult.success || !authResult.userId) {
@@ -52,6 +52,107 @@ export async function GET(request: NextRequest) {
     if (levelId) {
       where.levelId = levelId;
     }
+
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+
+      // 构建 D1 SQL 查询条件和参数
+      let sql = `SELECT t.id, t.title, t.description, t.status,
+        t.startDate, t.dueDate, t.completedAt, t.subTasks,
+        t.isMilestone, t.isCycleTask, t.priority, t.categoryId, t.levelId,
+        t.createdAt, t.updatedAt,
+        c.id AS cat_id, c.name AS cat_name, c.emoji AS cat_emoji, c.color AS cat_color,
+        l.id AS lvl_id, l.name AS lvl_name, l.value AS lvl_value
+        FROM todos t
+        LEFT JOIN categories c ON c.id = t.categoryId
+        LEFT JOIN levels l ON l.id = t.levelId
+        WHERE t.userId = ?`;
+      const params: unknown[] = [userId];
+
+      if (startDate) {
+        sql += ' AND t.startDate >= ?';
+        params.push(startDate);
+      }
+      if (endDate) {
+        sql += ' AND t.dueDate <= ?';
+        params.push(endDate);
+      }
+      if (status) {
+        sql += ' AND t.status = ?';
+        params.push(status);
+      }
+      if (categoryId) {
+        sql += ' AND t.categoryId = ?';
+        params.push(categoryId);
+      }
+      if (levelId) {
+        sql += ' AND t.levelId = ?';
+        params.push(levelId);
+      }
+
+      sql += ' ORDER BY t.dueDate ASC, t.createdAt ASC';
+
+      const rows = await d1.all<any>(sql, ...params);
+
+      const formattedTodos = rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        status: row.status,
+        startDate: row.startDate,
+        dueDate: row.dueDate,
+        completedAt: row.completedAt,
+        isMilestone: Boolean(row.isMilestone),
+        isCycleTask: Boolean(row.isCycleTask),
+        subTasks: row.subTasks ? JSON.parse(row.subTasks) : [],
+        category: row.cat_id ? { id: row.cat_id, name: row.cat_name, emoji: row.cat_emoji, color: row.cat_color } : null,
+        level: row.lvl_id ? { id: row.lvl_id, name: row.lvl_name, value: row.lvl_value } : null,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      }));
+
+      if (outputFormat === 'csv') {
+        const headers = [
+          'ID', '标题', '描述', '状态', '开始日期', '截止日期',
+          '完成日期', '里程碑', '周期任务', '分类', '等级', '创建时间',
+        ];
+
+        const csvRows = formattedTodos.map((t) => [
+          t.id,
+          `"${(t.title || '').replace(/"/g, '""')}"`,
+          `"${(t.description || '').replace(/"/g, '""')}"`,
+          t.status,
+          t.startDate,
+          t.dueDate,
+          t.completedAt || '',
+          t.isMilestone ? '是' : '否',
+          t.isCycleTask ? '是' : '否',
+          t.category?.name || '',
+          t.level?.name || '',
+          t.createdAt,
+        ]);
+
+        const csv = [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\n');
+
+        return new NextResponse(csv, {
+          headers: {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': `attachment; filename="todos-${format(new Date(), 'yyyy-MM-dd')}.csv"`,
+          },
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          exportedAt: new Date().toISOString(),
+          total: formattedTodos.length,
+          todos: formattedTodos,
+        },
+      });
+    }
+
+    const db = await getDb();
 
     // 查询任务数据
     const todos = await db.todo.findMany({

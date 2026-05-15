@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getTodayString, parseDateString } from '@/lib/date-utils';
 import { syncDate } from '@/services/recurrence-service';
-import { getAuthSession } from '@/lib/auth';
+import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 // 将 D1 扁平 JOIN 结果重组为嵌套对象（与 Prisma include 格式一致）
@@ -83,16 +83,16 @@ const TODO_JOIN_TABLES = `
 // GET /api/todos/daily - 获取当日任务和历史待办
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const authResult = await getApiSession(request);
 
-    if (!session?.user?.id) {
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = authResult.userId;
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date') || getTodayString();
     const today = getTodayString();

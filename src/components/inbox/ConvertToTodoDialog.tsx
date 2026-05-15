@@ -156,7 +156,7 @@ export function ConvertToTodoDialog({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate || '选择日期'}
+                    {startDate || t('selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -183,7 +183,7 @@ export function ConvertToTodoDialog({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate || '选择日期'}
+                    {dueDate || t('selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -245,7 +245,7 @@ export function ConvertToTodoDialog({
           {/* 按钮 */}
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={onClose}>
-              {tTask('cancel') || '取消'}
+              {tTask('cancel')}
             </Button>
             <Button
               onClick={handleSubmit}

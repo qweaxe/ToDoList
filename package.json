@@ -8,7 +8,7 @@
     "build": "prisma generate && next build",
     "build:cf": "npx @cloudflare/next-on-pages",
     "preview:cf": "wrangler pages dev .vercel/output/static",
-    "deploy:cf": "wrangler pages deploy .vercel/output/static --project-name=todolist",
+    "deploy:cf": "wrangler pages deploy .vercel/output/static --project-name=todolist-cf",
     "start": "next start",
     "lint": "eslint .",
     "db:push": "prisma db push",

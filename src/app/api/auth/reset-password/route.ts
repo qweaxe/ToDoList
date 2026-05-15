@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword, hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
+import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 const resetPasswordSchema = z.object({
   username: z.string().min(1),
@@ -17,9 +18,124 @@ const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 分钟
 // POST /api/auth/reset-password - 验证答案并重置密码
 export async function POST(request: NextRequest) {
   try {
-    const db = await getDb();
     const body = await request.json();
     const validated = resetPasswordSchema.parse(body);
+
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+
+      const user = await d1.first<{
+        id: string;
+        username: string;
+        securityQuestion: string | null;
+        securityAnswer: string | null;
+        securityAnswerAttempts: number;
+        securityAnswerLockedAt: string | null;
+      }>(
+        'SELECT id, username, securityQuestion, securityAnswer, securityAnswerAttempts, securityAnswerLockedAt FROM users WHERE username = ?',
+        validated.username
+      );
+
+      if (!user) {
+        return NextResponse.json(
+          { success: false, code: 'USER_NOT_FOUND' },
+          { status: 400 }
+        );
+      }
+
+      if (!user.securityQuestion || !user.securityAnswer) {
+        return NextResponse.json(
+          { success: false, code: 'NO_SECURITY_QUESTION' },
+          { status: 400 }
+        );
+      }
+
+      // 检查是否被锁定
+      if (user.securityAnswerLockedAt) {
+        const lockTime = new Date(user.securityAnswerLockedAt).getTime();
+        const now = Date.now();
+
+        if (now - lockTime < LOCK_DURATION_MS) {
+          const remainingMinutes = Math.ceil(
+            (LOCK_DURATION_MS - (now - lockTime)) / 60000
+          );
+          return NextResponse.json(
+            {
+              success: false,
+              code: 'ACCOUNT_LOCKED',
+              data: { remainingMinutes },
+            },
+            { status: 400 }
+          );
+        }
+
+        // 锁定已过期，重置
+        await d1.run(
+          'UPDATE users SET securityAnswerAttempts = 0, securityAnswerLockedAt = NULL WHERE id = ?',
+          user.id
+        );
+      }
+
+      // 验证答案（忽略大小写）
+      const isAnswerValid = await verifyPassword(
+        validated.answer.toLowerCase().trim(),
+        user.securityAnswer
+      );
+
+      if (!isAnswerValid) {
+        const newAttempts = user.securityAnswerAttempts + 1;
+
+        // 达到最大尝试次数，锁定账户
+        if (newAttempts >= MAX_ATTEMPTS) {
+          const now = new Date().toISOString();
+          await d1.run(
+            'UPDATE users SET securityAnswerAttempts = ?, securityAnswerLockedAt = ?, updatedAt = ? WHERE id = ?',
+            newAttempts, now, now, user.id
+          );
+
+          return NextResponse.json(
+            {
+              success: false,
+              code: 'ACCOUNT_LOCKED',
+              data: { remainingMinutes: 30 },
+            },
+            { status: 400 }
+          );
+        }
+
+        // 更新尝试次数
+        const now = new Date().toISOString();
+        await d1.run(
+          'UPDATE users SET securityAnswerAttempts = ?, updatedAt = ? WHERE id = ?',
+          newAttempts, now, user.id
+        );
+
+        return NextResponse.json(
+          {
+            success: false,
+            code: 'WRONG_ANSWER',
+            data: { attemptsLeft: MAX_ATTEMPTS - newAttempts },
+          },
+          { status: 400 }
+        );
+      }
+
+      // 验证成功，重置尝试次数并更新密码
+      const hashedPassword = await hashPassword(validated.newPassword);
+
+      await d1.run(
+        'UPDATE users SET password = ?, securityAnswerAttempts = 0, securityAnswerLockedAt = NULL, updatedAt = ? WHERE id = ?',
+        hashedPassword, new Date().toISOString(), user.id
+      );
+
+      return NextResponse.json({
+        success: true,
+        code: 'PASSWORD_RESET_SUCCESS',
+      });
+    }
+
+    // Prisma fallback (development)
+    const db = await getDb();
 
     const user = await db.user.findUnique({
       where: { username: validated.username },

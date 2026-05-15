@@ -529,7 +529,8 @@
     "deleteItem": "Delete",
     "itemCount": "{count} items to organize",
     "convertDialogTitle": "Convert to Task",
-    "originalContent": "Original Idea"
+    "originalContent": "Original Idea",
+    "selectDate": "Select date"
   },
   "time": {
     "title": "Time Tracking",

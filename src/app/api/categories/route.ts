@@ -3,22 +3,22 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { createCategorySchema } from '@/types/api';
-import { getAuthSession } from '@/lib/auth';
+import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 // GET /api/categories - 获取所有分类
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const authResult = await getApiSession(request);
 
-    if (!session?.user?.id) {
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = authResult.userId;
 
     if (IS_EDGE) {
       const d1 = await getD1Client();
@@ -69,16 +69,16 @@ export async function GET() {
 // POST /api/categories - 创建分类
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const authResult = await getApiSession(request);
 
-    if (!session?.user?.id) {
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = authResult.userId;
     const body = await request.json();
     const validated = createCategorySchema.parse(body);
 

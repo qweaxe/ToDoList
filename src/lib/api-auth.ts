@@ -7,6 +7,7 @@
 import { NextRequest } from 'next/server';
 import { getAuthSession } from './auth';
 import { getDb } from './db';
+import { getD1Client, IS_EDGE } from './d1';
 
 // API Token 前缀
 export const API_TOKEN_PREFIX = 'tdl_';
@@ -74,6 +75,31 @@ export async function verifyApiToken(token: string): Promise<ApiAuthResult> {
   }
 
   const hashedToken = await hashToken(token);
+
+  if (IS_EDGE) {
+    const d1 = await getD1Client();
+    const apiKey = await d1.first<{ id: string; userId: string; expiresAt: string | null }>(
+      'SELECT id, userId, expiresAt FROM api_keys WHERE key = ?',
+      hashedToken
+    );
+
+    if (!apiKey) {
+      return { success: false, error: 'Token 不存在或已撤销' };
+    }
+
+    if (apiKey.expiresAt && new Date() > new Date(apiKey.expiresAt)) {
+      return { success: false, error: 'Token 已过期' };
+    }
+
+    // 更新最后使用时间（异步执行，不阻塞请求）
+    d1.run(
+      'UPDATE api_keys SET lastUsedAt = ? WHERE id = ?',
+      new Date().toISOString(), apiKey.id
+    ).catch(() => {});
+
+    return { success: true, userId: apiKey.userId };
+  }
+
   const db = await getDb();
 
   const apiKey = await db.apiKey.findUnique({

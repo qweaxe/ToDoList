@@ -528,7 +528,8 @@
     "deleteItem": "删除",
     "itemCount": "{count} 条待整理",
     "convertDialogTitle": "整理为任务",
-    "originalContent": "原始想法"
+    "originalContent": "原始想法",
+    "selectDate": "选择日期"
   },
   "time": {
     "title": "时间记录",

@@ -3063,3 +3063,83 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/hooks/use-view-store.ts` - 新增 PiP 状态字段
 - `messages/zh.json` - 新增 pip 翻译
 - `messages/en.json` - 新增 pip 翻译
+
+## 2026-05-14: 5 个 API 路由添加 D1 原生 SQL 路径 (IS_EDGE 分支)
+
+### 改动内容
+为以下 5 个 API 路由添加 `IS_EDGE` 分支，生产环境使用 D1 原生 SQL 绕过 Prisma 初始化开销，开发环境保留 Prisma 路径不变：
+
+1. **categories/[id]/route.ts** - GET/PUT/DELETE 三个处理器
+   - GET: `SELECT c.*, (SELECT COUNT(*) FROM todos WHERE categoryId = c.id) as todoCount` 子查询
+   - PUT: SELECT 验证所有权 + SELECT 检查重名 + 动态构建 `UPDATE categories SET` 子句
+   - DELETE: SELECT 含子查询检查关联任务数 + `DELETE FROM categories WHERE id = ?`
+
+2. **api-keys/route.ts** - GET/POST 两个处理器
+   - GET: `SELECT id, name, createdAt, lastUsedAt, expiresAt FROM api_keys WHERE userId = ?`
+   - POST: SELECT 检查重名 + `INSERT INTO api_keys` 使用 `crypto.randomUUID()` 生成 ID
+
+3. **api-keys/[id]/route.ts** - DELETE 处理器
+   - SELECT 验证所有权 + `DELETE FROM api_keys WHERE id = ?`
+
+4. **todos/[id]/subtask/route.ts** - PUT 处理器
+   - SELECT 获取任务 subTasks + JS 端解析/更新 JSON + 检查 allDone + 动态 UPDATE SET 子句
+   - 新增 TODO_JOIN_FIELDS/reshapeTodo 用于 UPDATE 后 SELECT 返回完整任务数据
+
+5. **todos/[id]/reminders/route.ts** - GET/POST 两个处理器
+   - GET: SELECT 验证任务所有权 + `SELECT ... FROM reminders WHERE todoId = ?`
+   - POST: SELECT 验证所有权 + 检查 remindAt 是否已过 + `INSERT INTO reminders`
+   - D1 路径中 `sent` 字段存储为 INTEGER 0/1，返回时转换为 Boolean
+
+### 修改的文件
+- `src/app/api/categories/[id]/route.ts` - 添加 IS_EDGE 分支（GET/PUT/DELETE）
+- `src/app/api/api-keys/route.ts` - 添加 IS_EDGE 分支（GET/POST）
+- `src/app/api/api-keys/[id]/route.ts` - 添加 IS_EDGE 分支（DELETE）
+- `src/app/api/todos/[id]/subtask/route.ts` - 添加 IS_EDGE 分支（PUT）+ reshapeTodo
+- `src/app/api/todos/[id]/reminders/route.ts` - 添加 IS_EDGE 分支（GET/POST）
+
+## 2026-05-14: V1.0 基线版本全面修复
+
+### 改动内容
+1. **修复部署配置冲突 (C1)**: `deploy:cf` 脚本项目名从 `todolist` 改为 `todolist-cf`，与 wrangler.toml 保持一致
+2. **修复种子数据密码格式 (C4)**: `d1-data.sql` 中的 bcrypt 哈希替换为 PBKDF2 格式，使种子用户可正常登录
+3. **验证构建类型安全 (C5)**: 移除 `ignoreBuildErrors` 后构建失败（next-auth v5 beta 与 edge runtime 类型不兼容），已恢复并加注释说明原因
+4. **清理环境变量 (C2)**: `.env` 和 `.env.local` 移除 Supabase PostgreSQL 死代码，改为本地 SQLite 配置
+5. **归档 PostgreSQL 遗留迁移 (C3)**: 迁移 0-4 移至 `prisma/migrations/_legacy_postgresql/`，标记为 PostgreSQL-only
+6. **为 16 个端点添加 D1 边缘路径**: 所有缺失 IS_EDGE 分支的 API 路由已添加 D1 原生 SQL 路径，生产环境不再依赖 Prisma fallback
+7. **统一认证方式**: 全部 API 路由从 `getAuthSession` (仅 Session) 改为 `getApiSession` (Bearer Token + Session 双认证)，`api-auth.ts` 也添加了 IS_EDGE D1 路径
+8. **修复 i18n 硬编码中文**: ConvertToTodoDialog 中的 `'选择日期'` 和 `'取消'` fallback 替换为 i18n 翻译 key
+9. **修复文档错误**: DEPLOYMENT.md 中 D1 schema 初始化路径从错误的 `000_init/migration.sql` 改为 `d1-schema.sql`
+
+### 修改的文件
+- `package.json` - deploy:cf 项目名修正
+- `d1-data.sql` - bcrypt→PBKDF2 密码哈希替换
+- `next.config.ts` - ignoreBuildErrors 加注释说明
+- `.env`, `.env.local` - 清理 Supabase 死代码
+- `prisma/migrations/_legacy_postgresql/` - 归档 PostgreSQL 迁移 (0-4)
+- `src/lib/api-auth.ts` - verifyApiToken 添加 IS_EDGE D1 路径
+- `src/app/api/auth/register/route.ts` - D1 路径 + getApiSession
+- `src/app/api/auth/forgot-password/route.ts` - D1 路径 + getApiSession
+- `src/app/api/auth/reset-password/route.ts` - D1 路径 + getApiSession
+- `src/app/api/auth/change-password/route.ts` - D1 路径 + getApiSession
+- `src/app/api/reminders/pending/route.ts` - D1 路径 + getApiSession
+- `src/app/api/reminders/[id]/route.ts` - D1 路径 + getApiSession
+- `src/app/api/reminders/[id]/sent/route.ts` - D1 路径 + getApiSession
+- `src/app/api/categories/route.ts` - D1 路径 + getApiSession
+- `src/app/api/categories/[id]/route.ts` - D1 路径 + getApiSession
+- `src/app/api/api-keys/route.ts` - D1 路径 + getApiSession
+- `src/app/api/api-keys/[id]/route.ts` - D1 路径 + getApiSession
+- `src/app/api/todos/[id]/subtask/route.ts` - D1 路径 + getApiSession
+- `src/app/api/todos/[id]/reminders/route.ts` - D1 路径 + getApiSession
+- `src/app/api/todos/daily/route.ts` - getApiSession
+- `src/app/api/todos/weekly/route.ts` - getApiSession
+- `src/app/api/todos/monthly/route.ts` - getApiSession
+- `src/app/api/todos/quarterly/route.ts` - getApiSession
+- `src/app/api/todos/yearly/route.ts` - getApiSession
+- `src/app/api/export/todos/route.ts` - D1 路径
+- `src/app/api/export/backup/route.ts` - D1 路径
+- `src/app/api/sync/route.ts` - D1 路径
+- `src/app/api/holidays/route.ts` - D1 路径
+- `src/app/api/seed/route.ts` - D1 路径 + getApiSession
+- `src/components/inbox/ConvertToTodoDialog.tsx` - 硬编码中文→i18n
+- `messages/zh.json`, `messages/en.json` - 新增 selectDate key
+- `docs/DEPLOYMENT.md` - D1 schema 初始化路径修正

@@ -1,8 +1,9 @@
 export const runtime = 'edge';
 
 import { getDb } from '@/lib/db';
-import { getAuthSession } from '@/lib/auth';
-import { NextResponse } from 'next/server';
+import { getApiSession } from '@/lib/api-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 // 默认分类数据
 const defaultCategories = [
@@ -20,18 +21,68 @@ const defaultLevels = [
   { name: '低', value: 1, description: '低优先级，有空时处理' },
 ];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const db = await getDb();
     // 需要认证
-    const session = await getAuthSession();
+    const authResult = await getApiSession(request);
 
-    if (!session?.user?.id) {
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
+
+    const userId = authResult.userId;
+
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      const now = new Date().toISOString();
+
+      // 检查数据是否已存在
+      const categoryCount = await d1.first<{ count: number }>(
+        'SELECT COUNT(*) as count FROM categories'
+      );
+      const levelCount = await d1.first<{ count: number }>(
+        'SELECT COUNT(*) as count FROM levels'
+      );
+
+      let categoriesCreated = 0;
+      let levelsCreated = 0;
+
+      // 创建默认分类
+      if ((categoryCount?.count ?? 0) === 0) {
+        for (const category of defaultCategories) {
+          const id = crypto.randomUUID();
+          await d1.run(
+            'INSERT INTO categories (id, name, description, emoji, color, userId, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            id, category.name, category.description, category.emoji, category.color, userId, now, now
+          );
+          categoriesCreated++;
+        }
+      }
+
+      // 创建默认等级
+      if ((levelCount?.count ?? 0) === 0) {
+        for (const level of defaultLevels) {
+          const id = crypto.randomUUID();
+          await d1.run(
+            'INSERT INTO levels (id, name, value, description, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
+            id, level.name, level.value, level.description, now, now
+          );
+          levelsCreated++;
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: '种子数据初始化完成',
+        categoriesCreated,
+        levelsCreated,
+      });
+    }
+
+    const db = await getDb();
 
     // 检查数据是否已存在
     const existingCategories = await db.category.count();
@@ -46,7 +97,7 @@ export async function GET() {
         await db.category.create({
           data: {
             ...category,
-            userId: session.user.id,
+            userId: userId,
           },
         });
         categoriesCreated++;

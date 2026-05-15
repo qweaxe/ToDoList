@@ -120,7 +120,7 @@ wrangler d1 create todolist-db
 bun run db:migrate
 
 # 方式二：直接在 D1 执行 Schema
-wrangler d1 execute todolist-db --file=./prisma/migrations/000_init/migration.sql
+wrangler d1 execute todolist-db --remote --file=./d1-schema.sql
 ```
 
 ---

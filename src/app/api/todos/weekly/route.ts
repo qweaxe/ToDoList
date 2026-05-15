@@ -6,7 +6,7 @@ import { getWeekStart, getWeekEnd, formatDate, getWeekDates, extractWeekNumber }
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { syncRecurringTasks } from '@/services/recurrence-service';
-import { getAuthSession } from '@/lib/auth';
+import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
 
 // 与 daily/route.ts 共用的 JOIN 字段和表定义
@@ -54,16 +54,16 @@ function reshapeTodo(row: Record<string, unknown>) {
 // GET /api/todos/weekly?date=YYYY-MM-DD - 获取一周的任务数据
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const authResult = await getApiSession(request);
 
-    if (!session?.user?.id) {
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = authResult.userId;
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
 

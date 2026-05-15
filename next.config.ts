@@ -4,6 +4,7 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
+  // CF 部署需要忽略类型错误（next-auth v5 beta 与 edge runtime 类型不兼容）
   typescript: {
     ignoreBuildErrors: true,
   },
