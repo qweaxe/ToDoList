@@ -22,6 +22,12 @@ export class PiPManager {
   private queryClient: any = null;
   private onPipClosed: (() => void) | null = null;
 
+  // 初始数据（PIP_READY 时发送到 PiP 窗口）
+  private initialTasks: PipTaskItem[] = [];
+  private initialCategories: PipCategory[] = [];
+  private initialLevels: PipLevel[] = [];
+  private initialDate: string = '';
+
   // 心跳相关
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private missedPongs: number = 0;
@@ -60,6 +66,10 @@ export class PiPManager {
 
     this.queryClient = queryClient;
     this.onPipClosed = onClosed ?? null;
+    this.initialTasks = initialTasks;
+    this.initialCategories = initialCategories;
+    this.initialLevels = initialLevels;
+    this.initialDate = date;
 
     // 读取当前主题
     const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
@@ -198,6 +208,16 @@ export class PiPManager {
       switch (message.type) {
         case 'PIP_READY':
           // PiP 窗口准备好，发送初始数据
+          if (this.syncChannel) {
+            this.syncChannel.sendToPip({
+              type: 'INIT',
+              tasks: this.initialTasks,
+              date: this.initialDate,
+              categories: this.initialCategories,
+              levels: this.initialLevels,
+              isDark: typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
+            });
+          }
           break;
         case 'TASK_TOGGLE':
           // PiP 窗口切换了任务，乐观更新主窗口缓存 + invalidate

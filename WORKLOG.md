@@ -3204,3 +3204,12 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `docs/CLOUDFLARE_MIGRATION_GUIDE.md` - 多项修正
 - `docs/CROSS_DAY_SPAN_DESIGN.md` - 1 项修正
 - `docs/TEST_CASES.md` - 1 项修正
+
+## 2026-05-16: PiP 悬浮窗分类/等级选择框空内容修复
+
+### 改动内容
+- 修复 PiP 悬浮窗分类和等级下拉选择框为空：PiPManager PIP_READY handler 从空 break 改为发送 INIT 消息（携带 tasks/categories/levels/date/isDark），PiPMiniApp fetchDailyTodos 兜底增加 /api/categories 和 /api/levels 请求
+
+### 修改的文件
+- `src/components/pip/PiPManager.ts` - 新增实例变量保存初始数据，PIP_READY handler 发送 INIT 消息
+- `src/components/pip/PiPMiniApp.ts` - fetchDailyTodos 兜底增加 categories/levels API 请求

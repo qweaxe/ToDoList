@@ -457,6 +457,36 @@ export class PiPMiniApp {
           this.render();
         }
       }
+
+      // 兜底获取 categories 和 levels
+      if (this.categories.length === 0) {
+        try {
+          const catRes = await fetch('/api/categories');
+          if (catRes.ok) {
+            const catResult: any = await catRes.json();
+            if (catResult.success && catResult.data) {
+              this.categories = catResult.data.map((c: any) => ({
+                id: c.id, name: c.name, emoji: c.emoji ?? null,
+              }));
+              this.renderCategoryOptions();
+            }
+          }
+        } catch {}
+      }
+      if (this.levels.length === 0) {
+        try {
+          const lvRes = await fetch('/api/levels');
+          if (lvRes.ok) {
+            const lvResult: any = await lvRes.json();
+            if (lvResult.success && lvResult.data) {
+              this.levels = lvResult.data.map((l: any) => ({
+                id: l.id, name: l.name, value: l.value,
+              }));
+              this.renderLevelOptions();
+            }
+          }
+        } catch {}
+      }
     } catch {
       // API 请求失败，等待主窗口 broadcast 提供数据
     }
