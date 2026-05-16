@@ -1,12 +1,12 @@
 # Cloudflare 迁移操作指南
 
-> **注意**：此指南最初设计为继续使用 Supabase PostgreSQL，但最终项目选择了 **Plan B（Cloudflare D1 SQLite）**。以下文档中与 Supabase/PostgreSQL 相关的内容已过时，实际实施请参考 [CLOUDFLARE_EDGE_MIGRATION_PLAN.md](./CLOUDFLARE_EDGE_MIGRATION_PLAN.md) 和 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+> **严重过时警告**：此指南最初设计为继续使用 Supabase PostgreSQL，但最终项目选择了 **Plan B（Cloudflare D1 SQLite）**。以下文档中与 Supabase/PostgreSQL 相关的内容已严重过时，**切勿按照 PostgreSQL 内容操作**。实际实施请参考 [CLOUDFLARE_EDGE_MIGRATION_PLAN.md](./CLOUDFLARE_EDGE_MIGRATION_PLAN.md) 和 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 >
 > 关键变更：
-> - 数据库从 PostgreSQL 改为 SQLite/D1，不再使用 Supabase
-> - 环境变量中 `DATABASE_URL` 为本地 SQLite 文件路径，`DIRECT_URL` 已废弃
-> - 生产环境 D1 通过 Cloudflare binding 注入，不通过 `DATABASE_URL`
+> - 数据库从 PostgreSQL 改为 SQLite/D1，不再使用 Supabase — 所有 PostgreSQL 连接字符串已废弃
+> - 环境变量中 `DATABASE_URL` 为本地 SQLite 文件路径（`file:./dev.db`），`DIRECT_URL` 已废弃，生产环境 D1 通过 Cloudflare binding 注入
 > - 密码加密从 bcryptjs 改为 PBKDF2（Web Crypto API）
+> - 图片优化使用 `images: { unoptimized: true }` 而非自定义 loader
 
 ---
 
@@ -47,7 +47,7 @@ wrangler login
 ### 1.4 创建 Cloudflare Pages 项目
 
 ```bash
-wrangler pages project create todolist
+wrangler pages project create todolist-cf
 # 选择生产分支：feat/cloudflare-deploy
 ```
 
@@ -67,17 +67,23 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 ## 二、数据迁移
 
-**无需数据迁移**，继续使用现有 Supabase 数据库。
+> **严重过时警告**：本节内容完全基于 Supabase PostgreSQL 编写，但项目已切换到 SQLite/D1，不再使用 PostgreSQL。以下 PostgreSQL 连接字符串和 Supabase Pooler 配置仅为历史参考，**切勿直接使用**。当前只需 `DATABASE_URL="file:./dev.db"` 和 D1 binding，无需 `DIRECT_URL`。
+
+**无需数据迁移**，继续使用现有 Supabase 数据库。← 此条已过时。实际使用 D1 时需要从 PostgreSQL 导出数据并转换格式导入 D1。
 
 只需确认 Prisma 连接配置正确：
 
 ```env
-# .env.local
-DATABASE_URL="postgresql://...pooler.supabase.com:6543/postgres"
-DIRECT_URL="postgresql://...supabase.co:5432/postgres"
+# .env.local (以下已废弃 - 仅供历史参考，实际请使用下方 D1 配置)
+DATABASE_URL="postgresql://...pooler.supabase.com:6543/postgres"  # ❌ 已废弃
+DIRECT_URL="postgresql://...supabase.co:5432/postgres"            # ❌ 已废弃
+
+# 实际配置（SQLite/D1）
+DATABASE_URL="file:./dev.db"
+NEXTAUTH_SECRET="your-secret-key"
 ```
 
-> **注意**：Cloudflare Workers 使用 HTTP 连接，Supabase Pooler 已支持。
+> **注意**：Cloudflare Workers 使用 HTTP 连接，Supabase Pooler 已支持。← 此条已过时，D1 方案不需要 HTTP 连接池。
 
 ---
 
@@ -91,15 +97,24 @@ bun add -D @cloudflare/next-on-pages wrangler
 
 ### 3.2 创建 wrangler.toml
 
+> **注意**：项目名已修正为 `todolist-cf`，数据库名为 `todolist-db`，已添加 `nodejs_compat` 兼容性标志和 `compatibility_date` 更新。
+
 在项目根目录创建 `wrangler.toml`：
 
 ```toml
-name = "todolist"
-compatibility_date = "2024-01-01"
+name = "todolist-cf"
+compatibility_date = "2026-04-10"
+compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
 [vars]
-NEXTAUTH_URL = "https://your-domain.pages.dev"
+NEXTAUTH_URL = "https://todolist-cf.pages.dev"
+# NEXTAUTH_SECRET 需通过 Cloudflare Dashboard 设置（类型选 "Secret")
+
+[[d1_databases]]
+binding = "DB"
+database_name = "todolist-db"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # 替换为 wrangler d1 create 返回的实际值
 ```
 
 ### 3.3 修改 next.config.ts
@@ -288,6 +303,7 @@ export const runtime = 'edge';
 - `src/app/api/auth/register/route.ts`
 - `src/app/api/auth/change-password/route.ts`
 - `src/app/api/auth/reset-password/route.ts`
+- `src/app/api/auth/forgot-password/route.ts`
 - `src/app/api/auth/security-question/route.ts`
 - `src/app/api/todos/route.ts`
 - `src/app/api/todos/[id]/route.ts`
@@ -312,19 +328,31 @@ export const runtime = 'edge';
 - `src/app/api/reminders/pending/route.ts`
 - `src/app/api/reminders/[id]/route.ts`
 - `src/app/api/reminders/[id]/sent/route.ts`
+- `src/app/api/inbox/route.ts`
+- `src/app/api/inbox/count/route.ts`
+- `src/app/api/inbox/[id]/route.ts`
+- `src/app/api/inbox/[id]/convert/route.ts`
+- `src/app/api/admin/check/route.ts`
+- `src/app/api/admin/holidays/route.ts`
+- `src/app/api/time-entries/route.ts`
+- `src/app/api/time-entries/[id]/route.ts`
 - `src/app/api/seed/route.ts`
 - `src/app/api/holidays/route.ts`
+- `src/app/api/route.ts`
 
 ### 3.7 修改 package.json 构建脚本
+
+> **注意**：`dev:cf` 脚本内部已包含 `build:cf`，无需在运行 `dev:cf` 前单独执行 `build:cf`。项目名已修正为 `todolist-cf`。
 
 ```json
 {
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "dev:cf": "npm run build:cf && npx wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat --port 3000",
+    "build": "prisma generate && next build",
     "build:cf": "npx @cloudflare/next-on-pages",
     "preview:cf": "wrangler pages dev .vercel/output/static",
-    "deploy:cf": "wrangler pages deploy .vercel/output/static --project-name=todolist",
+    "deploy:cf": "wrangler pages deploy .vercel/output/static --project-name=todolist-cf",
     "start": "next start",
     "lint": "eslint .",
     "db:push": "prisma db push",
@@ -342,36 +370,42 @@ export const runtime = 'edge';
 
 ### 4.1 本地开发环境
 
+> **注意**：以下 PostgreSQL 配置已废弃。实际本地开发使用 SQLite，`DIRECT_URL` 不再需要。
+
 确认 `.env.local` 配置正确：
 
 ```env
-DATABASE_URL="postgresql://...pooler.supabase.com:6543/postgres"
-DIRECT_URL="postgresql://...supabase.co:5432/postgres"
+# 已废弃（仅供历史参考）:
+# DATABASE_URL="postgresql://...pooler.supabase.com:6543/postgres"  ❌
+# DIRECT_URL="postgresql://...supabase.co:5432/postgres"            ❌
+
+# 实际配置（SQLite/D1）:
+DATABASE_URL="file:./dev.db"
 NEXTAUTH_SECRET="你生成的密钥"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
 ### 4.2 Cloudflare Pages 环境变量
 
+> **注意**：项目已使用 D1 (SQLite)，`DATABASE_URL` 和 `DIRECT_URL` 不需要在 Cloudflare 环境中设置。D1 通过 binding 自动注入，仅需配置 `NEXTAUTH_SECRET` 和 `NEXTAUTH_URL`。
+
 在 Cloudflare Dashboard 或使用 CLI：
 
 ```bash
-# 设置环境变量
-wrangler pages secret put DATABASE_URL --project-name=todolist
-# 粘贴 Supabase Pooler 连接字符串（端口 6543）
-
-wrangler pages secret put DIRECT_URL --project-name=todolist
-# 粘贴 Supabase 直连字符串（端口 5432）
-
-wrangler pages secret put NEXTAUTH_SECRET --project-name=todolist
+# 设置环境变量（仅需以下两个，DATABASE_URL 和 DIRECT_URL 已废弃）
+wrangler pages secret put NEXTAUTH_SECRET --project-name=todolist-cf
 # 粘贴生成的密钥
 
-wrangler pages secret put NEXTAUTH_URL --project-name=todolist
-# 输入生产域名，如 https://todolist.pages.dev
+wrangler pages secret put NEXTAUTH_URL --project-name=todolist-cf
+# 输入生产域名，如 https://todolist-cf.pages.dev
+
+# 以下已废弃，无需设置：
+# wrangler pages secret put DATABASE_URL  ← D1 通过 binding 注入，不需要
+# wrangler pages secret put DIRECT_URL    ← PostgreSQL 已废弃，不需要
 ```
 
 或在 Cloudflare Dashboard 操作：
-1. 进入 Pages → todolist → Settings → Environment variables
+1. 进入 Pages → todolist-cf → Settings → Environment variables
 2. 添加 Production 和 Preview 环境变量
 
 ---
@@ -401,7 +435,7 @@ bun run deploy:cf
 ```
 
 或使用 GitHub 自动部署：
-1. 在 Cloudflare Dashboard → Pages → todolist → Settings
+1. 在 Cloudflare Dashboard → Pages → todolist-cf → Settings
 2. 连接 GitHub 仓库
 3. 设置构建命令：`bun run build:cf`
 4. 设置输出目录：`.vercel/output/static`
@@ -436,9 +470,9 @@ bun run deploy:cf
 
 ### Q2: 数据库连接超时
 
-**原因**：Neon 免费版有连接数限制
+**原因**：本地 SQLite 或 D1 binding 连接问题
 
-**解决**：确保使用连接池连接字符串（带 `-pooler` 后缀）
+**解决**：检查 D1 binding 配置是否正确，本地开发确保 `DATABASE_URL="file:./dev.db"` 指向有效文件
 
 ### Q3: API 返回 500 错误
 
@@ -466,7 +500,7 @@ git push origin dev/vercel
 
 ```
 你手动操作：
-├── 1. 确认 Supabase 连接池配置
+├── 1. 创建 D1 数据库并配置 wrangler.toml  ← 已取代 Supabase 连接池配置
 ├── 2. 创建 Cloudflare 账号
 ├── 3. 安装 Wrangler CLI 并登录
 ├── 4. 创建 Pages 项目

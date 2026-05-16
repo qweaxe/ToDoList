@@ -43,6 +43,10 @@
 - 流畅的动画过渡（Framer Motion）
 - 拖拽排序（dnd-kit）
 
+### 🖼️ 画中画/浮动面板
+- 画中画（PiP）浮动面板，快速查看和操作任务
+- 支持拖拽定位和最小化
+
 ### 🔑 API 密钥
 - 生成外部 API 访问密钥
 - 支持Bearer Token认证
@@ -157,6 +161,7 @@ src/
 │   ├── inbox/              # 捕获箱组件
 │   ├── time/               # 时间记录组件
 │   ├── reminder/           # 提醒组件
+│   ├── pip/                # 画中画/浮动面板组件
 │   ├── settings/           # 设置组件
 │   ├── layout/             # 布局组件
 │   └── common/             # 通用组件
@@ -183,10 +188,10 @@ wrangler.toml               # Cloudflare Pages/D1 配置
 | 模型 | 说明 |
 |------|------|
 | **User** | 用户（含密码、密保问题） |
-| **Todo** | 任务主表 |
+| **Todo** | 任务主表（状态：pending/in_progress/completed） |
 | **Category** | 任务分类（含 emoji） |
 | **Level** | 任务等级（高/中/低） |
-| **RecurrenceRule** | 周期规则 |
+| **RecurrenceRule** | 周期规则（DAILY/WEEKLY/MONTHLY/YEARLY/CUSTOM） |
 | **Holiday** | 节假日缓存 |
 | **InboxItem** | 捕获箱条目 |
 | **TimeEntry** | 时间记录 |

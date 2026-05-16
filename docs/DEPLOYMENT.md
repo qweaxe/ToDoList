@@ -115,13 +115,26 @@ wrangler d1 create todolist-db
 
 ### 2.3 初始化 D1 Schema
 
-```bash
-# 方式一：通过 Prisma 迁移生成 SQL
-bun run db:migrate
+D1 数据库需要手动初始化表结构，Prisma migrate 仅适用于本地 SQLite，不能直接用于 D1。
 
-# 方式二：直接在 D1 执行 Schema
-wrangler d1 execute todolist-db --remote --file=./d1-schema.sql
+```bash
+# 方式一：通过 Prisma 导出 SQL，再手动在 D1 执行
+# 先在本地生成迁移 SQL 文件
+bun run db:migrate
+# 然后查看生成的迁移 SQL（位于 prisma/migrations/ 目录）
+# 选择对应的 SQL 文件，手动在 D1 执行：
+wrangler d1 execute todolist-db --remote --command="$(cat prisma/migrations/<migration_folder>/migration.sql)"
+
+# 方式二：从本地 SQLite 导出完整 Schema
+# 使用 sqlite3 工具导出 dev.db 的表结构，再在 D1 执行
+wrangler d1 execute todolist-db --remote --command="$(sqlite3 prisma/dev.db .schema)"
+
+# 方式三：访问 /api/seed 端点
+# 部署后注册登录，访问 /api/seed 初始化默认分类和等级
+# 注意：seed 端点只创建分类和等级数据，不创建表结构
 ```
+
+**重要**：无论哪种方式，表结构必须先在 D1 中创建，否则应用无法正常运行。
 
 ---
 
@@ -142,6 +155,8 @@ bun run preview:cf
 ```
 
 使用 Wrangler 在本地模拟 Cloudflare Pages + D1 环境。
+
+**注意**：`preview:cf` 脚本（`wrangler pages dev .vercel/output/static`）缺少 `--compatibility-flag=nodejs_compat` 参数，而 `wrangler.toml` 中的 `nodejs_compat` 配置仅在远程部署时生效。如果预览时遇到 Node.js API 兼容性错误，需手动添加该参数或改用 `dev:cf`（已内置该 flag）。
 
 ### 3.3 部署到 Cloudflare
 
@@ -164,10 +179,12 @@ wrangler pages deploy .vercel/output/static --project-name=todolist-cf
 | Name | Value | 说明 |
 |------|-------|------|
 | `NEXTAUTH_SECRET` | （Secret 类型） | JWT 签名密钥，必填 |
-| `NEXTAUTH_URL` | `https://todolist-cf.pages.dev` | 应用 URL |
+| `NEXTAUTH_URL` | （可选覆盖） | 已在 `wrangler.toml` `[vars]` 中默认设置为 `https://todolist-cf.pages.dev`，仅在自定义域名时需在 Dashboard 中覆盖此值 |
 | `ADMIN_USER_IDS` | （可选） | 管理员用户 ID |
 
-**注意**：`NEXTAUTH_SECRET` 必须设为 Secret 类型（加密存储），不要用普通文本变量。
+**注意**：
+1. `NEXTAUTH_SECRET` 必须设为 Secret 类型（加密存储），不要用普通文本变量。
+2. `NODE_ENV` 是双路径架构的关键开关：`IS_EDGE = process.env.NODE_ENV !== 'development'`。开发环境下 `NODE_ENV="development"` 使用 Prisma + SQLite 路径；生产环境默认 `"production"`，自动启用 D1 路径。Cloudflare Pages 生产部署无需手动设置 `NODE_ENV`，系统默认为 `"production"`。
 
 ---
 
@@ -208,6 +225,7 @@ wrangler pages deploy .vercel/output/static --project-name=todolist-cf
 1. `wrangler.toml` 必须包含 `nodejs_compat` flag
 2. 确认没有使用 Node.js 专属 API（如 `fs`、`crypto`）
 3. 密码加密使用 Web Crypto API（PBKDF2），不使用 bcryptjs
+4. `next.config.ts` 中设置了 `typescript: { ignoreBuildErrors: true }`，这是因为 next-auth v5 beta 与 Edge Runtime 存在类型不兼容问题，构建时需要忽略类型错误才能正常部署
 
 ### Q3: 认证相关错误
 
@@ -222,10 +240,7 @@ wrangler pages deploy .vercel/output/static --project-name=todolist-cf
 
 **解决方案**:
 ```bash
-# 先构建
-bun run build:cf
-
-# 再预览（需要本地 D1 绑定）
+# dev:cf 已内置 build:cf，无需单独构建
 bun run dev:cf
 ```
 

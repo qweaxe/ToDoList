@@ -19,7 +19,7 @@
 | 技术 | 用途 |
 |------|------|
 | TanStack Query (React Query) | 服务端状态管理、缓存、自动重获取 |
-| Zustand | 客户端全局状态（视图切换、UI状态） |
+| Zustand | 客户端全局状态（视图切换、UI状态、PiP 悬浮窗状态） |
 
 ### 2.3 数据层
 | 技术 | 用途 |
@@ -36,6 +36,8 @@
 | Lucide Icons | 图标库 |
 | Framer Motion | 动画过渡 |
 | dnd-kit | 拖拽功能 |
+| Sonner | Toast 提示通知 |
+| Embla Carousel | 轮播组件 |
 
 ### 2.5 工具库
 | 技术 | 用途 |
@@ -104,11 +106,19 @@ src/
 │       │   └── backup/route.ts   # 完整备份
 │       ├── sync/                 # 增量同步
 │       │   └── route.ts
+│       ├── inbox/                 # 捕获箱 API
+│       │   ├── route.ts           # 列表/创建
+│       │   ├── count/route.ts     # 未处理条目计数
+│       │   ├── [id]/route.ts      # 更新/删除
+│       │   └── [id]/convert/route.ts # 转化为任务
+│       ├── time-entries/          # 时间追踪 API
+│       │   ├── route.ts           # 列表/创建
+│       │   ├── daily/route.ts     # 日统计数据
+│       │   └── [id]/route.ts      # 更新/删除
 │       ├── reminders/            # 提醒管理
 │       │   ├── pending/route.ts  # 待发送提醒
-│       │   └── [id]/route.ts     # 删除
+│       │   ├── [id]/route.ts     # 删除/标记已发送
 │       │   └── [id]/sent/route.ts # 标记已发送
-│       ├── admin/                # 管理员 API
 │       │   ├── check/route.ts    # 权限检查
 │       │   └── holidays/route.ts # 节假日管理
 │       └── seed/                 # 初始化种子数据
@@ -131,15 +141,24 @@ src/
 │   │   ├── OverdueView.tsx       # 历史待办视图
 │   │   ├── TaskListView.tsx      # 任务列表视图
 │   │   ├── TimeView.tsx          # 时间追踪视图
+│   │   ├── InboxView.tsx         # 捕获箱视图
 │   │   └── SettingsView.tsx      # 设置视图
+│   ├── pip/                      # PiP 悬浮窗组件
+│   │   ├── FloatTodoButton.tsx   # 悬浮按钮（触发 PiP 或回退面板）
+│   │   ├── FloatingPanel.tsx     # 非 Chrome 浏览器回退浮动面板
+│   │   ├── PiPManager.ts        # PiP 窗口生命周期管理器（主窗口侧）
+│   │   ├── PiPMiniApp.ts        # PiP 窗口迷你应用（纯 vanilla JS）
+│   │   ├── broadcast-sync.ts    # BroadcastChannel 跨窗口同步
+│   │   ├── pip-styles.ts        # PiP 窗口 CSS 样式
+│   │   └── pip-types.ts         # PiP 消息类型定义
 │   ├── task/                     # 任务相关组件
 │   │   ├── TaskCard.tsx          # 任务卡片
 │   │   ├── TaskForm.tsx          # 任务表单
 │   │   ├── TaskDetailDialog.tsx  # 任务详情弹窗
 │   │   ├── TaskListDialog.tsx    # 任务列表弹窗（统计点击）
-│   │   └── BatchActionsToolbar.tsx # 批量操作工具栏
+│   │   ├── BatchActionsToolbar.tsx # 批量操作工具栏
+│   │   └── DayViewFilter.tsx     # 日视图任务类型筛选器
 │   ├── time/                     # 时间追踪组件
-│   │   ├── TimeView.tsx          # 时间追踪视图
 │   │   ├── TimeEntryForm.tsx     # 时间记录表单
 │   │   ├── TimeEntryCard.tsx     # 时间记录卡片
 │   │   └── TimeStatsCard.tsx     # 时间统计卡片
@@ -181,17 +200,17 @@ src/
 │   ├── use-holidays.ts           # 节假日数据 Hook
 │   ├── use-batch-selection.ts    # 批量选择 Hook
 │   ├── use-mobile.ts             # 移动端检测 Hook
-│   ├── use-toast.ts              # Toast 提示 Hook
 │   ├── use-reminders.ts          # 提醒数据 Hook
 │   ├── use-notifications.ts      # 浏览器通知 Hook
 │   ├── use-inbox.ts              # 捕获箱数据 Hook
-│   └── use-time-entries.ts       # 时间记录数据 Hook
+│   ├── use-time-entries.ts       # 时间记录数据 Hook
+│   ├── use-task-type.ts          # 任务类型判定逻辑 Hook
 │
 ├── lib/
-│   ├── db.ts                     # Prisma 客户端（开发环境）
+│   ├── db.ts                     # Prisma 客户端（开发环境）+ getDb() 函数
 │   ├── d1.ts                     # D1 原生客户端 + IS_EDGE 常量（生产环境）
-│   ├── auth.ts                   # NextAuth 配置
-│   ├── password.ts               # 密码加密（Web crypto API）
+│   ├── auth.ts                   # NextAuth v5 主配置（lazy init 模式）
+│   ├── password.ts               # 密码加密（Web Crypto API）
 │   ├── admin.ts                  # 管理员权限检查
 │   ├── api-auth.ts               # API Token 认证
 │   ├── date-utils.ts             # 日期处理工具
@@ -224,6 +243,10 @@ src/
 prisma/
 └── schema.prisma                 # 数据库模型定义
 └── migrations/                   # 数据库迁移文件
+    ├── 5_add_inbox_items
+    ├── 6_add_time_entries
+    ├── 7_add_estimated_duration
+    └── _legacy_postgresql        # 原 PostgreSQL 迁移（不再使用）
 ```
 
 ---
@@ -263,12 +286,14 @@ model Category {
   emoji       String?
   color       String?
   userId      String   // 用户级数据隔离
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   todos       Todo[]
+  timeEntries TimeEntry[]
 
-  @@unique([name, userId])
+  @@unique([userId, name])
+  @@map("categories")
 }
 
 // 任务等级（固定三级：高、中、低）
@@ -280,6 +305,7 @@ model Level {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   todos       Todo[]
+  @@map("levels")
 }
 
 // 任务主表
@@ -309,7 +335,7 @@ model Todo {
   levelId     String?
   level       Level? @relation(fields: [levelId], references: [id])
   userId      String
-  user        User   @relation(fields: [userId], references: [id])
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // 元数据
   priority    Int      @default(0)
@@ -320,9 +346,17 @@ model Todo {
 
   // 提醒关联
   reminders Reminder[]
-  
+
   // 时间记录关联
   timeEntries TimeEntry[]
+
+  @@index([userId])
+  @@index([startDate])
+  @@index([dueDate])
+  @@index([status])
+  @@index([categoryId])
+  @@index([levelId])
+  @@map("todos")
 }
 
 // 周期规则
@@ -340,6 +374,9 @@ model RecurrenceRule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   todos     Todo[]
+
+  @@index([userId])
+  @@map("recurrence_rules")
 }
 
 // 节假日缓存
@@ -350,6 +387,10 @@ model Holiday {
   isHoliday Boolean  // true=休息日, false=调休
   year      Int
   createdAt DateTime @default(now())
+
+  @@unique([date])
+  @@index([year])
+  @@map("holidays")
 }
 
 // API 密钥
@@ -362,6 +403,10 @@ model ApiKey {
   createdAt   DateTime  @default(now())
   lastUsedAt  DateTime?
   expiresAt   DateTime?
+
+  @@index([userId])
+  @@index([key])
+  @@map("api_keys")
 }
 
 // 任务提醒
@@ -388,6 +433,7 @@ model InboxItem {
 
   @@index([userId, createdAt])
   @@index([userId, convertedToTodoId])
+  @@map("inbox_items")
 }
 
 // 时间记录条目
@@ -419,6 +465,7 @@ model TimeEntry {
   @@index([date])
   @@index([categoryId])
   @@index([todoId])
+  @@map("time_entries")
 }
 ```
 
@@ -443,9 +490,9 @@ model TimeEntry {
 - **开发环境**（`IS_EDGE = false`）：使用 **Prisma ORM**，通过 `src/lib/db.ts` 的 `PrismaClient` 访问本地 SQLite 数据库，支持完整的类型安全查询。
 - **生产环境**（`IS_EDGE = true`）：使用 **D1Client** 原生 SQL，绕过 Prisma 初始化开销，直接通过 Cloudflare D1 binding 执行 SQL 查询。
 
-`D1Client` 类（`src/lib/d1.ts`）提供 `all()`、`first()`、`run()` 三个方法，分别对应查询多行、查询单行、执行写操作。生产环境的查询结果通过 `reshapeTodo()` 等函数将 D1 返回的原始行对象映射为与 Prisma 查询结果一致的结构，确保前端代码无需感知底层差异。
+`D1Client` 类（`src/lib/d1.ts`）提供 `all()`、`first()`、`run()` 三个方法，分别对应查询多行、查询单行、执行写操作。生产环境的查询结果通过各路由文件中内联定义的 `reshapeTodo()` 函数将 D1 返回的原始行对象映射为与 Prisma 查询结果一致的结构，确保前端代码无需感知底层差异。目前 `reshapeTodo` 在 7 个路由文件中重复定义，未来计划提取为共享模块。
 
-此双路径架构影响 21+ 个 API 路由文件，每个路由均根据 `IS_EDGE` 选择 `db`（Prisma）或 `d1`（D1Client）执行数据库操作。
+此双路径架构影响 38 个 API 路由文件（94 处 `IS_EDGE` 引用），每个路由均根据 `IS_EDGE` 选择 `db`（Prisma）或 `d1`（D1Client）执行数据库操作。
 
 ---
 
@@ -611,7 +658,7 @@ model User {
   // 安全相关字段
   securityQuestion        String?   // 密保问题
   securityAnswer          String?   // 密保答案（加密存储）
-  securityAnswerAttempts  Int?      // 错误尝试次数
+  securityAnswerAttempts  Int       @default(0) // 错误尝试次数
   securityAnswerLockedAt  DateTime? // 锁定时间
 
   // 关联数据
@@ -646,33 +693,41 @@ model User {
 
 ```typescript
 // API 路由中的权限验证示例
-import { getAuthSession } from '@/lib/auth';
+import { getApiSession } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
-  const session = await getAuthSession();
+  // getApiSession 同时支持 Bearer Token 和 Session Cookie
+  const { userId, error } = await getApiSession(request);
   
-  if (!session?.user) {
+  if (error || !userId) {
     return NextResponse.json(
       { success: false, error: '未授权访问' },
       { status: 401 }
     );
   }
   
-  const userId = session.user.id;
-  // 只查询当前用户的数据
-  const todos = await db.todo.findMany({
-    where: { userId }
-  });
+  // IS_EDGE 双路径
+  if (IS_EDGE) {
+    const d1 = new D1Client((env as any).DB);
+    const todos = await d1.all(`SELECT * FROM todos WHERE userId=?`, [userId]);
+  } else {
+    const db = await getDb();
+    const todos = await db.todo.findMany({ where: { userId } });
+  }
   
   return NextResponse.json({ success: true, data: todos });
 }
 ```
 
+**注意**：代码库中有两套 NextAuth 配置：
+- `src/auth.ts` — 使用 NextAuth v5 lazy initialization 模式的主配置文件
+- `src/app/api/auth/[...nextauth]/route.ts` — 包含完整的内联 NextAuth 配置（含 `authorize()` 函数和 IS_EDGE 分支），不导入 `src/auth.ts`
+
 ### 6.6 会话管理
 
 - **JWT 策略**：使用 JWT 存储会话信息，无需服务器端会话存储
-- **有效期**：默认 7 天，选择"记住我"延长至 30 天
-- **刷新机制**：Token 过期前自动刷新
+- **有效期**：7 天（`maxAge: 7 * 24 * 60 * 60`），无"记住我"延长功能
+- **刷新机制**：NextAuth v5 自动处理 JWT renewal
 
 ### 6.7 路由保护
 
@@ -808,9 +863,10 @@ console.log(t('today')); // "今天" 或 "Today"
 ### 9.1 同步触发时机
 
 当调用以下 API 时，执行周期任务同步：
-- `/api/todos/daily`
-- `/api/todos/weekly`
-- `/api/todos/monthly`
+- `/api/todos/daily` — 调用 `syncDate()`
+- `/api/todos/weekly` — 调用 `syncRecurringTasks()`
+
+**注意**：`/api/todos/monthly` 不执行周期任务同步，仅查询数据。
 
 ### 9.2 同步逻辑
 
@@ -842,7 +898,8 @@ async function syncCycleTasks(startDate: Date, endDate: Date) {
 
 使用开源 API 获取中国法定节假日：
 - **主源**: [timor.tech](http://timor.tech/api/holiday) 免费节假日API
-- **备源**: 本地缓存 + 手动配置补充
+- **备源**: [holiday.ailcc.com](https://holiday.ailcc.com/api/holiday) 备用节假日API
+- **兜底**: 本地缓存 + 静态数据补充
 
 ### 10.2 缓存策略
 
@@ -1071,7 +1128,7 @@ export async function getDb() {
 }
 ```
 
-生产环境还提供 `D1Client`（`src/lib/d1.ts`）用于直接执行原生 SQL，绕过 Prisma 初始化开销。通过 `IS_EDGE` 常量（`process.env.NODE_ENV !== 'development'`），21+ 个 API 路由在 Prisma ORM 与 D1Client 原生 SQL 之间切换。详见 4.3 节。
+生产环境还提供 `D1Client`（`src/lib/d1.ts`）用于直接执行原生 SQL，绕过 Prisma 初始化开销。通过 `IS_EDGE` 常量（`process.env.NODE_ENV !== 'development'`），38 个 API 路由在 Prisma ORM 与 D1Client 原生 SQL 之间切换。详见 4.3 节。
 
 ### 16.4 密码加密适配
 
@@ -1091,9 +1148,10 @@ export async function hashPassword(password: string): Promise<string> {
 
 | 变量 | 说明 |
 |------|------|
-| `DATABASE_URL` | D1 数据库连接 |
-| `NEXTAUTH_SECRET` | JWT 签名密钥 |
-| `ADMIN_USER_IDS` | 管理员用户 ID（逗号分隔） |
+| `DATABASE_URL` | 开发环境 SQLite 连接（`file:./dev.db`） |
+| `NEXTAUTH_SECRET` | JWT 签名密钥（生产环境需设为 Cloudflare Secret） |
+| `NEXTAUTH_URL` | 应用 URL（生产环境在 `wrangler.toml [vars]` 中预设） |
+| `ADMIN_USER_IDS` | 管理员用户 ID（逗号分隔，可选） |
 
 ---
 

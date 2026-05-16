@@ -1,5 +1,7 @@
 # 跨天任务横跨框设计方案
 
+> **⚠️ 实现状态说明**：本设计文档描述的跨天任务横跨框视觉功能（CalendarSpanLayer、WeekSpanBar、MultiRowSpanBar 等组件）**尚未实现**。文档中列出的 10 个新文件均不存在于代码库中。当前跨天任务类型通过 `estimatedDuration >= 1440` 判定（见 `src/hooks/use-task-type.ts`），任务类型筛选已实现（见 `src/components/task/DayViewFilter.tsx`），但横跨框视觉效果仍未开发。本文档仅作为设计参考保留。
+
 ## 背景
 
 用户需求：**移动端 + PC端 + 周视图 + 日历视图，全场景实现跨天任务横跨框**

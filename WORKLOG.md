@@ -3172,3 +3172,35 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/components/pip/pip-types.ts` - PipToMainMessage TASK_TOGGLE 增加 newStatus 字段
 - `src/components/pip/PiPMiniApp.ts` - handleToggleTask 发消息携带 newStatus
 - `src/components/pip/PiPManager.ts` - TASK_TOGGLE handler 从单纯 invalidate 改为乐观更新 + invalidate
+
+## 2026-05-16: 项目文档全面审计与修复
+
+### 改动内容
+- docs/ARCHITECTURE.md：修正 IS_EDGE 路径数量(21+→38)、PiP 系统缺失、月度路由同步声明错误、"记住我30天"不存在、双 NextAuth 配置、reshapeTodo 非共享而是内联重复、User.securityAnswerAttempts 类型(Int?→Int @default(0))、toast 库(sonner)、缺失目录(pip/、DayViewFilter)、API 路由(inbox/time-entries)、schema @@map/@@index/@onDelete、节假日备源(ailcc.com)、环境变量
+- docs/API.md：修正认证描述(仅Session→Bearer+Session双支持)、6 个缺失端点、toggle 行为描述、filter 必填参数、batch update 字段、API keys 约束、inbox includeConverted、categories/levels todoCount
+- docs/DEPLOYMENT.md：删除不存在 d1-schema.sql 引用、修正 db:migrate 误导、添加 NODE_ENV 说明、修正 NEXTAUTH_URL 重复设置、修正 dev:cf 双重构建、添加 preview:cf 缺少 nodejs_compat 说明
+- CLAUDE.md：修正 Prisma 导入模式(生产用 await getDb)、修正 Todo 日期(DateTime而非String)、新增 time-entries 端点、pip 目录、NEXTAUTH_URL、dev:cf/build:cf/deploy:cf 命令
+- README.md：新增 PiP 功能、pip 目录、Todo in_progress 状态、RecurrenceRule 频率值
+- prisma/schema.prisma：修正 password 和 securityAnswer 注释(bcrypt→PBKDF2)
+- docs/TODO_PLAN.md：修正 RecurrenceRule schema 片段(String→DateTime、频率大小写、byDay 格式)
+- docs/features/README.md：修正 Next.js 版本(16→15.2.4)、标注 4 个提案为未实现
+- docs/CLOUDFLARE_MIGRATION.md：标注 PostgreSQL 内容废弃、修正 wrangler.toml、修正项目名(todolist-cf)
+- docs/CLOUDFLARE_EDGE_MIGRATION_PLAN.md：标注 Plan A 未采用、修正 db.ts 代码样本、标注 @prisma/adapter-pg 不在 package.json
+- docs/CLOUDFLARE_MIGRATION_GUIDE.md：升级过时警告、修正项目名、修正 wrangler.toml、补全 edge runtime 文件列表、删除 Neon 引用、标注图片 loader 改为 unoptimized
+- docs/CROSS_DAY_SPAN_DESIGN.md：添加实现状态警告（10 个提议文件全部不存在）
+- docs/TEST_CASES.md：修正 TC-1.2 注释（数据层面可执行，不依赖未实现的视觉组件）
+
+### 修改的文件
+- `docs/ARCHITECTURE.md` - 14 项修正
+- `docs/API.md` - 11 项修正
+- `docs/DEPLOYMENT.md` - 7 项修正
+- `CLAUDE.md` - 7 项修正
+- `README.md` - 4 项修正
+- `prisma/schema.prisma` - 2 项注释修正
+- `docs/TODO_PLAN.md` - 3 项修正
+- `docs/features/README.md` - 2 项修正
+- `docs/CLOUDFLARE_MIGRATION.md` - 多项修正
+- `docs/CLOUDFLARE_EDGE_MIGRATION_PLAN.md` - 多项修正
+- `docs/CLOUDFLARE_MIGRATION_GUIDE.md` - 多项修正
+- `docs/CROSS_DAY_SPAN_DESIGN.md` - 1 项修正
+- `docs/TEST_CASES.md` - 1 项修正

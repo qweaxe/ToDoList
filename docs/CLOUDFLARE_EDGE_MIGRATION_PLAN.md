@@ -27,7 +27,9 @@ polyfill 方案不可行，必须从根本上替换这两个依赖。
 
 ---
 
-## Plan A：next-auth v5 + Prisma edge adapter（继续使用 Supabase）
+## Plan A：next-auth v5 + Prisma edge adapter（继续使用 Supabase） — 未采用，仅为历史参考
+
+> **重要**：Plan A（Supabase/PostgreSQL）最终未被采用。以下 Plan A 详细内容（A1、A2）纯属历史参考，实际项目已切换到 Plan B（D1/SQLite）。不要按照 Plan A 步骤操作。`@prisma/adapter-pg` 未安装，package.json 中只有 `@prisma/adapter-d1`。
 
 ### A1. 升级 next-auth v4 → v5
 
@@ -144,8 +146,10 @@ npm install @prisma/adapter-pg pg
 npm install -D @types/pg
 ```
 
-> ⚠️ 不确定项：Cloudflare Workers 上的 WebSocket pg 连接需要验证。  
+> ⚠️ 不确定项：Cloudflare Workers 上的 WebSocket pg 连接需要验证。
 > 备选方案：若 `@prisma/adapter-pg` 不工作，尝试 `@prisma/adapter-neon` + Supabase 的 Neon 兼容端点（Supabase 支持 Neon 协议）。
+
+> **重要**：以上依赖为 Plan A 所需，实际项目中未安装。`@prisma/adapter-pg` 不在 package.json 中——项目使用的是 Plan B 的 `@prisma/adapter-d1`。不要安装这些依赖。
 
 **2. 更新 `prisma/schema.prisma`**
 ```prisma
@@ -228,7 +232,7 @@ npx wrangler d1 create todolist-db
 [[d1_databases]]
 binding = "DB"
 database_name = "todolist-db"
-database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # 替换为 wrangler d1 create 返回的实际值
 ```
 
 ### B2. 安装依赖
@@ -253,18 +257,53 @@ datasource db {
 
 ### B4. 更新 `src/lib/db.ts`
 
+> **注意**：以下为最终实际实施的 db.ts 代码，使用 async `getDb()` 自动检测开发/edge 环境。
+
 ```typescript
-import { PrismaClient } from "@prisma/client";
-import { PrismaD1 } from "@prisma/adapter-d1";
+import { PrismaClient } from '@prisma/client';
+import { PrismaD1 } from '@prisma/adapter-d1';
 
 // D1 binding 通过 Cloudflare env 注入
-export function createDb(d1Binding: D1Database) {
-  const adapter = new PrismaD1(d1Binding);
+export function createDb(d1: any) {
+  const adapter = new PrismaD1(d1);
   return new PrismaClient({ adapter });
 }
+
+// 开发环境: 使用本地 SQLite (PrismaClient 直连)
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+function getDevDb(): PrismaClient {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      log: ['query', 'error', 'warn'],
+    });
+  }
+  return globalForPrisma.prisma;
+}
+
+/**
+ * Get database client — 自动检测环境
+ * - 开发环境: 使用本地 SQLite (PrismaClient)
+ * - 生产 edge 环境: 使用 D1 binding (getRequestContext)
+ */
+export async function getDb(): Promise<PrismaClient> {
+  if (process.env.NODE_ENV === 'development') {
+    return getDevDb();
+  }
+  const { getRequestContext } = await import('@cloudflare/next-on-pages');
+  const { env } = getRequestContext();
+  return createDb(env.DB);
+}
+
+// 开发环境便捷导出
+export const db = process.env.NODE_ENV === 'development'
+  ? getDevDb()
+  : (null as unknown as PrismaClient);
 ```
 
-> ⚠️ D1 方案的最大问题：API 路由需要访问 `env.DB`（D1 binding），这在 Next.js App Router 中需要特殊处理（通过 `getRequestContext()` 从 `@cloudflare/next-on-pages` 获取）。
+> ⚠️ D1 方案的最大问题（已解决）：API 路由需要访问 `env.DB`（D1 binding），已通过 `getRequestContext()` 从 `@cloudflare/next-on-pages` 获取并封装在 `getDb()` 函数中。
 
 ### B5. 数据迁移
 

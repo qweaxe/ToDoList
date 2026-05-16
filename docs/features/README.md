@@ -2,6 +2,8 @@
 
 本目录包含 ToDoList 项目的功能扩展实现方案文档。
 
+> **注意**：01-task-tags、02-task-templates、03-smart-reminders、04-search-filter 均为 **未实现提案**，这些功能目前尚未开发，仅作为规划参考。
+
 ## 文档列表
 
 | 序号 | 功能 | 文档 | 工作量 |
@@ -87,7 +89,7 @@
 
 所有功能方案均基于项目现有技术栈：
 
-- **框架**: Next.js 16 (App Router) + TypeScript
+- **框架**: Next.js 15.2.4 (App Router) + TypeScript
 - **数据库**: Cloudflare D1 (SQLite) + Prisma ORM
 - **状态管理**: TanStack Query + Zustand
 - **UI**: Tailwind CSS 4 + shadcn/ui

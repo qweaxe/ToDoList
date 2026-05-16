@@ -31,22 +31,26 @@
 
 ---
 
+> **严重过时警告**：本文档"二、技术架构对比"、"四、关键改造点"等章节仍引用 Supabase PostgreSQL，但项目已完全切换到 SQLite/D1。以下 PostgreSQL 相关内容仅为历史参考，**切勿直接使用**。实际架构为：用户 → Cloudflare Edge → D1 (SQLite)。
+
 ## 二、技术架构对比
 
-### 2.1 当前架构 (Vercel)
+> **注意**：以下架构图中的 Supabase PostgreSQL 仅为原计划内容，实际已替换为 Cloudflare D1 (SQLite)。
+
+### 2.1 当前架构 (Vercel) — 原计划（已过时）
 ```
-用户 → Vercel Edge (香港/新加坡) → Supabase PostgreSQL
+用户 → Vercel Edge (香港/新加坡) → Supabase PostgreSQL  ← 已废弃，现为 SQLite
          ↓
     Next.js App Router
     (SSR + API Routes)
 ```
 
-### 2.2 目标架构 (Cloudflare)
+### 2.2 目标架构 (Cloudflare) — 实际架构
 ```
-用户 → Cloudflare Edge (全球节点) → Supabase PostgreSQL
+用户 → Cloudflare Edge (全球节点) → D1 (SQLite) ← 实际使用
          ↓                         ↓
     Pages (静态)              Workers (API)
-    Workers (SSR)             D1 (可选缓存)
+    Workers (SSR)             D1 binding 注入
 ```
 
 ---
@@ -64,7 +68,7 @@ npm install -g wrangler
 wrangler login
 
 # 创建 Pages 项目
-wrangler pages project create todolist
+wrangler pages project create todolist-cf
 ```
 
 #### Step 1.2：配置项目
@@ -74,19 +78,22 @@ bun add @cloudflare/next-on-pages
 ```
 
 #### Step 1.3：创建 wrangler.toml
+> **注意**：以下为实际使用的 wrangler.toml 配置，项目名、数据库名和 compatibility_flags 已修正。
+
 ```toml
-name = "todolist"
-compatibility_date = "2024-01-01"
+name = "todolist-cf"
+compatibility_date = "2026-04-10"
+compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
 [vars]
-NEXTAUTH_SECRET = ""
-NEXTAUTH_URL = ""
+NEXTAUTH_URL = "https://todolist-cf.pages.dev"
+# NEXTAUTH_SECRET 需通过 Cloudflare Dashboard 设置（类型选 "Secret"）
 
 [[d1_databases]]
 binding = "DB"
-database_name = "todolist-cache"
-database_id = "xxx"
+database_name = "todolist-db"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # 替换为实际值
 ```
 
 ---
@@ -215,8 +222,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 # 使用 Cloudflare 适配器构建
 npx @cloudflare/next-on-pages
 
-# 或添加到 package.json
-# "build:cf": "npx @cloudflare/next-on-pages"
+# package.json 中已有 build:cf 脚本
+# 注意：dev:cf 脚本内部已包含 build:cf，无需单独运行
+bun run build:cf
 ```
 
 #### Step 3.2：本地测试
@@ -241,25 +249,27 @@ wrangler pages dev .vercel/output/static
 ### 阶段四：部署上线 (Day 5)
 
 #### Step 4.1：配置环境变量
+> **注意**：项目已使用 D1 (SQLite)，`DIRECT_URL` 已废弃不再需要。D1 通过 Cloudflare binding 注入，不需要 `DATABASE_URL` 环境变量。
+
 ```bash
-# 在 Cloudflare Dashboard 设置
-wrangler pages secret put DATABASE_URL
-wrangler pages secret put DIRECT_URL
-wrangler pages secret put NEXTAUTH_SECRET
-wrangler pages secret put NEXTAUTH_URL
+# 在 Cloudflare Dashboard 设置（仅需以下变量）
+wrangler pages secret put NEXTAUTH_SECRET --project-name=todolist-cf
+wrangler pages secret put NEXTAUTH_URL --project-name=todolist-cf
+# DATABASE_URL 不需要 — D1 通过 binding 自动注入
+# DIRECT_URL 已废弃 — 不再使用 PostgreSQL
 ```
 
 #### Step 4.2：部署
 ```bash
 # 部署到 Cloudflare Pages
-wrangler pages deploy .vercel/output/static --project-name=todolist
+wrangler pages deploy .vercel/output/static --project-name=todolist-cf
 ```
 
 #### Step 4.3：配置自定义域名
 ```bash
 # 在 Cloudflare Dashboard 添加域名
 # 或使用命令行
-wrangler pages domain add yourdomain.com --project-name=todolist
+wrangler pages domain add yourdomain.com --project-name=todolist-cf
 ```
 
 ---
@@ -289,7 +299,7 @@ wrangler pages domain add yourdomain.com --project-name=todolist
 | `src/lib/db.ts` | 环境适配 | 🔴 高 |
 | `src/lib/auth.ts` | 边缘适配 | 🔴 高 |
 | `src/app/api/**/route.ts` | 添加 runtime | 🟡 中 |
-| `src/lib/image-loader.ts` | 新建文件 | 🟡 中 |
+| `src/lib/password.ts` | 新建文件 (PBKDF2) | 🟡 中 | ← 已实施，取代了 image-loader
 | `wrangler.toml` | 新建配置 | 🔴 高 |
 | `package.json` | 添加依赖 | 🔴 高 |
 
@@ -297,8 +307,8 @@ wrangler pages domain add yourdomain.com --project-name=todolist
 
 | 问题 | 解决方案 |
 |------|---------|
-| bcryptjs 不兼容 | 使用 Web Crypto API 或 argon2 |
-| Prisma 连接池 | 使用 Supabase Pooler 或 Prisma Accelerate |
+| bcryptjs 不兼容 | 使用 Web Crypto API (PBKDF2) — 已实施 |
+| Prisma 连接池 | 使用 @prisma/adapter-d1 + D1 binding — 已实施 |
 | 文件上传 | 使用 Cloudflare R2 |
 | Session 存储 | 使用 JWT 或 Cloudflare KV |
 | 实时功能 | 使用 Cloudflare Durable Objects |

@@ -337,12 +337,12 @@
 ```prisma
 model RecurrenceRule {
   id        String   @id @default(cuid())
-  frequency String   // daily, weekly, monthly, custom
+  frequency String   // DAILY, WEEKLY, MONTHLY, YEARLY, CUSTOM
   interval  Int      @default(1)
-  byDay     String?  // JSON array: ["MON", "WED", "FRI"]
+  byDay     String?  // JSON 数组: [0,1,2,3,4,5,6] 表示周日到周六
   cronExpr  String?  // 自定义 cron 表达式
-  startDate String
-  endDate   String?
+  startDate DateTime
+  endDate   DateTime?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

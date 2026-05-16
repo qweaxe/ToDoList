@@ -11,6 +11,7 @@
 ```bash
 # 开发
 bun run dev              # 启动开发服务器（端口 3000）
+bun run dev:cf           # Cloudflare 本地开发
 
 # 数据库 (Prisma)
 bun run db:generate      # 生成 Prisma Client（修改 schema 后必须执行）
@@ -20,6 +21,8 @@ bun run db:reset         # 重置数据库（删除所有数据）
 
 # 构建与生产
 bun run build            # 生产构建（包含 prisma generate + migrate deploy）
+bun run build:cf         # Cloudflare 生产构建
+bun run deploy:cf        # 部署到 Cloudflare Pages
 bun run start            # 启动生产服务器
 bun run lint             # 运行 ESLint
 ```
@@ -37,13 +40,14 @@ bun run lint             # 运行 ESLint
 
 - `src/app/api/` - 遵循 Next.js App Router 约定的 API 路由
 - `src/components/views/` - 主要视图组件（DayView、CalendarView、WeeklyKanban 等）
+- `src/components/pip/` - 画中画/浮动面板组件（FloatingPanel 等）
 - `src/hooks/use-view-store.ts` - 用于视图/导航状态的 Zustand store
 - `src/services/recurrence-service.ts` - 周期任务生成逻辑
 - `prisma/schema.prisma` - 数据库模型
 
 ### 数据库模型
 
-- **Todo** - 主任务表，日期以 ISO 字符串格式存储 (YYYY-MM-DD)
+- **Todo** - 主任务表，日期以 DateTime 类型存储，应用层格式化为 YYYY-MM-DD 字符串使用
 - **Category** - 任务分类，包含 emoji 和颜色
 - **Level** - 优先级等级（高/中/低，值为 3/2/1）
 - **RecurrenceRule** - 周期任务规则（DAILY/WEEKLY/MONTHLY/YEARLY/CUSTOM）
@@ -97,6 +101,11 @@ bun run lint             # 运行 ESLint
 - `/api/reminders/[id]` - 删除提醒
 - `/api/reminders/[id]/sent` - 标记已发送
 
+**时间记录：**
+- `/api/time-entries` - 时间记录列表/创建
+- `/api/time-entries/daily?date=YYYY-MM-DD` - 获取指定日期的时间记录
+- `/api/time-entries/[id]` - 更新/删除时间记录
+
 **认证：**
 - `/api/auth/register` - 用户注册
 - `/api/auth/[...nextauth]` - NextAuth 端点
@@ -135,7 +144,8 @@ bun run lint             # 运行 ESLint
 - 避免直接操作 `Date` 对象
 
 ### Prisma Client
-- 从 `@/lib/db.ts` 导入: `import { db } from '@/lib/db'`
+- 生产环境路由使用异步模式: `const db = await getDb()`（来自 `@/lib/db.ts`）
+- 开发便利模式下可使用同步导入: `import { db } from '@/lib/db'`（注意：此模式在 Edge/生产环境不工作）
 - 开发模式会记录 queries/errors/warnings 日志
 - 使用全局单例模式防止连接池耗尽
 
@@ -166,6 +176,7 @@ export async function POST(request: Request) {
 `.env.local` 中需要配置:
 - `DATABASE_URL` - SQLite/D1 数据库连接
 - `NEXTAUTH_SECRET` - JWT 签名密钥
+- `NEXTAUTH_URL` - 应用基础 URL（如 `http://localhost:3000`，生产环境必须配置）
 - `ADMIN_USER_IDS` - 管理员用户 ID（逗号分隔，可选）
 
 ## 提交代码工作流

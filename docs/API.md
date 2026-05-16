@@ -61,8 +61,8 @@ Content-Type: application/json
 **请求体**
 ```json
 {
-  "name": "My Plugin",
-  "expiresInDays": 30  // 可选，不设置则永不过期
+  "name": "My Plugin",     // 最多 50 个字符
+  "expiresInDays": 30      // 可选，范围 1-365，不设置则永不过期
 }
 ```
 
@@ -293,7 +293,7 @@ Content-Type: application/json
 | isMilestone | boolean | 否 | 是否为里程碑 |
 | isCycleTask | boolean | 否 | 是否为周期任务 |
 | priority | number | 否 | 优先级（默认 0） |
-| estimatedDuration | number | 否 | 预计耗时（分钟），如 60=1小时、480=8小时 |
+| estimatedDuration | number | 否 | 预计耗时（分钟），最大 525600（约1年），如 60=1小时、480=8小时 |
 | completedAt | string | 否 | 完成日期时间 (ISO datetime)，通常由 toggle 端点自动设置 |
 | subTasks | array | 否 | 子任务列表 |
 | recurrenceRule | object | 否 | 周期规则（仅当 isCycleTask=true 时有效） |
@@ -386,7 +386,7 @@ Authorization: Bearer <your_token>
 
 ### 切换任务状态
 
-在 `pending` 和 `completed` 之间切换任务状态。
+切换任务完成状态：已完成→pending，其他状态→completed。
 
 **请求**
 ```
@@ -463,6 +463,9 @@ Content-Type: application/json
 | status | string | 状态：pending/in_progress/completed |
 | categoryId | string | 分类 ID（null 表示移除分类） |
 | levelId | string | 等级 ID（null 表示移除等级） |
+| completedAt | string | 完成日期时间 (ISO datetime)，通常配合 status=completed 使用 |
+| startDate | string | 开始日期 (YYYY-MM-DD) |
+| dueDate | string | 截止日期 (YYYY-MM-DD) |
 
 **响应**
 ```json
@@ -618,7 +621,7 @@ Authorization: Bearer <your_token>
 
 ### 获取日视图数据
 
-> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
+> **注意**：此端点支持 Bearer Token + Session Cookie 认证。
 
 ```
 GET /api/todos/daily?date=2026-04-02
@@ -626,7 +629,7 @@ GET /api/todos/daily?date=2026-04-02
 
 ### 获取周视图数据
 
-> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
+> **注意**：此端点支持 Bearer Token + Session Cookie 认证。
 
 ```
 GET /api/todos/weekly?date=2026-03-30
@@ -634,7 +637,7 @@ GET /api/todos/weekly?date=2026-03-30
 
 ### 获取月视图数据
 
-> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
+> **注意**：此端点支持 Bearer Token + Session Cookie 认证。
 
 ```
 GET /api/todos/monthly?year=2026&month=4
@@ -642,7 +645,7 @@ GET /api/todos/monthly?year=2026&month=4
 
 ### 获取年度统计
 
-> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
+> **注意**：此端点支持 Bearer Token + Session Cookie 认证。
 
 ```
 GET /api/todos/yearly?year=2026
@@ -650,18 +653,27 @@ GET /api/todos/yearly?year=2026
 
 ### 获取分类列表
 
-> **注意**：此端点仅支持 Session 认证（Cookie-based），不支持 Bearer Token。
+> **注意**：此端点支持 Bearer Token + Session Cookie 认证。
 
 ```
 GET /api/categories
 ```
 
+**响应字段说明**
+
+响应中每个分类对象包含 `todoCount` 字段，表示该分类下的任务数量。
+
 ### 获取等级列表
+
+> **注意**：此端点支持 Bearer Token + Session Cookie 认证。
 
 ```
 GET /api/levels
 ```
-> 此接口无需认证
+
+**响应字段说明**
+
+响应中每个等级对象包含 `todoCount`（该等级下的任务数量）和 `description`（等级描述）字段。
 
 ---
 
@@ -669,29 +681,30 @@ GET /api/levels
 
 以下端点组已在应用中实现，此处仅作概览，详细文档后续补充。
 
-### 认证端点（仅 Session 认证）
+### 认证端点
+
+| 端点 | 说明 | 认证方式 |
+|------|------|----------|
+| POST /api/auth/register | 用户注册 | 无需认证（公开端点） |
+| POST /api/auth/change-password | 修改密码 | 支持 Bearer Token + Session Cookie 认证 |
+| POST /api/auth/forgot-password | 忘记密码（发送重置邮件） | 无需认证（公开端点） |
+| POST /api/auth/reset-password | 重置密码 | 无需认证（公开端点） |
+| GET/POST /api/auth/security-question | 密保问题管理 | 支持 Bearer Token + Session Cookie 认证 |
+| DELETE /api/auth/security-question | 删除密保问题 | 支持 Bearer Token + Session Cookie 认证 |
+| GET/POST /api/auth/[...nextauth] | NextAuth 登录/登出等端点 | Session Cookie 认证（NextAuth 专用） |
+
+### 捕获箱端点（支持 Bearer Token + Session Cookie 认证）
 
 | 端点 | 说明 |
 |------|------|
-| POST /api/auth/register | 用户注册 |
-| POST /api/auth/change-password | 修改密码 |
-| POST /api/auth/forgot-password | 忘记密码（发送重置邮件） |
-| POST /api/auth/reset-password | 重置密码 |
-| GET/POST /api/auth/security-question | 密保问题管理 |
-| GET/POST /api/auth/[...nextauth] | NextAuth 登录/登出等端点 |
-
-### 捕获箱端点（仅 Session 认证）
-
-| 端点 | 说明 |
-|------|------|
-| GET /api/inbox | 获取捕获箱列表 |
+| GET /api/inbox | 获取捕获箱列表（支持 `includeConverted` 查询参数，默认不包含已转化条目） |
 | POST /api/inbox | 创建捕获箱条目 |
 | GET /api/inbox/count | 获取未处理条目数 |
 | PUT /api/inbox/{id} | 更新捕获箱条目 |
 | DELETE /api/inbox/{id} | 删除捕获箱条目 |
 | POST /api/inbox/{id}/convert | 将捕获箱条目转化为任务 |
 
-### 提醒端点（仅 Session 认证）
+### 提醒端点（支持 Bearer Token + Session Cookie 认证）
 
 | 端点 | 说明 |
 |------|------|
@@ -699,7 +712,7 @@ GET /api/levels
 | DELETE /api/reminders/{id} | 删除提醒 |
 | POST /api/reminders/{id}/sent | 标记提醒已发送 |
 
-### 分类 CRUD 端点（仅 Session 认证）
+### 分类 CRUD 端点（支持 Bearer Token + Session Cookie 认证）
 
 | 端点 | 说明 |
 |------|------|
@@ -713,11 +726,28 @@ GET /api/levels
 
 | 端点 | 说明 |
 |------|------|
-| GET /api/todos/filter | 按分类/等级筛选任务 |
+| GET /api/todos/filter?type=category&id=xxx&year=2026 | 按分类/等级筛选任务（3个必填查询参数：type=category|level, id=分类/等级ID, year=年份） |
 | GET /api/todos/quarterly | 获取季度里程碑任务 |
 | PUT /api/todos/{id}/subtask | 更新任务子任务 |
 | GET /api/todos/{id}/reminders | 获取任务关联提醒 |
 | POST /api/todos/{id}/reminders | 为任务创建提醒 |
+
+### 种子数据与管理端点
+
+| 端点 | 说明 | 认证方式 |
+|------|------|----------|
+| GET /api/seed | 初始化默认分类和等级种子数据 | 支持 Bearer Token + Session Cookie 认证 |
+| GET /api/holidays?year=YYYY&action=preload|refresh | 获取年度节假日数据（action: preload 缓存到数据库, refresh 重新获取并更新缓存） | 支持 Bearer Token + Session Cookie 认证 |
+| GET /api/admin/check | 检查管理员权限 | 支持 Bearer Token + Session Cookie 认证 |
+| GET /api/admin/holidays | 获取节假日缓存管理 | 支持 Bearer Token + Session Cookie 认证 |
+| POST /api/admin/holidays | 更新节假日缓存 | 支持 Bearer Token + Session Cookie 认证 |
+| GET /api | 健康检查（返回服务状态） | 无需认证 |
+
+### 时间记录详情端点
+
+| 端点 | 说明 |
+|------|------|
+| GET /api/time-entries/{id} | 获取单条时间记录详情 |
 
 ---
 
