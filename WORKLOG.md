@@ -3213,3 +3213,19 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 ### 修改的文件
 - `src/components/pip/PiPManager.ts` - 新增实例变量保存初始数据，PIP_READY handler 发送 INIT 消息
 - `src/components/pip/PiPMiniApp.ts` - fetchDailyTodos 兜底增加 categories/levels API 请求
+
+## 2026-05-17: PiP 悬浮窗三个问题修复
+
+### 改动内容
+- 移除 PiP 悬浮窗多余的 close 按钮（浏览器自带关闭功能）
+- 主窗口创建任务后自动同步到 PiP 悬浮窗（新增 TASK_CREATED 消息类型和 sendDataRefreshToPipNewTask 方法）
+- PiP 悬浮窗支持展开/收起子任务：点击标题展开子任务列表，子任务 checkbox 可单独切换
+- fetchDailyTodos 增加 subTasks 字段解析，todoToPipTask 也同步解析子任务 JSON
+
+### 修改的文件
+- `src/components/pip/PiPMiniApp.ts` - 移除 close 按钮 DOM 和事件、增加子任务展开/收起交互、增加子任务 checkbox toggle、fetchDailyTodos 增加 subTasks 解析
+- `src/components/pip/PiPManager.ts` - 新增 sendDataRefreshToPipNewTask 方法
+- `src/components/pip/pip-types.ts` - 新增 PipSubTask 接口、PipTaskItem 增加 subTasks 字段、MainToPipMessage 增加 TASK_CREATED 类型
+- `src/components/pip/broadcast-sync.ts` - todoToPipTask 解析 subTasks JSON
+- `src/components/pip/pip-styles.ts` - 移除 .pip-close-btn CSS、新增子任务相关样式
+- `src/hooks/use-todos.ts` - useCreateTodo onSuccess 中同步新任务到 PiP

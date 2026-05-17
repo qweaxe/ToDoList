@@ -133,6 +133,13 @@ export class PiPManager {
     }
   }
 
+  // 发送新任务到 PiP 窗口
+  sendDataRefreshToPipNewTask(task: PipTaskItem) {
+    if (this.syncChannel && this.isOpen()) {
+      this.syncChannel.sendToPip({ type: 'TASK_CREATED', task });
+    }
+  }
+
   // 聚焦 PiP 窗口（供置顶按钮调用）
   focusPipWindow() {
     if (this.pipWindow && !this.pipWindow.closed) {

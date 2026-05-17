@@ -108,26 +108,6 @@ body {
   background: var(--pip-hover);
 }
 
-.pip-close-btn {
-  background: none;
-  border: none;
-  color: var(--pip-muted);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  font-size: 16px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-}
-
-.pip-close-btn:hover {
-  background: var(--pip-hover);
-  color: var(--pip-text);
-}
 
 .pip-stats {
   padding: 6px 12px;
@@ -161,6 +141,65 @@ body {
 
 .pip-task-item:hover {
   background: var(--pip-hover);
+}
+
+.pip-subtask-indicator {
+  font-size: 11px;
+  color: var(--pip-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0 2px;
+}
+
+.pip-task-item.has-subtasks .pip-task-title {
+  cursor: pointer;
+}
+
+.pip-subtask-list {
+  padding: 4px 12px 4px 40px;
+  border-top: 1px solid var(--pip-border);
+}
+
+.pip-subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.pip-subtask-item.done span {
+  color: var(--pip-muted);
+  text-decoration: line-through;
+}
+
+.pip-subtask-checkbox {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--pip-border);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.pip-subtask-checkbox:checked {
+  background: var(--pip-success);
+  border-color: var(--pip-success);
+}
+
+.pip-subtask-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  width: 3px;
+  height: 6px;
+  border: solid white;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
 }
 
 .pip-task-item.completed {

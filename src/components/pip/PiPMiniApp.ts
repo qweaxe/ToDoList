@@ -1,7 +1,7 @@
 // PiP 窗口迷你应用 - 纯 vanilla JS，在 PiP 窗口的独立 document 中运行
 // 不使用 React，因为 PiP 窗口无法进行 hydration
 
-import { PipTaskItem, PipCategory, PipLevel } from './pip-types';
+import { PipTaskItem, PipSubTask, PipCategory, PipLevel } from './pip-types';
 import { PipSyncChannel } from './broadcast-sync';
 import { pipStyles } from './pip-styles';
 
@@ -67,7 +67,6 @@ export class PiPMiniApp {
             <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" fill="currentColor"/>
           </svg>
         </button>
-        <button class="pip-close-btn" id="pip-close-btn" title="Close">&#x2715;</button>
       </div>
     `;
     body.appendChild(header);
@@ -111,14 +110,7 @@ export class PiPMiniApp {
     this.categorySelectEl = doc.getElementById('pip-category-select') as HTMLSelectElement;
     this.levelSelectEl = doc.getElementById('pip-level-select') as HTMLSelectElement;
     this.pinBtnEl = doc.getElementById('pip-pin-btn') as HTMLButtonElement;
-    const closeBtn = doc.getElementById('pip-close-btn');
     const dateEl = doc.getElementById('pip-date');
-
-    // 绑定关闭按钮
-    closeBtn?.addEventListener('click', () => {
-      this.syncChannel.sendToMain({ type: 'PIP_CLOSED' });
-      this.pipWindow.close();
-    });
 
     // 绑定置顶按钮
     this.pinBtnEl?.addEventListener('click', () => this.handlePinToggle());
@@ -294,6 +286,28 @@ export class PiPMiniApp {
         this.handleToggleTask(taskId);
       });
     });
+
+    // 绑定标题点击展开/收起子任务
+    const taskTitles = this.taskListEl.querySelectorAll<HTMLElement>('.pip-task-title[data-task-id]');
+    taskTitles.forEach(titleEl => {
+      titleEl.addEventListener('click', () => {
+        const taskId = titleEl.dataset.taskId!;
+        const subtaskList = this.taskListEl!.querySelector<HTMLElement>(`.pip-subtask-list[data-task-id="${taskId}"]`);
+        if (subtaskList) {
+          subtaskList.style.display = subtaskList.style.display === 'none' ? 'block' : 'none';
+        }
+      });
+    });
+
+    // 绑定子任务 checkbox 事件
+    const subtaskCheckboxes = this.taskListEl.querySelectorAll<HTMLInputElement>('.pip-subtask-checkbox');
+    subtaskCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const taskId = cb.dataset.taskId!;
+        const subtaskId = cb.dataset.subtaskId!;
+        this.handleToggleSubTask(taskId, subtaskId, cb.checked);
+      });
+    });
   }
 
   // 渲染单个任务项
@@ -303,13 +317,26 @@ export class PiPMiniApp {
     const levelLabel = task.levelValue === 3 ? 'high' : task.levelValue === 2 ? 'medium' : task.levelValue === 1 ? 'low' : '';
     const levelTag = levelLabel ? `<span class="pip-task-level ${levelLabel}">${task.levelValue === 3 ? 'H' : task.levelValue === 2 ? 'M' : 'L'}</span>` : '';
 
+    const hasSubTasks = task.subTasks && task.subTasks.length > 0;
+    const subTaskIndicator = hasSubTasks ? `<span class="pip-subtask-indicator" data-task-id="${task.id}">${task.subTasks!.filter(s => s.isDone).length}/${task.subTasks!.length}</span>` : '';
+    const subTaskHtml = hasSubTasks ? `<div class="pip-subtask-list" data-task-id="${task.id}" style="display:none;">
+      ${task.subTasks!.map(st => `
+        <div class="pip-subtask-item ${st.isDone ? 'done' : ''}">
+          <input type="checkbox" class="pip-subtask-checkbox" data-task-id="${task.id}" data-subtask-id="${st.id}" ${st.isDone ? 'checked' : ''} />
+          <span>${this.escapeHtml(st.text)}</span>
+        </div>
+      `).join('')}
+    </div>` : '';
+
     return `
-      <div class="pip-task-item ${isCompleted ? 'completed' : ''}">
+      <div class="pip-task-item ${isCompleted ? 'completed' : ''} ${hasSubTasks ? 'has-subtasks' : ''}" data-task-id="${task.id}">
         <input type="checkbox" class="pip-checkbox" data-id="${task.id}" ${isCompleted ? 'checked' : ''} />
         <span class="pip-task-emoji">${emoji}</span>
-        <span class="pip-task-title">${this.escapeHtml(task.title)}</span>
+        <span class="pip-task-title" data-task-id="${task.id}">${this.escapeHtml(task.title)}</span>
+        ${subTaskIndicator}
         ${levelTag}
       </div>
+      ${subTaskHtml}
     `;
   }
 
@@ -369,6 +396,34 @@ export class PiPMiniApp {
     if (!task) return;
     task.status = newStatus as 'pending' | 'completed';
     this.render();
+  }
+
+  // 处理子任务 checkbox 切换
+  private async handleToggleSubTask(taskId: string, subtaskId: string, isChecked: boolean) {
+    const task = this.tasks.find(t => t.id === taskId);
+    if (!task || !task.subTasks) return;
+
+    // 乐观更新
+    const subtask = task.subTasks.find(s => s.id === subtaskId);
+    if (!subtask) return;
+    subtask.isDone = isChecked;
+    this.render();
+
+    // 调用 API
+    try {
+      const res = await fetch(`/api/todos/${taskId}/subtask`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subtaskId, isDone: isChecked }),
+      });
+      if (!res.ok) {
+        subtask.isDone = !isChecked;
+        this.render();
+      }
+    } catch {
+      subtask.isDone = !isChecked;
+      this.render();
+    }
   }
 
   // 处理快速创建任务
@@ -438,12 +493,22 @@ export class PiPMiniApp {
       if (res.ok) {
         const result: any = await res.json();
         if (result.success && result.data) {
+          const parseSubTasks = (raw: string | null | undefined): PipSubTask[] | null => {
+            if (!raw) return null;
+            try {
+              return JSON.parse(raw).map((st: { id: string; text: string; isDone: boolean }) => ({
+                id: st.id, text: st.text, isDone: st.isDone,
+              }));
+            } catch { return null; }
+          };
+
           const pending: PipTaskItem[] = result.data.today.pending.map((t: any) => ({
             id: t.id,
             title: t.title,
             status: 'pending',
             categoryEmoji: t.category?.emoji ?? null,
             levelValue: t.level?.value ?? null,
+            subTasks: parseSubTasks(t.subTasks),
           }));
           const completed: PipTaskItem[] = result.data.today.completed.map((t: any) => ({
             id: t.id,
@@ -451,6 +516,7 @@ export class PiPMiniApp {
             status: 'completed',
             categoryEmoji: t.category?.emoji ?? null,
             levelValue: t.level?.value ?? null,
+            subTasks: parseSubTasks(t.subTasks),
           }));
           this.tasks = [...pending, ...completed];
           this.isLoading = false;

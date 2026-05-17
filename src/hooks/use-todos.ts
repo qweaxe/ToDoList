@@ -172,6 +172,16 @@ export function useCreateTodo() {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['todos'] });
         toast.success('Task created successfully');
+
+        // 同步新任务到 PiP 悬浮窗
+        try {
+          const { getPipManager } = require('@/components/pip/PiPManager');
+          const { todoToPipTask } = require('@/components/pip/broadcast-sync');
+          const pipManager = getPipManager();
+          if (pipManager.isOpen() && result.data) {
+            pipManager.sendDataRefreshToPipNewTask(todoToPipTask(result.data));
+          }
+        } catch {}
       } else {
         toast.error(result.error || 'Creation failed');
       }

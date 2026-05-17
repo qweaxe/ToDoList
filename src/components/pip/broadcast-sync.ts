@@ -1,4 +1,4 @@
-import { SYNC_CHANNEL_NAME, PipTaskItem, MainToPipMessage, PipToMainMessage } from './pip-types';
+import { SYNC_CHANNEL_NAME, PipTaskItem, PipSubTask, MainToPipMessage, PipToMainMessage } from './pip-types';
 
 // 跨窗口数据同步模块
 // 使用 BroadcastChannel API 在主窗口和 PiP 窗口之间通信
@@ -47,12 +47,25 @@ export function todoToPipTask(todo: {
   status: string;
   category: { emoji: string | null } | null;
   level: { value: number } | null;
+  subTasks: string | null;
 }): PipTaskItem {
+  let subTasks: PipSubTask[] | null = null;
+  if (todo.subTasks) {
+    try {
+      subTasks = JSON.parse(todo.subTasks).map((st: { id: string; text: string; isDone: boolean }) => ({
+        id: st.id, text: st.text, isDone: st.isDone,
+      }));
+    } catch {
+      subTasks = null;
+    }
+  }
+
   return {
     id: todo.id,
     title: todo.title,
     status: todo.status === 'completed' ? 'completed' : 'pending',
     categoryEmoji: todo.category?.emoji ?? null,
     levelValue: todo.level?.value ?? null,
+    subTasks,
   };
 }

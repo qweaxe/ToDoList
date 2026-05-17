@@ -7,6 +7,14 @@ export interface PipTaskItem {
   status: 'pending' | 'completed';
   categoryEmoji: string | null;
   levelValue: number | null; // 3=高, 2=中, 1=低
+  subTasks: PipSubTask[] | null;
+}
+
+// 精简子任务结构
+export interface PipSubTask {
+  id: string;
+  text: string;
+  isDone: boolean;
 }
 
 // 精简分类结构
@@ -27,6 +35,7 @@ export interface PipLevel {
 export type MainToPipMessage =
   | { type: 'INIT'; tasks: PipTaskItem[]; date: string; categories: PipCategory[]; levels: PipLevel[]; isDark: boolean }
   | { type: 'TASK_TOGGLE'; taskId: string; newStatus: string }
+  | { type: 'TASK_CREATED'; task: PipTaskItem }
   | { type: 'DATA_REFRESH'; tasks: PipTaskItem[]; categories: PipCategory[]; levels: PipLevel[] }
   | { type: 'THEME_CHANGE'; isDark: boolean }
   | { type: 'PING' };
