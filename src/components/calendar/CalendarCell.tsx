@@ -28,6 +28,7 @@ interface CalendarCellProps {
   maxVisibleTasks?: number;
   onClick?: () => void;
   onTaskClick?: (taskId: string) => void;
+  onMoreClick?: () => void;
 }
 
 // 获取任务等级对应的颜色（使用 value 而非 name，支持 i18n）
@@ -43,9 +44,10 @@ export function CalendarCell({
   isCurrentMonth,
   tasks,
   holiday,
-  maxVisibleTasks = 3,
+  maxVisibleTasks = 4,
   onClick,
   onTaskClick,
+  onMoreClick,
 }: CalendarCellProps) {
   const t = useTranslations();
   const isTodayDate = isToday(date);
@@ -69,15 +71,13 @@ export function CalendarCell({
     });
   }, [tasks]);
 
-  // 移动端最多显示 2 个任务，桌面端显示 3 个
-  const actualMaxVisible = maxVisibleTasks;
-  const visibleTasks = sortedTasks.slice(0, actualMaxVisible);
-  const hiddenCount = sortedTasks.length - actualMaxVisible;
+  const visibleTasks = sortedTasks.slice(0, maxVisibleTasks);
+  const hiddenCount = sortedTasks.length - maxVisibleTasks;
 
   return (
     <div
       className={cn(
-        'min-w-[68px] min-h-[80px] sm:min-w-0 sm:min-h-[80px] lg:min-h-[100px] p-1.5 sm:p-2 border rounded-lg cursor-pointer transition-colors',
+        'min-w-[68px] min-h-[80px] sm:min-w-0 sm:min-h-[90px] lg:min-h-[120px] p-2 sm:p-2.5 border rounded-lg cursor-pointer transition-colors',
         'hover:bg-muted/50 hover:border-primary/50',
         !isCurrentMonth && 'bg-muted/20 opacity-40',
         isCurrentMonth && 'bg-card hover:shadow-sm',
@@ -116,14 +116,14 @@ export function CalendarCell({
         )}
       </div>
 
-      {/* 任务列表 - 即使是非当前月也显示任务 */}
+      {/* 任务列表 - 支持滚动查看更多 */}
       {tasks.length > 0 && (
-        <div className="space-y-0.5 overflow-hidden">
+        <div className="space-y-0.5 overflow-y-auto max-h-[40px] sm:max-h-[50px] lg:max-h-[70px] calendar-cell-scroll">
           {visibleTasks.map((task) => (
             <div
               key={task.id}
               className={cn(
-                'text-[10px] sm:text-xs truncate px-1 sm:px-1.5 py-0.5 rounded cursor-pointer transition-colors',
+                'text-[11px] sm:text-xs truncate px-1.5 sm:px-2 py-0.5 rounded cursor-pointer transition-colors',
                 'hover:bg-muted/80',
                 task.status === 'completed'
                   ? 'line-through text-muted-foreground bg-muted/30'
@@ -144,9 +144,15 @@ export function CalendarCell({
             </div>
           ))}
 
-          {/* 更多任务提示 */}
+          {/* 更多任务提示 - 可点击打开完整任务列表 */}
           {hiddenCount > 0 && (
-            <div className="text-[9px] sm:text-[10px] text-muted-foreground px-1 sm:px-1.5 py-0.5 bg-muted/10 rounded">
+            <div
+              className="text-[9px] sm:text-[10px] text-muted-foreground hover:text-primary px-1.5 sm:px-2 py-0.5 bg-muted/10 rounded cursor-pointer transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoreClick?.();
+              }}
+            >
               +{hiddenCount} {t('calendar.more')}
             </div>
           )}

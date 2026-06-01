@@ -88,7 +88,7 @@ function DraggableTaskCard({ task, onEdit, onToggle, isDragging }: DraggableTask
       ref={setNodeRef}
       style={style}
       className={cn(
-        'text-xs p-1.5 rounded cursor-pointer transition-colors group relative',
+        'text-xs p-2 rounded cursor-pointer transition-colors group relative',
         'hover:bg-muted/80',
         isCompleted
           ? 'bg-muted/30 text-muted-foreground'
@@ -118,6 +118,9 @@ function DraggableTaskCard({ task, onEdit, onToggle, isDragging }: DraggableTask
         >
           <GripVertical className="h-3 w-3 text-muted-foreground" />
         </div>
+        {task.category?.emoji && (
+          <span className="text-xs flex-shrink-0">{task.category.emoji}</span>
+        )}
         {task.level && (
           <span
             className={cn(
@@ -130,8 +133,14 @@ function DraggableTaskCard({ task, onEdit, onToggle, isDragging }: DraggableTask
             )}
           />
         )}
-        <span className={cn('truncate flex-1', isCompleted && 'line-through')}>{task.title}</span>
+        <span className={cn('flex-1 line-clamp-2 leading-tight', isCompleted && 'line-through')}>{task.title}</span>
       </div>
+      {(task.isCycleTask || task.isMilestone) && (
+        <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
+          {task.isCycleTask && <span>🔄</span>}
+          {task.isMilestone && <span>🎯</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -219,7 +228,7 @@ function DateColumn({
       </div>
 
       {/* 任务列表 */}
-      <div className="p-1 sm:p-2 space-y-1 max-h-[180px] sm:max-h-[260px] overflow-y-auto">
+      <div className="p-1 sm:p-2 space-y-1 max-h-[200px] sm:max-h-[360px] md:max-h-[500px] overflow-y-auto week-task-list">
         {tasks.length === 0 ? (
           <div
             className="text-xs text-center text-muted-foreground py-4 cursor-pointer hover:text-foreground"
@@ -484,7 +493,7 @@ export function WeekView() {
   }
 
   return (
-    <div className="container mx-auto py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
+    <div className="container mx-auto py-4 sm:py-6 max-w-full px-4 sm:px-6">
       {/* 标题和控制区 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
@@ -582,7 +591,7 @@ export function WeekView() {
       >
         {/* 周视图网格 - 移动端支持横向滚动 */}
         <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2">
-          <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[700px] sm:min-w-0">
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2.5 min-w-[700px] sm:min-w-0">
             {/* 星期头部 */}
             {DAY_NAMES.map((day, index) => (
               <div

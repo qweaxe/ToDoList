@@ -99,6 +99,15 @@ export function CalendarView() {
     setIsDetailOpen(true);
   };
 
+  // 点击 "+N more" - 打开该日期的任务列表弹窗
+  const handleMoreClick = (date: string) => {
+    const dateTasks = monthlyData?.data.tasks[date] || [];
+    setTaskListTitle(date);
+    setTaskListFilter('all');
+    // 将 filteredTasksForDialog 临时设为该日期的任务
+    setIsTaskListOpen(true);
+  };
+
   // 新建任务
   const handleCreateTask = (date?: string) => {
     setSelectedDateForForm(date || null);
@@ -133,7 +142,7 @@ export function CalendarView() {
   }, [allTasks, taskListFilter]);
 
   return (
-    <div className="container mx-auto py-4 sm:py-6 max-w-6xl px-4 sm:px-6">
+    <div className="container mx-auto py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
       {/* 标题和控制区 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
@@ -177,6 +186,8 @@ export function CalendarView() {
             isLoading={isLoading}
             onDateClick={handleDateClick}
             onTaskClick={handleTaskClick}
+            onMoreClick={handleMoreClick}
+            maxVisibleTasks={4}
           />
         </div>
 

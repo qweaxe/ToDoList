@@ -3227,5 +3227,28 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/components/pip/PiPManager.ts` - 新增 sendDataRefreshToPipNewTask 方法
 - `src/components/pip/pip-types.ts` - 新增 PipSubTask 接口、PipTaskItem 增加 subTasks 字段、MainToPipMessage 增加 TASK_CREATED 类型
 - `src/components/pip/broadcast-sync.ts` - todoToPipTask 解析 subTasks JSON
+
+## 2026-06-01: 侧边栏折叠 + 周视图/日历视图显示优化
+
+### 改动内容
+- 侧边栏支持桌面端折叠/展开：256px → 64px 图标模式，释放约 192px 横向空间
+- 新增 sidebarCollapsed 状态（Zustand + localStorage 持久化），与移动端 sidebarOpen 状态独立
+- 折叠态下导航项仅显示图标 + Tooltip（右侧），展开态保持当前三行布局
+- 周视图 TaskCard：truncate → line-clamp-2（两行标题），新增分类 emoji + 循环/里程碑辅助标记
+- 周视图 DateColumn：增大滚动区域 max-h-500px，容器 max-w-full 放宽，间距微调
+- 日历视图容器：max-w-6xl → max-w-7xl，maxVisibleTasks 3 → 4
+- CalendarCell：增大格子 min-h/padding，文字字号 10px→11px，间距增大
+- CalendarCell 任务区域：overflow-hidden → overflow-y-auto 滚动 + 自定义滚动条
+- CalendarCell "+N more" 可点击打开该日期完整任务列表弹窗
+- globals.css 新增 week-task-list 和 calendar-cell-scroll 自定义滚动条样式
+
+### 修改的文件
+- `src/hooks/use-view-store.ts` - 新增 sidebarCollapsed/setSidebarCollapsed/toggleSidebarCollapsed，partialize 持久化
+- `src/components/layout/Sidebar.tsx` - 折叠/展开双态重构（动态宽度 w-64/w-16、Tooltip 导航、ChevronLeft 折叠按钮）
+- `src/components/views/WeekView.tsx` - TaskCard line-clamp-2 + emoji + 辅助标记 + p-2；DateColumn max-h 增大 + week-task-list 滚动条；容器 max-w-full；网格间距 gap 微调
+- `src/components/views/CalendarView.tsx` - 容器 max-w-7xl；maxVisibleTasks=4；新增 handleMoreClick 和 onMoreClick 传递
+- `src/components/calendar/CalendarCell.tsx` - 格子 min-h/padding 增大；文字字号/间距微调；任务区域 overflow-y-auto 滚动；新增 onMoreClick prop
+- `src/components/calendar/CalendarGrid.tsx` - 间距 gap 微调；maxVisibleTasks=4；新增 onMoreClick 传递
+- `src/app/globals.css` - 新增 .week-task-list 和 .calendar-cell-scroll 自定义滚动条样式
 - `src/components/pip/pip-styles.ts` - 移除 .pip-close-btn CSS、新增子任务相关样式
 - `src/hooks/use-todos.ts` - useCreateTodo onSuccess 中同步新任务到 PiP

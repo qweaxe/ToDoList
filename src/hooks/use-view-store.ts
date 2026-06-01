@@ -58,6 +58,9 @@ interface ViewState {
   // 侧边栏是否展开（移动端）
   sidebarOpen: boolean;
 
+  // 侧边栏是否折叠（桌面端图标模式）
+  sidebarCollapsed: boolean;
+
   // hydration 完成标记
   _hydrated: boolean;
 
@@ -78,6 +81,8 @@ interface ViewState {
   setFloatingPanelPosition: (pos: { x: number; y: number }) => void;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  toggleSidebarCollapsed: () => void;
 
   // 快捷操作
   goToToday: () => void;
@@ -116,6 +121,7 @@ export const useViewStore = create<ViewState>()(
       floatingPanelOpen: false,
       floatingPanelPosition: { x: 0, y: -200 },
       sidebarOpen: false,
+      sidebarCollapsed: false,
       _hydrated: false,
 
       // 操作方法
@@ -135,6 +141,8 @@ export const useViewStore = create<ViewState>()(
       setFloatingPanelPosition: (pos) => set({ floatingPanelPosition: pos }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+      toggleSidebarCollapsed: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
       // 快捷操作
       goToToday: () => {
@@ -188,6 +196,7 @@ export const useViewStore = create<ViewState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         currentView: state.currentView,
+        sidebarCollapsed: state.sidebarCollapsed,
         // 不持久化日期相关状态，每次访问都从今天开始
         // selectedDate: state.selectedDate,
         // calendarYear: state.calendarYear,

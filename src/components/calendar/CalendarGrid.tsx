@@ -27,6 +27,7 @@ interface CalendarGridProps {
   isLoading?: boolean;
   onDateClick?: (date: string) => void;
   onTaskClick?: (taskId: string) => void;
+  onMoreClick?: (date: string) => void;
   maxVisibleTasks?: number;
 }
 
@@ -38,7 +39,8 @@ export function CalendarGrid({
   isLoading,
   onDateClick,
   onTaskClick,
-  maxVisibleTasks = 3,
+  onMoreClick,
+  maxVisibleTasks = 4,
 }: CalendarGridProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -125,7 +127,7 @@ export function CalendarGrid({
 
       {/* 日历网格 - 移动端支持横向滚动 */}
       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2">
-        <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[490px] sm:min-w-0">
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2 min-w-[490px] sm:min-w-0">
           {calendarDates.map((date, index) => {
             const dateStr = formatDate(date);
             const dayTasks = tasks[dateStr] || [];
@@ -141,6 +143,7 @@ export function CalendarGrid({
                 maxVisibleTasks={maxVisibleTasks}
                 onClick={() => onDateClick?.(dateStr)}
                 onTaskClick={onTaskClick}
+                onMoreClick={() => onMoreClick?.(dateStr)}
               />
             );
           })}
