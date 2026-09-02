@@ -3252,3 +3252,20 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/app/globals.css` - 新增 .week-task-list 和 .calendar-cell-scroll 自定义滚动条样式
 - `src/components/pip/pip-styles.ts` - 移除 .pip-close-btn CSS、新增子任务相关样式
 - `src/hooks/use-todos.ts` - useCreateTodo onSuccess 中同步新任务到 PiP
+
+## 2026-09-02: 周期任务月/年递增语义修复 + 补齐视图同步 + 问号说明
+
+### 改动内容
+- 修复月/年周期任务在对应日期不生成实例的问题：`calculateOccurrenceDates` 中 `MONTHLY`/`YEARLY` 不再走 cron「每月/年固定第 N 天」语义，改为从规则 `startDate` 用 `addMonths`/`addYears` 按月/年相对递增（如「8/31 每 3 个月」正确落在 11/30、次年 2/28，而非 10/1、次年 1/1）
+- 补齐 monthly/quarterly/yearly 三个视图的周期任务同步触发（此前只有 daily/weekly 会生成实例，导致切到月/季/年视图看不到周期任务实例）
+- 修复周期任务间隔输入框 `type="number"` 无法清空的问题（backspace 删不掉默认值 1，导致「3」拼成「13」）：改为 `type="text"` + `inputMode="numeric"` + 非数字过滤 + 空值回退 1
+- 在「周期任务」标题旁新增问号图标 + Tooltip 悬停说明
+
+### 修改的文件
+- `src/lib/cron-utils.ts` - 新增 `generateMonthlyYearlyDates`，MONTHLY/YEARLY 改用 addMonths/addYears 相对递增
+- `src/app/api/todos/monthly/route.ts` - 查询前加入周期任务同步触发
+- `src/app/api/todos/quarterly/route.ts` - 查询前加入周期任务同步触发
+- `src/app/api/todos/yearly/route.ts` - 查询前加入周期任务同步触发
+- `src/components/task/TaskForm.tsx` - interval 输入框修复 + 问号 Tooltip
+- `messages/zh.json` - 新增 task.recurringHint
+- `messages/en.json` - 新增 task.recurringHint

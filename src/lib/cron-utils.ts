@@ -1,4 +1,5 @@
 import { parseExpression } from 'cron-parser';
+import { addMonths, addYears } from 'date-fns';
 import { formatDate, parseDateString, isDateBefore, isDateAfter, isSameDayDate } from './date-utils';
 import type { Frequency } from '@/types';
 
@@ -115,6 +116,20 @@ export function calculateOccurrenceDates(
     return [];
   }
 
+  // MONTHLY / YEARLY：从规则 startDate 按月/年递增，生成日期
+  // 使用添月/添年语义，而非 cron 的「每月/年固定第 N 天」
+  if (rule.frequency === 'MONTHLY') {
+    return generateMonthlyYearlyDates(
+      ruleStartDate, effectiveStart, effectiveEnd, rule.interval, 'MONTHLY'
+    );
+  }
+  if (rule.frequency === 'YEARLY') {
+    return generateMonthlyYearlyDates(
+      ruleStartDate, effectiveStart, effectiveEnd, rule.interval, 'YEARLY'
+    );
+  }
+
+  // DAILY / WEEKLY / CUSTOM 继续走 cron 路径
   let cronExpr: string;
 
   if (rule.frequency === 'CUSTOM' && rule.cronExpr) {
@@ -124,6 +139,46 @@ export function calculateOccurrenceDates(
   }
 
   return getCronDates(cronExpr, effectiveStart, effectiveEnd);
+}
+
+/**
+ * 从 originDate 开始按 interval 递增 month/year，收集落在 [effectiveStart, effectiveEnd] 内的日期
+ */
+function generateMonthlyYearlyDates(
+  originDate: Date,
+  effectiveStart: Date,
+  effectiveEnd: Date,
+  interval: number,
+  mode: 'MONTHLY' | 'YEARLY'
+): Date[] {
+  const dates: Date[] = [];
+
+  // 日期字符串比较：用 YYYY-MM-DD 格式比较判定边界
+  const effectiveStartStr = formatDate(effectiveStart);
+  const effectiveEndStr = formatDate(effectiveEnd);
+
+  const addFn = mode === 'MONTHLY' ? addMonths : addYears;
+
+  // 从 originDate 开始，一路推进到进入窗口为止
+  let current = new Date(originDate);
+  // 安全上限：防止无限循环（最多 1000 次，远超正常使用）
+  const MAX_ITERATIONS = 1000;
+  let iterations = 0;
+
+  // 推进到 effectiveStart 附近
+  while (formatDate(current) < effectiveStartStr && iterations < MAX_ITERATIONS) {
+    current = addFn(current, interval);
+    iterations++;
+  }
+
+  // 从该位置开始，逐个生成直到越过 effectiveEnd
+  while (formatDate(current) <= effectiveEndStr && iterations < MAX_ITERATIONS) {
+    dates.push(current);
+    current = addFn(current, interval);
+    iterations++;
+  }
+
+  return dates;
 }
 
 // ==================== 用户友好的频率描述 ====================

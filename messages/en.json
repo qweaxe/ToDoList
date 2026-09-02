@@ -51,6 +51,7 @@
     "recurringTask": "Recurring",
     "frequency": "Frequency",
     "interval": "Interval",
+    "recurringHint": "Recurring tasks automatically generate instances on the corresponding dates. Example: starting from Aug 31 with \"Monthly, interval 3\" will appear on Nov 30, Feb 28 of the next year, etc.",
     "newTask": "New Task",
     "createTask": "Create Task",
     "editTask": "Edit Task",

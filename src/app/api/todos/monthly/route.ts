@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { syncRecurringTasks } from '@/services/recurrence-service';
 
 const TODO_JOIN_FIELDS = `
   t.id, t.title, t.description, t.status,
@@ -89,6 +90,13 @@ export async function GET(request: NextRequest) {
     const calendarEndISO = new Date(`${calendarEndStr}T23:59:59`).toISOString();
     const monthStartISO = new Date(`${monthStartStr}T00:00:00`).toISOString();
     const monthEndISO = new Date(`${monthEndStr}T23:59:59`).toISOString();
+
+    // 同步周期任务（静默执行，不阻塞请求）
+    try {
+      await syncRecurringTasks(calendarStartDate, calendarEndDate, userId);
+    } catch (syncError) {
+      console.error('Failed to sync recurring tasks:', syncError);
+    }
 
     if (IS_EDGE) {
       const d1 = await getD1Client();

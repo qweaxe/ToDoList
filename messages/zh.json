@@ -51,6 +51,7 @@
     "recurringTask": "周期",
     "frequency": "重复频率",
     "interval": "间隔",
+    "recurringHint": "周期任务会在对应日期自动生成实例。示例：从 8 月 31 日开始的「每月、间隔 3」会在 11 月 30 日、次年 2 月 28 日等日期出现。",
     "newTask": "新建任务",
     "createTask": "创建任务",
     "editTask": "编辑任务",

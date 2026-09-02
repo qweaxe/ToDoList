@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parseISO } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
-import { CalendarIcon, Plus, Trash2, Repeat, Flag, CalendarCheck } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, Repeat, Flag, CalendarCheck, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,6 +41,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { createTodoSchema, type CreateTodoInput } from '@/types/api';
 import { useCategories } from '@/hooks/use-categories';
@@ -677,6 +682,16 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
           <div className="flex items-center gap-2">
             <Repeat className="h-4 w-4" />
             <Label>{t('task.recurring')}</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full" type="button" tabIndex={-1}>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[280px]">
+                <p>{t('task.recurringHint')}</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
           <Switch
             checked={isCycleTask}
@@ -708,10 +723,20 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
             <div className="space-y-2">
               <Label>{t('task.interval')}</Label>
               <Input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 min={1}
                 value={cycleInterval}
-                onChange={(e) => setCycleInterval(parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '');
+                  if (raw === '') {
+                    setCycleInterval(1);
+                  } else {
+                    const num = parseInt(raw, 10);
+                    setCycleInterval(Math.max(1, num));
+                  }
+                }}
               />
             </div>
           </div>

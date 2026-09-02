@@ -6,6 +6,7 @@ import { getApiSession } from '@/lib/api-auth';
 import { formatDate } from '@/lib/date-utils';
 import { format, eachDayOfInterval, getDay, getMonth } from 'date-fns';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { syncRecurringTasks } from '@/services/recurrence-service';
 
 // GET /api/todos/yearly?year=YYYY - 获取年度统计数据
 export async function GET(request: NextRequest) {
@@ -28,6 +29,13 @@ export async function GET(request: NextRequest) {
     const yearEndStr = `${year}-12-31`;
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year, 11, 31);
+
+    // 同步周期任务（静默执行，不阻塞请求）
+    try {
+      await syncRecurringTasks(yearStart, yearEnd, userId);
+    } catch (syncError) {
+      console.error('Failed to sync recurring tasks:', syncError);
+    }
 
     // D1 原生 SQL 路径（生产环境），避免 Prisma 初始化 CPU 开销
     if (IS_EDGE) {

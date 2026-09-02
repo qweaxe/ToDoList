@@ -1,4 +1,15 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(sqlite3 prisma/dev.db \"SELECT * FROM recurrence_rules;\")",
+      "Bash(sqlite3 prisma/dev.db \"SELECT id, frequency, interval, byDay, cronExpr, startDate, endDate, isActive, userId FROM recurrence_rules;\")",
+      "Bash(npx --yes prisma@latest db seed -- --help)",
+      "Bash(npx prisma *)",
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'fix: 周期任务月/年递增语义修复 + 补齐视图同步 + 问号说明 *)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -6,8 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(git push *)",
             "command": "bash scripts/check-worklog.sh",
+            "if": "Bash(git push *)",
             "statusMessage": "检查 WORKLOG.md 是否已更新"
           }
         ]

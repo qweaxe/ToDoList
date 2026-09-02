@@ -6,6 +6,7 @@ import { getApiSession } from '@/lib/api-auth';
 import { getQuarterStart, getQuarterEnd, formatDate, extractQuarter } from '@/lib/date-utils';
 import { format, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { syncRecurringTasks } from '@/services/recurrence-service';
 
 // GET /api/todos/quarterly?date=YYYY-MM-DD - 获取季度数据
 export async function GET(request: NextRequest) {
@@ -31,6 +32,13 @@ export async function GET(request: NextRequest) {
 
     const quarterStartStr = formatDate(quarterStart);
     const quarterEndStr = formatDate(quarterEnd);
+
+    // 同步周期任务（静默执行，不阻塞请求）
+    try {
+      await syncRecurringTasks(quarterStart, quarterEnd, userId);
+    } catch (syncError) {
+      console.error('Failed to sync recurring tasks:', syncError);
+    }
 
     // D1 原生 SQL 路径（生产环境），避免 Prisma 初始化 CPU 开销
     if (IS_EDGE) {
