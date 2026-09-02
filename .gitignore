@@ -53,5 +53,21 @@ server.log
 d1-schema.sql
 d1-data.sql
 
+# Local database files and their transient journal files
+/db/*.db
+/db/*.db-journal
+/db/*.db-shm
+/db/*.db-wal
+/prisma/*.db
+/prisma/*.db-journal
+/prisma/*.db-shm
+/prisma/*.db-wal
+
+# Wrangler local development state (includes local D1 databases)
+/.wrangler/
+
+# Local source bundle; generated copies may embed ignored database files
+/todolist_demo
+
 # Skills directory
 /skills/
