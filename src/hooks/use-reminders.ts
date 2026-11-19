@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -44,7 +46,7 @@ export function useTodoReminders(todoId: string | null) {
     queryKey: ['reminders', todoId],
     queryFn: async () => {
       if (!todoId) return { success: true, data: [] };
-      const res = await fetch(`/api/todos/${todoId}/reminders`);
+      const res = await apiFetch(`/api/todos/${todoId}/reminders`);
       return res.json();
     },
     enabled: !!todoId,
@@ -62,7 +64,7 @@ export function useCreateReminder() {
       type: string;
       offset?: number;
     }) => {
-      const res = await fetch(`/api/todos/${data.todoId}/reminders`, {
+      const res = await apiFetch(`/api/todos/${data.todoId}/reminders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -89,7 +91,7 @@ export function useDeleteReminder() {
 
   return useMutation({
     mutationFn: async ({ reminderId, todoId }: { reminderId: string; todoId: string }) => {
-      const res = await fetch(`/api/reminders/${reminderId}`, {
+      const res = await apiFetch(`/api/reminders/${reminderId}`, {
         method: 'DELETE',
       });
       return res.json();
@@ -123,7 +125,7 @@ export function usePendingReminders() {
   }>({
     queryKey: ['reminders', 'pending'],
     queryFn: async () => {
-      const res = await fetch('/api/reminders/pending');
+      const res = await apiFetch('/api/reminders/pending');
       return res.json();
     },
     refetchInterval: 60000, // 每分钟检查一次
@@ -136,7 +138,7 @@ export function useMarkReminderSent() {
 
   return useMutation({
     mutationFn: async (reminderId: string) => {
-      const res = await fetch(`/api/reminders/${reminderId}/sent`, {
+      const res = await apiFetch(`/api/reminders/${reminderId}/sent`, {
         method: 'POST',
       });
       return res.json();

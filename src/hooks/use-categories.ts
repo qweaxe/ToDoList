@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { CreateCategoryInput, UpdateCategoryInput } from '@/types/api';
@@ -23,7 +25,7 @@ export function useCategories() {
   }>({
     queryKey: ['categories'],
     queryFn: async () => {
-      const res = await fetch('/api/categories');
+      const res = await apiFetch('/api/categories');
       return res.json();
     },
   });
@@ -35,7 +37,7 @@ export function useCreateCategory() {
 
   return useMutation({
     mutationFn: async (data: CreateCategoryInput) => {
-      const res = await fetch('/api/categories', {
+      const res = await apiFetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -62,7 +64,7 @@ export function useUpdateCategory() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateCategoryInput }) => {
-      const res = await fetch(`/api/categories/${id}`, {
+      const res = await apiFetch(`/api/categories/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -89,7 +91,7 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/categories/${id}`, {
+      const res = await apiFetch(`/api/categories/${id}`, {
         method: 'DELETE',
       });
       return res.json();

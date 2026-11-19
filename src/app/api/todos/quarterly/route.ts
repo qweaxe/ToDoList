@@ -3,7 +3,8 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getApiSession } from '@/lib/api-auth';
-import { getQuarterStart, getQuarterEnd, formatDate, extractQuarter } from '@/lib/date-utils';
+import { getQuarterStart, getQuarterEnd, formatDate, extractQuarter, localDateString, localDayStart, localDayEnd } from '@/lib/date-utils';
+import { getRequestTimeZone } from '@/lib/api-utils';
 import { format, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
 import { syncRecurringTasks } from '@/services/recurrence-service';
@@ -21,10 +22,11 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authResult.userId;
+    const timeZone = getRequestTimeZone(request);
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
 
-    const targetDate = dateParam || format(new Date(), 'yyyy-MM-dd');
+    const targetDate = dateParam || localDateString(timeZone);
     const quarterStart = getQuarterStart(targetDate);
     const quarterEnd = getQuarterEnd(targetDate);
     const quarter = extractQuarter(targetDate);
@@ -35,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     // 同步周期任务（静默执行，不阻塞请求）
     try {
-      await syncRecurringTasks(quarterStart, quarterEnd, userId);
+      await syncRecurringTasks(quarterStart, quarterEnd, userId, timeZone);
     } catch (syncError) {
       console.error('Failed to sync recurring tasks:', syncError);
     }
@@ -43,8 +45,8 @@ export async function GET(request: NextRequest) {
     // D1 原生 SQL 路径（生产环境），避免 Prisma 初始化 CPU 开销
     if (IS_EDGE) {
       const d1 = await getD1Client();
-      const startStr = `${quarterStartStr}T00:00:00.000Z`;
-      const endStr = `${quarterEndStr}T23:59:59.999Z`;
+      const startStr = localDayStart(quarterStartStr, timeZone).toISOString();
+      const endStr = localDayEnd(quarterEndStr, timeZone).toISOString();
 
       // 里程碑（含分类和等级信息）
       const milestoneRows = await d1.all<{
@@ -92,8 +94,8 @@ export async function GET(request: NextRequest) {
       const months = eachMonthOfInterval({ start: quarterStart, end: quarterEnd });
       const monthStatRows = await Promise.all(
         months.map((month) => {
-          const mStartStr = `${formatDate(startOfMonth(month))}T00:00:00.000Z`;
-          const mEndStr = `${formatDate(endOfMonth(month))}T23:59:59.999Z`;
+          const mStartStr = localDayStart(formatDate(startOfMonth(month)), timeZone).toISOString();
+          const mEndStr = localDayEnd(formatDate(endOfMonth(month)), timeZone).toISOString();
           return d1.first<{ total: number; completed: number }>(
             `SELECT COUNT(*) as total,
                     SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed
@@ -162,8 +164,8 @@ export async function GET(request: NextRequest) {
 
     // 开发环境：Prisma 路径
     const db = await getDb();
-    const quarterStartBoundary = new Date(`${quarterStartStr}T00:00:00`);
-    const quarterEndBoundary = new Date(`${quarterEndStr}T23:59:59`);
+    const quarterStartBoundary = localDayStart(quarterStartStr, timeZone);
+    const quarterEndBoundary = localDayEnd(quarterEndStr, timeZone);
 
     // 获取季度内的所有里程碑任务
     const milestones = await db.todo.findMany({

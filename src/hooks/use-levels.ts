@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { useQuery } from '@tanstack/react-query';
 
 interface Level {
@@ -20,7 +22,7 @@ export function useLevels() {
   }>({
     queryKey: ['levels'],
     queryFn: async () => {
-      const res = await fetch('/api/levels');
+      const res = await apiFetch('/api/levels');
       return res.json();
     },
   });

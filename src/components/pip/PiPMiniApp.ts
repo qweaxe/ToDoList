@@ -1,3 +1,5 @@
+import { apiFetch } from '@/lib/api-client';
+import { localDateString } from '@/lib/date-utils';
 // PiP 窗口迷你应用 - 纯 vanilla JS，在 PiP 窗口的独立 document 中运行
 // 不使用 React，因为 PiP 窗口无法进行 hydration
 
@@ -370,7 +372,7 @@ export class PiPMiniApp {
 
     // 调用 API
     try {
-      const res = await fetch('/api/todos/toggle', {
+      const res = await apiFetch('/api/todos/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: taskId }),
@@ -411,7 +413,7 @@ export class PiPMiniApp {
 
     // 调用 API
     try {
-      const res = await fetch(`/api/todos/${taskId}/subtask`, {
+      const res = await apiFetch(`/api/todos/${taskId}/subtask`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subtaskId, isDone: isChecked }),
@@ -436,7 +438,7 @@ export class PiPMiniApp {
     this.addBtnEl.disabled = true;
     this.addInputEl.value = '';
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateString();
     const categoryId = this.categorySelectEl?.value || undefined;
     const levelId = this.levelSelectEl?.value || undefined;
 
@@ -445,7 +447,7 @@ export class PiPMiniApp {
     if (this.levelSelectEl) this.levelSelectEl.value = '';
 
     try {
-      const res = await fetch('/api/todos', {
+      const res = await apiFetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -489,7 +491,7 @@ export class PiPMiniApp {
   private async fetchDailyTodos() {
     const today = new Date().toISOString().split('T')[0];
     try {
-      const res = await fetch(`/api/todos/daily?date=${today}`);
+      const res = await apiFetch(`/api/todos/daily?date=${today}`);
       if (res.ok) {
         const result: any = await res.json();
         if (result.success && result.data) {
@@ -527,7 +529,7 @@ export class PiPMiniApp {
       // 兜底获取 categories 和 levels
       if (this.categories.length === 0) {
         try {
-          const catRes = await fetch('/api/categories');
+          const catRes = await apiFetch('/api/categories');
           if (catRes.ok) {
             const catResult: any = await catRes.json();
             if (catResult.success && catResult.data) {
@@ -541,7 +543,7 @@ export class PiPMiniApp {
       }
       if (this.levels.length === 0) {
         try {
-          const lvRes = await fetch('/api/levels');
+          const lvRes = await apiFetch('/api/levels');
           if (lvRes.ok) {
             const lvResult: any = await lvRes.json();
             if (lvResult.success && lvResult.data) {

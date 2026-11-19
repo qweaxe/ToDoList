@@ -5,6 +5,8 @@ import { getDb } from '@/lib/db';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
 import { syncRecurringTasks } from '@/services/recurrence-service';
+import { localDateString, localDayStart, localDayEnd } from '@/lib/date-utils';
+import { getRequestTimeZone } from '@/lib/api-utils';
 
 const TODO_JOIN_FIELDS = `
   t.id, t.title, t.description, t.status,
@@ -63,9 +65,11 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authResult.userId;
+    const timeZone = getRequestTimeZone(request);
     const { searchParams } = new URL(request.url);
-    const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
-    const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString());
+    const todayStr = localDateString(timeZone);
+    const year = parseInt(searchParams.get('year') || todayStr.substring(0, 4));
+    const month = parseInt(searchParams.get('month') || todayStr.substring(5, 7));
 
     // 计算日历网格实际范围
     const firstDayOfMonth = new Date(year, month - 1, 1);
@@ -86,14 +90,14 @@ export async function GET(request: NextRequest) {
     const monthStartStr = formatDateStr(firstDayOfMonth);
     const monthEndStr = formatDateStr(lastDayOfMonth);
 
-    const calendarStartISO = new Date(`${calendarStartStr}T00:00:00`).toISOString();
-    const calendarEndISO = new Date(`${calendarEndStr}T23:59:59`).toISOString();
-    const monthStartISO = new Date(`${monthStartStr}T00:00:00`).toISOString();
-    const monthEndISO = new Date(`${monthEndStr}T23:59:59`).toISOString();
+    const calendarStartISO = localDayStart(calendarStartStr, timeZone).toISOString();
+    const calendarEndISO = localDayEnd(calendarEndStr, timeZone).toISOString();
+    const monthStartISO = localDayStart(monthStartStr, timeZone).toISOString();
+    const monthEndISO = localDayEnd(monthEndStr, timeZone).toISOString();
 
     // 同步周期任务（静默执行，不阻塞请求）
     try {
-      await syncRecurringTasks(calendarStartDate, calendarEndDate, userId);
+      await syncRecurringTasks(calendarStartDate, calendarEndDate, userId, timeZone);
     } catch (syncError) {
       console.error('Failed to sync recurring tasks:', syncError);
     }
@@ -174,10 +178,10 @@ export async function GET(request: NextRequest) {
 
     // 开发环境：Prisma 路径
     const db = await getDb();
-    const calendarStartBoundary = new Date(`${calendarStartStr}T00:00:00`);
-    const calendarEndBoundary = new Date(`${calendarEndStr}T23:59:59`);
-    const monthStartBoundary = new Date(`${monthStartStr}T00:00:00`);
-    const monthEndBoundary = new Date(`${monthEndStr}T23:59:59`);
+    const calendarStartBoundary = localDayStart(calendarStartStr, timeZone);
+    const calendarEndBoundary = localDayEnd(calendarEndStr, timeZone);
+    const monthStartBoundary = localDayStart(monthStartStr, timeZone);
+    const monthEndBoundary = localDayEnd(monthEndStr, timeZone);
 
     const tasks = await db.todo.findMany({
       where: {

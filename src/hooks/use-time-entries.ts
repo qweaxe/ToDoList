@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { CreateTimeEntryInput, UpdateTimeEntryInput } from '@/types/api';
@@ -74,7 +76,7 @@ export function useTimeEntries(params?: {
   }>({
     queryKey: ['time-entries', params],
     queryFn: async () => {
-      const res = await fetch(`/api/time-entries${query ? `?${query}` : ''}`);
+      const res = await apiFetch(`/api/time-entries${query ? `?${query}` : ''}`);
       return res.json();
     },
   });
@@ -88,7 +90,7 @@ export function useDailyTimeEntries(date: string) {
   }>({
     queryKey: ['time-entries', 'daily', date],
     queryFn: async () => {
-      const res = await fetch(`/api/time-entries/daily?date=${date}`);
+      const res = await apiFetch(`/api/time-entries/daily?date=${date}`);
       return res.json();
     },
     enabled: !!date,
@@ -104,7 +106,7 @@ export function useTimeEntry(id: string | null) {
     queryKey: ['time-entries', id],
     queryFn: async () => {
       if (!id) throw new Error('No id');
-      const res = await fetch(`/api/time-entries/${id}`);
+      const res = await apiFetch(`/api/time-entries/${id}`);
       return res.json();
     },
     enabled: !!id,
@@ -117,7 +119,7 @@ export function useCreateTimeEntry() {
 
   return useMutation({
     mutationFn: async (data: CreateTimeEntryInput) => {
-      const res = await fetch('/api/time-entries', {
+      const res = await apiFetch('/api/time-entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -144,7 +146,7 @@ export function useUpdateTimeEntry() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateTimeEntryInput }) => {
-      const res = await fetch(`/api/time-entries/${id}`, {
+      const res = await apiFetch(`/api/time-entries/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -171,7 +173,7 @@ export function useDeleteTimeEntry() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/time-entries/${id}`, {
+      const res = await apiFetch(`/api/time-entries/${id}`, {
         method: 'DELETE',
       });
       return res.json();

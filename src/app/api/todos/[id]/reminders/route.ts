@@ -7,9 +7,11 @@ import { z } from 'zod';
 import { getApiSession } from '@/lib/api-auth';
 
 const createReminderSchema = z.object({
-  remindAt: z.string(),
+  // remindAt 为客户端按用户本地时间换算后的绝对时刻（ISO 8601 datetime），
+  // 服务端只做 UTC 比较，绝不二次做时区换算
+  remindAt: z.string().datetime({ offset: true }),
   type: z.enum(['before_due', 'custom']),
-  offset: z.number().optional(),
+  offset: z.number().int().min(0).max(60 * 24 * 30).optional(),
 });
 
 // GET /api/todos/[id]/reminders - 获取任务的提醒列表
@@ -142,8 +144,14 @@ export async function POST(
         );
       }
 
-      // 检查提醒时间是否已过
+      // 检查提醒时间是否有效/已过（纯 UTC 比较）
       const remindAt = new Date(validated.remindAt);
+      if (isNaN(remindAt.getTime())) {
+        return NextResponse.json(
+          { success: false, error: '提醒时间格式无效' },
+          { status: 400 }
+        );
+      }
       if (remindAt < new Date()) {
         return NextResponse.json(
           { success: false, error: '提醒时间已过' },
@@ -187,8 +195,14 @@ export async function POST(
       );
     }
 
-    // 检查提醒时间是否已过
+    // 检查提醒时间是否有效/已过（纯 UTC 比较）
     const remindAt = new Date(validated.remindAt);
+    if (isNaN(remindAt.getTime())) {
+      return NextResponse.json(
+        { success: false, error: '提醒时间格式无效' },
+        { status: 400 }
+      );
+    }
     if (remindAt < new Date()) {
       return NextResponse.json(
         { success: false, error: '提醒时间已过' },

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { localDayStart, localDayEnd } from '@/lib/date-utils';
+import { getRequestTimeZone } from '@/lib/api-utils';
 
 const TODO_JOIN_FIELDS = `
   t.id, t.title, t.description, t.status,
@@ -58,6 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authResult.userId;
+    const timeZone = getRequestTimeZone(request);
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'category' or 'level'
     const id = searchParams.get('id');
@@ -71,8 +74,14 @@ export async function GET(request: NextRequest) {
     }
 
     const yearNum = parseInt(year, 10);
-    const yearStartISO = new Date(`${yearNum}-01-01T00:00:00`).toISOString();
-    const yearEndISO = new Date(`${yearNum}-12-31T23:59:59`).toISOString();
+    if (!Number.isInteger(yearNum) || yearNum < 1900 || yearNum > 2100) {
+      return NextResponse.json(
+        { error: 'Invalid year parameter' },
+        { status: 400 }
+      );
+    }
+    const yearStartISO = localDayStart(`${yearNum}-01-01`, timeZone).toISOString();
+    const yearEndISO = localDayEnd(`${yearNum}-12-31`, timeZone).toISOString();
 
     const filterColumn = type === 'category' ? 'categoryId' : type === 'level' ? 'levelId' : null;
     if (!filterColumn) {
@@ -119,8 +128,8 @@ export async function GET(request: NextRequest) {
 
     // 开发环境：Prisma 路径
     const db = await getDb();
-    const yearStartBoundary = new Date(`${yearNum}-01-01T00:00:00`);
-    const yearEndBoundary = new Date(`${yearNum}-12-31T23:59:59`);
+    const yearStartBoundary = localDayStart(`${yearNum}-01-01`, timeZone);
+    const yearEndBoundary = localDayEnd(`${yearNum}-12-31`, timeZone);
 
     let todos;
 

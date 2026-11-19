@@ -349,8 +349,8 @@ export function TaskForm({ open, onClose, initialData, defaultDate }: TaskFormPr
     // 只有已完成的任务才发送完成日期字段
     // 未完成的任务不发送 completedAt 字段（而不是发送 null）
     if (isCompleted && completedAt) {
-      // 将完成日期转换为 ISO 格式（与 startDate/dueDate 保持一致，不进行时区转换）
-      submitData.completedAt = `${completedAt}T00:00:00.000Z`;
+      // completedAt 统一为客户端本地日历日（yyyy-MM-dd），服务端原样存储、不做时区换算
+      submitData.completedAt = completedAt;
     }
 
     try {

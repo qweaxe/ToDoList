@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 import { getApiSession } from '@/lib/api-auth';
 import { getDb } from '@/lib/db';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { localDayStart, localDayEnd } from '@/lib/date-utils';
+import { getRequestTimeZone } from '@/lib/api-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +31,10 @@ export async function GET(request: NextRequest) {
     // 解析筛选参数
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    // 按用户时区将日历日转换为 UTC 绝对时刻（ISO 字符串），供 Prisma/D1 统一比较
+    const timeZone = getRequestTimeZone(request);
+    const startDateBound = startDate ? localDayStart(startDate, timeZone).toISOString() : null;
+    const endDateBound = endDate ? localDayEnd(endDate, timeZone).toISOString() : null;
     const status = searchParams.get('status');
     const categoryId = searchParams.get('categoryId');
     const levelId = searchParams.get('levelId');
@@ -38,10 +44,10 @@ export async function GET(request: NextRequest) {
     const where: any = { userId };
 
     if (startDate) {
-      where.startDate = { ...where.startDate, gte: startDate };
+      where.startDate = { ...where.startDate, gte: startDateBound };
     }
     if (endDate) {
-      where.dueDate = { ...where.dueDate, lte: endDate };
+      where.dueDate = { ...where.dueDate, lte: endDateBound };
     }
     if (status) {
       where.status = status;
@@ -69,13 +75,13 @@ export async function GET(request: NextRequest) {
         WHERE t.userId = ?`;
       const params: unknown[] = [userId];
 
-      if (startDate) {
+      if (startDate && startDateBound) {
         sql += ' AND t.startDate >= ?';
-        params.push(startDate);
+        params.push(startDateBound);
       }
-      if (endDate) {
+      if (endDate && endDateBound) {
         sql += ' AND t.dueDate <= ?';
-        params.push(endDate);
+        params.push(endDateBound);
       }
       if (status) {
         sql += ' AND t.status = ?';

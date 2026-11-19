@@ -2,6 +2,7 @@
 // 管理 Document Picture-in-Picture 窗口的打开、关闭、数据同步、心跳检测
 
 import { PipTaskItem, PipCategory, PipLevel } from './pip-types';
+import { localDateString } from '@/lib/date-utils';
 import { PipSyncChannel, todoToPipTask } from './broadcast-sync';
 import { PiPMiniApp } from './PiPMiniApp';
 
@@ -242,7 +243,7 @@ export class PiPManager {
                 const record = obj as Record<string, unknown>;
 
                 if (record.id === taskId && typeof record.status === 'string') {
-                  const today = new Date().toISOString().split('T')[0];
+                  const today = localDateString();
                   return {
                     ...record,
                     status: newStatus,

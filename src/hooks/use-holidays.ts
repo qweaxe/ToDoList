@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { useQuery } from '@tanstack/react-query';
 
 interface Holiday {
@@ -16,7 +18,7 @@ export function useHolidays(year: number) {
   }>({
     queryKey: ['holidays', year],
     queryFn: async () => {
-      const res = await fetch(`/api/holidays?year=${year}`);
+      const res = await apiFetch(`/api/holidays?year=${year}`);
       return res.json();
     },
     staleTime: 24 * 60 * 60 * 1000, // 1天过期

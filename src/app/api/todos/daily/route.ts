@@ -2,7 +2,8 @@ export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getTodayString, parseDateString } from '@/lib/date-utils';
+import { parseDateString, localDateString, localDayStart, localDayEnd } from '@/lib/date-utils';
+import { getRequestTimeZone } from '@/lib/api-utils';
 import { syncDate } from '@/services/recurrence-service';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
@@ -93,26 +94,27 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authResult.userId;
+    const timeZone = getRequestTimeZone(request);
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date') || getTodayString();
-    const today = getTodayString();
+    const date = searchParams.get('date') || localDateString(timeZone);
+    const today = localDateString(timeZone);
 
     // 同步周期任务（静默执行，不阻塞请求）
     try {
-      await syncDate(parseDateString(date), userId);
+      await syncDate(parseDateString(date), userId, timeZone);
     } catch (syncError) {
       console.error('Failed to sync recurring tasks:', syncError);
     }
 
-    // 计算查询边界：本地时间的当天 00:00 和 23:59:59，转换为 UTC
+    // 计算查询边界：用户时区的当天 00:00 和 23:59:59，转换为 UTC 绝对时刻
     // 这样可以正确查询到用户在当天创建的任务（即使存储为 UTC）
-    const localDayStart = new Date(`${date}T00:00:00`);
-    const localDayEnd = new Date(`${date}T23:59:59`);
-    const dayStartISO = localDayStart.toISOString();
-    const dayEndISO = localDayEnd.toISOString();
+    const dayStart = localDayStart(date, timeZone);
+    const dayEnd = localDayEnd(date, timeZone);
+    const dayStartISO = dayStart.toISOString();
+    const dayEndISO = dayEnd.toISOString();
 
     // 同样计算今天的边界（用于历史待办查询）
-    const todayStartISO = new Date(`${today}T00:00:00`).toISOString();
+    const todayStartISO = localDayStart(today, timeZone).toISOString();
 
     if (IS_EDGE) {
       const d1 = await getD1Client();
@@ -160,8 +162,8 @@ export async function GET(request: NextRequest) {
       where: {
         userId,
         AND: [
-          { startDate: { lte: localDayEnd } },
-          { dueDate: { gte: localDayStart } },
+          { startDate: { lte: dayEnd } },
+          { dueDate: { gte: dayStart } },
         ],
       },
       orderBy: [
@@ -179,7 +181,7 @@ export async function GET(request: NextRequest) {
       where: {
         userId,
         AND: [
-          { dueDate: { lt: new Date(`${today}T00:00:00`) } },
+          { dueDate: { lt: localDayStart(today, timeZone) } },
           { status: { not: 'completed' } },
         ],
       },

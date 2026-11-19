@@ -1,8 +1,11 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { localDateString } from '@/lib/date-utils';
 import type { CreateTodoInput, UpdateTodoInput } from '@/types/api';
 import { mutationManager, isAbortError } from '@/lib/mutation-manager';
 
@@ -79,7 +82,7 @@ export function useTodos(params?: {
   }>({
     queryKey: ['todos', params],
     queryFn: async () => {
-      const res = await fetch(`/api/todos${query ? `?${query}` : ''}`);
+      const res = await apiFetch(`/api/todos${query ? `?${query}` : ''}`);
       return res.json();
     },
   });
@@ -105,7 +108,7 @@ export function useDailyTodos(date?: string) {
   }>({
     queryKey: ['todos', 'daily', date],
     queryFn: async () => {
-      const res = await fetch(`/api/todos/daily${params}`);
+      const res = await apiFetch(`/api/todos/daily${params}`);
       return res.json();
     },
   });
@@ -129,7 +132,7 @@ export function useMonthlyTodos(year: number, month: number) {
   }>({
     queryKey: ['todos', 'monthly', year, month],
     queryFn: async () => {
-      const res = await fetch(`/api/todos/monthly?year=${year}&month=${month}`);
+      const res = await apiFetch(`/api/todos/monthly?year=${year}&month=${month}`);
       return res.json();
     },
   });
@@ -144,7 +147,7 @@ export function useTodo(id: string | null) {
     queryKey: ['todos', id],
     queryFn: async () => {
       if (!id) throw new Error('No id');
-      const res = await fetch(`/api/todos/${id}`);
+      const res = await apiFetch(`/api/todos/${id}`);
       return res.json();
     },
     enabled: !!id,
@@ -157,7 +160,7 @@ export function useCreateTodo() {
 
   return useMutation({
     mutationFn: async (data: CreateTodoInput) => {
-      const res = await fetch('/api/todos', {
+      const res = await apiFetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -198,7 +201,7 @@ export function useUpdateTodo() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateTodoInput }) => {
-      const res = await fetch(`/api/todos/${id}`, {
+      const res = await apiFetch(`/api/todos/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -232,7 +235,7 @@ export function useToggleTodo() {
       // 创建 AbortController，自动取消之前的请求
       const controller = mutationManager.createController(`toggle-${id}`);
 
-      const res = await fetch('/api/todos/toggle', {
+      const res = await apiFetch('/api/todos/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
@@ -281,8 +284,8 @@ export function useToggleTodo() {
           // 如果是 todo 对象且 id 匹配
           if (record.id === id && typeof record.status === 'string') {
             const newStatus = record.status === 'completed' ? 'pending' : 'completed';
-            // 使用本地日期而非 UTC 日期
-            const today = format(new Date(), 'yyyy-MM-dd');
+            // completedAt 统一为客户端本地日历日（yyyy-MM-dd）
+            const today = localDateString();
             return {
               ...record,
               status: newStatus,
@@ -373,7 +376,7 @@ export function useWeeklyTodos(date?: string) {
   }>({
     queryKey: ['todos', 'weekly', date],
     queryFn: async () => {
-      const res = await fetch(`/api/todos/weekly${params}`);
+      const res = await apiFetch(`/api/todos/weekly${params}`);
       return res.json();
     },
   });
@@ -421,7 +424,7 @@ export function useQuarterlyTodos(date?: string) {
   }>({
     queryKey: ['todos', 'quarterly', date],
     queryFn: async () => {
-      const res = await fetch(`/api/todos/quarterly${params}`);
+      const res = await apiFetch(`/api/todos/quarterly${params}`);
       return res.json();
     },
   });
@@ -463,7 +466,7 @@ export function useYearlyStats(year: number) {
   }>({
     queryKey: ['todos', 'yearly', year],
     queryFn: async () => {
-      const res = await fetch(`/api/todos/yearly?year=${year}`);
+      const res = await apiFetch(`/api/todos/yearly?year=${year}`);
       return res.json();
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
@@ -476,7 +479,7 @@ export function useUpdateCompletedAt() {
 
   return useMutation({
     mutationFn: async ({ id, completedAt }: { id: string; completedAt: string | null }) => {
-      const res = await fetch(`/api/todos/${id}`, {
+      const res = await apiFetch(`/api/todos/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completedAt }),
@@ -507,7 +510,7 @@ export function useDeleteTodo() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/todos/${id}`, {
+      const res = await apiFetch(`/api/todos/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) {
@@ -536,7 +539,7 @@ export function useBatchDeleteTodos() {
 
   return useMutation({
     mutationFn: async (ids: string[]) => {
-      const res = await fetch('/api/todos/batch', {
+      const res = await apiFetch('/api/todos/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete', ids }),
@@ -567,7 +570,7 @@ export function useBatchUpdateTodos() {
 
   return useMutation({
     mutationFn: async ({ ids, data }: { ids: string[]; data: Record<string, unknown> }) => {
-      const res = await fetch('/api/todos/batch', {
+      const res = await apiFetch('/api/todos/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update', ids, data }),
@@ -601,7 +604,7 @@ export function useUpdateSubTask() {
       // 创建 AbortController，自动取消之前的请求
       const controller = mutationManager.createController(`subtask-${taskId}-${subTaskId}`);
 
-      const res = await fetch(`/api/todos/${taskId}/subtask`, {
+      const res = await apiFetch(`/api/todos/${taskId}/subtask`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subTaskId, isDone }),
@@ -715,7 +718,7 @@ export function useFilteredTodos(type: 'category' | 'level', id: string, year: n
   }>({
     queryKey: ['todos', 'filter', type, id, year],
     queryFn: async () => {
-      const res = await fetch(`/api/todos/filter?type=${type}&id=${id}&year=${year}`);
+      const res = await apiFetch(`/api/todos/filter?type=${type}&id=${id}&year=${year}`);
       return res.json();
     },
     enabled: !!type && !!id && !!year,

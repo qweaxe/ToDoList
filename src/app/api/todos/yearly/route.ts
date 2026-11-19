@@ -3,7 +3,8 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getApiSession } from '@/lib/api-auth';
-import { formatDate } from '@/lib/date-utils';
+import { formatDate, localDateString, localDayStart, localDayEnd } from '@/lib/date-utils';
+import { getRequestTimeZone } from '@/lib/api-utils';
 import { format, eachDayOfInterval, getDay, getMonth } from 'date-fns';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
 import { syncRecurringTasks } from '@/services/recurrence-service';
@@ -21,9 +22,10 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authResult.userId;
+    const timeZone = getRequestTimeZone(request);
     const { searchParams } = new URL(request.url);
     const yearParam = searchParams.get('year');
-    const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
+    const year = yearParam ? parseInt(yearParam, 10) : parseInt(localDateString(timeZone).substring(0, 4), 10);
 
     const yearStartStr = `${year}-01-01`;
     const yearEndStr = `${year}-12-31`;
@@ -32,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     // 同步周期任务（静默执行，不阻塞请求）
     try {
-      await syncRecurringTasks(yearStart, yearEnd, userId);
+      await syncRecurringTasks(yearStart, yearEnd, userId, timeZone);
     } catch (syncError) {
       console.error('Failed to sync recurring tasks:', syncError);
     }
@@ -40,8 +42,8 @@ export async function GET(request: NextRequest) {
     // D1 原生 SQL 路径（生产环境），避免 Prisma 初始化 CPU 开销
     if (IS_EDGE) {
       const d1 = await getD1Client();
-      const startStr = `${yearStartStr}T00:00:00.000Z`;
-      const endStr = `${yearEndStr}T23:59:59.999Z`;
+      const startStr = localDayStart(yearStartStr, timeZone).toISOString();
+      const endStr = localDayEnd(yearEndStr, timeZone).toISOString();
 
       // 并行获取三组聚合数据
       const [dayRows, monthRows, categoryRows] = await Promise.all([
@@ -155,8 +157,8 @@ export async function GET(request: NextRequest) {
 
     // 开发环境：Prisma 路径
     const db = await getDb();
-    const yearStartBoundary = new Date(`${yearStartStr}T00:00:00`);
-    const yearEndBoundary = new Date(`${yearEndStr}T23:59:59`);
+    const yearStartBoundary = localDayStart(yearStartStr, timeZone);
+    const yearEndBoundary = localDayEnd(yearEndStr, timeZone);
 
     // 获取年度内已完成的任务（用于热力图）
     const completedTasks = await db.todo.findMany({

@@ -2,7 +2,8 @@ export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getWeekStart, getWeekEnd, formatDate, getWeekDates, extractWeekNumber } from '@/lib/date-utils';
+import { getWeekStart, getWeekEnd, formatDate, getWeekDates, extractWeekNumber, localDateString, localDayStart, localDayEnd } from '@/lib/date-utils';
+import { getRequestTimeZone } from '@/lib/api-utils';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { syncRecurringTasks } from '@/services/recurrence-service';
@@ -64,10 +65,11 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authResult.userId;
+    const timeZone = getRequestTimeZone(request);
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
 
-    const targetDate = dateParam || format(new Date(), 'yyyy-MM-dd');
+    const targetDate = dateParam || localDateString(timeZone);
     const weekStart = getWeekStart(targetDate);
     const weekEnd = getWeekEnd(targetDate);
     const weekDates = getWeekDates(targetDate);
@@ -77,13 +79,13 @@ export async function GET(request: NextRequest) {
 
     // 同步周期任务（静默执行，不阻塞请求）
     try {
-      await syncRecurringTasks(weekStart, weekEnd, userId);
+      await syncRecurringTasks(weekStart, weekEnd, userId, timeZone);
     } catch (syncError) {
       console.error('Failed to sync recurring tasks:', syncError);
     }
 
-    const weekStartISO = new Date(`${weekStartStr}T00:00:00`).toISOString();
-    const weekEndISO = new Date(`${weekEndStr}T23:59:59`).toISOString();
+    const weekStartISO = localDayStart(weekStartStr, timeZone).toISOString();
+    const weekEndISO = localDayEnd(weekEndStr, timeZone).toISOString();
 
     if (IS_EDGE) {
       const d1 = await getD1Client();
@@ -132,7 +134,7 @@ export async function GET(request: NextRequest) {
             date: formatDate(d),
             dayName: format(d, 'EEE', { locale: zhCN }),
             dayNumber: format(d, 'd'),
-            isToday: format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'),
+            isToday: format(d, 'yyyy-MM-dd') === localDateString(timeZone),
             isWeekend: [0, 6].includes(d.getDay()),
           })),
           tasksByDate,
@@ -144,8 +146,8 @@ export async function GET(request: NextRequest) {
 
     // 开发环境：Prisma 路径
     const db = await getDb();
-    const weekStartBoundary = new Date(`${weekStartStr}T00:00:00`);
-    const weekEndBoundary = new Date(`${weekEndStr}T23:59:59`);
+    const weekStartBoundary = localDayStart(weekStartStr, timeZone);
+    const weekEndBoundary = localDayEnd(weekEndStr, timeZone);
 
     const todos = await db.todo.findMany({
       where: {
@@ -185,7 +187,7 @@ export async function GET(request: NextRequest) {
           date: formatDate(d),
           dayName: format(d, 'EEE', { locale: zhCN }),
           dayNumber: format(d, 'd'),
-          isToday: format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'),
+          isToday: format(d, 'yyyy-MM-dd') === localDateString(timeZone),
           isWeekend: [0, 6].includes(d.getDay()),
         })),
         tasksByDate,

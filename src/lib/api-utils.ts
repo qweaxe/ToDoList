@@ -90,3 +90,19 @@ export function errorResponse(
     { status }
   );
 }
+
+/**
+ * 从请求头读取用户时区（IANA 名称），用于服务端日期边界计算。
+ * 前端通过 apiFetch 统一注入 X-Timezone 头。
+ * 缺失或非法时返回 null，调用方回退到运行环境本地时区（开发环境）。
+ */
+export function getRequestTimeZone(request: Request): string | null {
+  const tz = request.headers.get('x-timezone');
+  if (!tz) return null;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return tz;
+  } catch {
+    return null;
+  }
+}

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { localDateString } from '@/lib/date-utils';
+import { getRequestTimeZone } from '@/lib/api-utils';
 
 // POST /api/todos/toggle - 切换任务状态
 export async function POST(request: NextRequest) {
@@ -18,6 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = authResult.userId;
+    const timeZone = getRequestTimeZone(request);
     const body = await request.json() as { id?: string };
     const { id } = body;
 
@@ -45,7 +48,8 @@ export async function POST(request: NextRequest) {
 
       const newStatus = existing.status === 'completed' ? 'pending' : 'completed';
       const now = new Date().toISOString();
-      const completedAt = newStatus === 'completed' ? now : null;
+      // completedAt 统一存用户时区的日历日（yyyy-MM-dd）
+      const completedAt = newStatus === 'completed' ? localDateString(timeZone) : null;
 
       await d1.run(
         'UPDATE todos SET status=?, completedAt=?, updatedAt=? WHERE id=?',
@@ -98,13 +102,13 @@ export async function POST(request: NextRequest) {
     }
 
     const newStatus = existing.status === 'completed' ? 'pending' : 'completed';
-    const now = new Date();
 
     const todo = await db.todo.update({
       where: { id },
       data: {
         status: newStatus,
-        completedAt: newStatus === 'completed' ? now : null,
+        // completedAt 统一存用户时区的日历日（yyyy-MM-dd）
+        completedAt: newStatus === 'completed' ? localDateString(timeZone) : null,
       },
       include: { category: true, level: true },
     });

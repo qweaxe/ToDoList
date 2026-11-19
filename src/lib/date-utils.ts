@@ -240,6 +240,108 @@ export function getQuarterEnd(date: DateInput): Date {
   return endOfQuarter(d);
 }
 
+// ==================== 时区感知辅助 ====================
+//
+// 实现说明：项目使用的 date-fns 4.1.0 未内置时区工具（TZDate/fromZonedTime），
+// 这里基于标准 Intl.DateTimeFormat 实现墙钟时间与 UTC 绝对时刻的互转，
+// 零额外依赖，浏览器 / Node / Cloudflare Edge 均可用。
+
+/**
+ * 校验 IANA 时区名，无效或缺失时返回 null（表示使用运行环境本地时区）
+ */
+export function normalizeTimeZone(timeZone?: string | null): string | null {
+  if (!timeZone) return null;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone });
+    return timeZone;
+  } catch {
+    return null;
+  }
+}
+
+/** 取指定时区在某个 UTC 时刻的偏移量（毫秒）：本地墙钟 - UTC */
+function tzOffsetAt(timeZone: string, utcMillis: number): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+  const parts = dtf.formatToParts(new Date(utcMillis));
+  const map: Record<string, string> = {};
+  for (const part of parts) map[part.type] = part.value;
+  const asUTC = Date.UTC(
+    Number(map.year), Number(map.month) - 1, Number(map.day),
+    Number(map.hour) % 24, Number(map.minute), Number(map.second)
+  );
+  return asUTC - utcMillis;
+}
+
+/** 将"时区内的墙钟时间"转换为 UTC 绝对时刻（处理 DST 间隙的双次逼近） */
+function wallClockToUtc(naiveUtcMillis: number, timeZone: string): Date {
+  // Intl 偏移计算只有秒级精度：毫秒分量单独保留
+  const ms = naiveUtcMillis % 1000;
+  const whole = naiveUtcMillis - ms;
+  // 第一遍：用近似偏移换算
+  let ts = whole - tzOffsetAt(timeZone, whole);
+  // 第二遍：用真实时刻处的偏移修正（DST 切换时刻附近一次逼近可能差 1 小时）
+  ts = whole - tzOffsetAt(timeZone, ts);
+  return new Date(ts + ms);
+}
+
+/** 取某 UTC 时刻在指定时区下的日历日（yyyy-MM-dd） */
+export function zonedDateString(date: DateInput, timeZone?: string | null): string {
+  const tz = normalizeTimeZone(timeZone);
+  const d = toDate(date);
+  if (!tz) return format(d, 'yyyy-MM-dd');
+  const dtf = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+  });
+  return dtf.format(d); // en-CA 输出即 yyyy-MM-dd
+}
+
+/**
+ * 获取"今天"的日期字符串（yyyy-MM-dd）
+ * - 客户端调用（无参）：使用浏览器本地时区，即用户当前设备的"今天"
+ * - 服务端调用（传入请求时区）：使用该时区的"今天"，与运行环境（UTC）无关
+ */
+export function localDateString(timeZone?: string | null): string {
+  return zonedDateString(new Date(), timeZone);
+}
+
+/**
+ * 指定日历日（yyyy-MM-dd）在指定时区的 00:00:00 对应的 UTC 绝对时刻。
+ * 服务端用它构造按天查询边界；无时区参数时退化为运行环境本地时区。
+ */
+export function localDayStart(dateStr: string, timeZone?: string | null): Date {
+  const tz = normalizeTimeZone(timeZone);
+  if (!tz) return new Date(`${dateStr}T00:00:00`);
+  return wallClockToUtc(Date.parse(`${dateStr}T00:00:00Z`), tz);
+}
+
+/**
+ * 指定日历日在指定时区的 23:59:59.999 对应的 UTC 绝对时刻
+ */
+export function localDayEnd(dateStr: string, timeZone?: string | null): Date {
+  const tz = normalizeTimeZone(timeZone);
+  if (!tz) return new Date(`${dateStr}T23:59:59.999`);
+  return wallClockToUtc(Date.parse(`${dateStr}T23:59:59.999Z`), tz);
+}
+
+/**
+ * 指定时区的"今天 00:00"对应的 UTC 绝对时刻
+ */
+export function getTodayStartInTimeZone(timeZone?: string | null): Date {
+  return localDayStart(localDateString(timeZone), timeZone);
+}
+
+/**
+ * 指定时区的"今天 23:59:59.999"对应的 UTC 绝对时刻
+ */
+export function getTodayEndInTimeZone(timeZone?: string | null): Date {
+  return localDayEnd(localDateString(timeZone), timeZone);
+}
+
 // ==================== 日期计算 ====================
 
 /**
@@ -552,9 +654,11 @@ export function calculateReminderTime(dueDate: DateInput, offsetMinutes: number)
 
 /**
  * 检查提醒是否应该发送
+ * 提醒时间统一存储为 UTC 绝对时刻，这里只做 UTC 比较：
+ * 提醒时刻到达（<= 当前时刻）即应发送。
  */
 export function shouldSendReminder(remindAt: DateInput): boolean {
   const now = new Date();
   const remind = toDate(remindAt);
-  return isBefore(remind, now) || isSameDay(remind, now);
+  return isBefore(remind, now) || remind.getTime() === now.getTime();
 }

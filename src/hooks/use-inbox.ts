@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface InboxItem {
@@ -22,7 +24,7 @@ export function useInboxItems(includeConverted = false) {
     queryKey: ['inbox', includeConverted],
     queryFn: async () => {
       const params = includeConverted ? '?includeConverted=true' : '';
-      const res = await fetch(`/api/inbox${params}`);
+      const res = await apiFetch(`/api/inbox${params}`);
       return res.json();
     },
   });
@@ -38,7 +40,7 @@ export function useInboxCount(options?: { enabled?: boolean }) {
   }>({
     queryKey: ['inbox', 'count'],
     queryFn: async () => {
-      const res = await fetch('/api/inbox/count');
+      const res = await apiFetch('/api/inbox/count');
       return res.json();
     },
     staleTime: 30 * 1000, // 30 秒
@@ -54,7 +56,7 @@ export function useCreateInboxItem() {
 
   return useMutation({
     mutationFn: async (content: string) => {
-      const res = await fetch('/api/inbox', {
+      const res = await apiFetch('/api/inbox', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -118,7 +120,7 @@ export function useUpdateInboxItem() {
 
   return useMutation({
     mutationFn: async ({ id, content }: { id: string; content: string }) => {
-      const res = await fetch(`/api/inbox/${id}`, {
+      const res = await apiFetch(`/api/inbox/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -139,7 +141,7 @@ export function useDeleteInboxItem() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/inbox/${id}`, {
+      const res = await apiFetch(`/api/inbox/${id}`, {
         method: 'DELETE',
       });
       return res.json();
@@ -201,7 +203,7 @@ export function useConvertInboxItem() {
         levelId?: string;
       };
     }) => {
-      const res = await fetch(`/api/inbox/${id}/convert`, {
+      const res = await apiFetch(`/api/inbox/${id}/convert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

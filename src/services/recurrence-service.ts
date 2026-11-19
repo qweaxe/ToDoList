@@ -7,9 +7,16 @@
 import { getDb } from '@/lib/db';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
 import { calculateOccurrenceDates } from '@/lib/cron-utils';
-import { formatDate } from '@/lib/date-utils';
+import { formatDate, zonedDateString } from '@/lib/date-utils';
 import { parseDateString } from '@/lib/date-utils';
 import type { Frequency } from '@/types';
+
+// 将周期任务发生日期格式化为日历日字符串：
+// cron 路径生成的 Date 是"用户时区墙钟时刻"，必须按同一时区格式化才能得到正确的日历日；
+// 算术递增路径生成的 Date 本身即 UTC 零点表示的日历日，无时区参数时按运行环境格式化（既有行为）。
+function occurrenceDateString(d: Date, timeZone?: string | null): string {
+  return timeZone ? zonedDateString(d, timeZone) : formatDate(d);
+}
 
 // 周期规则接口
 interface RecurrenceRuleWithTodo {
@@ -39,7 +46,8 @@ interface RecurrenceRuleWithTodo {
 async function syncRecurringTasksD1(
   windowStart: Date,
   windowEnd: Date,
-  userId: string
+  userId: string,
+  timeZone?: string | null
 ): Promise<{ created: number; skipped: number }> {
   const result = { created: 0, skipped: 0 };
 
@@ -119,12 +127,13 @@ async function syncRecurringTasksD1(
           endDate: rule.endDate ? rule.endDate.substring(0, 10) : null,
         },
         windowStart,
-        effectiveEnd
+        effectiveEnd,
+        timeZone
       );
 
       for (const templateTodo of rule.todos) {
         for (const occurrenceDate of occurrenceDates) {
-          const dateStr = formatDate(occurrenceDate); // YYYY-MM-DD
+          const dateStr = occurrenceDateString(occurrenceDate, timeZone); // YYYY-MM-DD
 
           // 用日期字符串比较，避免时间戳精度问题
           const existing = await d1.first<{ id: string }>(
@@ -179,10 +188,11 @@ async function syncRecurringTasksD1(
 export async function syncRecurringTasks(
   windowStart: Date,
   windowEnd: Date,
-  userId: string
+  userId: string,
+  timeZone?: string | null
 ): Promise<{ created: number; skipped: number }> {
   if (IS_EDGE) {
-    return syncRecurringTasksD1(windowStart, windowEnd, userId);
+    return syncRecurringTasksD1(windowStart, windowEnd, userId, timeZone);
   }
 
   const result = { created: 0, skipped: 0 };
@@ -225,13 +235,14 @@ export async function syncRecurringTasks(
           endDate: rule.endDate ? formatDate(rule.endDate) : null,
         },
         windowStart,
-        effectiveEnd
+        effectiveEnd,
+        timeZone
       );
 
       // 为每个模板任务和每个执行日期创建任务实例
       for (const templateTodo of rule.todos) {
         for (const occurrenceDate of occurrenceDates) {
-          const dateStr = formatDate(occurrenceDate);
+          const dateStr = occurrenceDateString(occurrenceDate, timeZone);
 
           // 检查是否已存在该日期的任务实例
           const existingTodo = await db.todo.findFirst({
@@ -284,34 +295,34 @@ export async function syncRecurringTasks(
 /**
  * 同步未来7天的周期任务
  */
-export async function syncUpcomingWeek(userId: string): Promise<{ created: number; skipped: number }> {
+export async function syncUpcomingWeek(userId: string, timeZone?: string | null): Promise<{ created: number; skipped: number }> {
   const now = new Date();
   const weekLater = new Date(now);
   weekLater.setDate(weekLater.getDate() + 7);
 
-  return syncRecurringTasks(now, weekLater, userId);
+  return syncRecurringTasks(now, weekLater, userId, timeZone);
 }
 
 /**
  * 同步未来一个月的周期任务
  */
-export async function syncUpcomingMonth(userId: string): Promise<{ created: number; skipped: number }> {
+export async function syncUpcomingMonth(userId: string, timeZone?: string | null): Promise<{ created: number; skipped: number }> {
   const now = new Date();
   const monthLater = new Date(now);
   monthLater.setMonth(monthLater.getMonth() + 1);
 
-  return syncRecurringTasks(now, monthLater, userId);
+  return syncRecurringTasks(now, monthLater, userId, timeZone);
 }
 
 /**
  * 同步指定日期的周期任务
  */
-export async function syncDate(date: Date, userId: string): Promise<{ created: number; skipped: number }> {
+export async function syncDate(date: Date, userId: string, timeZone?: string | null): Promise<{ created: number; skipped: number }> {
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
 
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
 
-  return syncRecurringTasks(startOfDay, endOfDay, userId);
+  return syncRecurringTasks(startOfDay, endOfDay, userId, timeZone);
 }
