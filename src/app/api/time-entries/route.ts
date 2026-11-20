@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 import { createTimeEntrySchema } from '@/types/api';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { assertCategoriesBelongToUser, assertTodosBelongToUser } from '@/lib/ownership';
 
 const TIME_ENTRY_JOIN_FIELDS = `
   t.id, t.title, t.description,
@@ -154,6 +155,12 @@ export async function POST(request: NextRequest) {
     const userId = authResult.userId;
     const body = await request.json();
     const validated = createTimeEntrySchema.parse(body);
+
+    // 归属校验：防止跨用户引用他人的分类/任务
+    if (!(await assertCategoriesBelongToUser([validated.categoryId], userId))
+      || !(await assertTodosBelongToUser([validated.todoId], userId))) {
+      return NextResponse.json({ success: false, error: '无效的分类或任务' }, { status: 400 });
+    }
 
     const startTimeObj = new Date(validated.startTime);
     const endTimeObj = new Date(validated.endTime);

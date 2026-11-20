@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 import { updateTodoSchema } from '@/types/api';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { assertCategoriesBelongToUser, assertLevelsExist } from '@/lib/ownership';
 
 const TODO_JOIN_FIELDS = `
   t.id, t.title, t.description, t.status,
@@ -124,6 +125,15 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
     const validated = updateTodoSchema.parse(body);
+
+    // 归属校验：仅校验本次请求中显式提供且非 null 的引用，防跨用户引用
+    if (!(await assertCategoriesBelongToUser(
+        validated.categoryId !== undefined && validated.categoryId !== null ? [validated.categoryId] : [],
+        userId))
+      || !(await assertLevelsExist(
+        validated.levelId !== undefined && validated.levelId !== null ? [validated.levelId] : []))) {
+      return NextResponse.json({ success: false, error: '无效的分类或等级' }, { status: 400 });
+    }
 
     if (IS_EDGE) {
       const d1 = await getD1Client();

@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 import { z } from 'zod';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { assertCategoriesBelongToUser, assertLevelsExist } from '@/lib/ownership';
 
 const batchDeleteSchema = z.object({
   ids: z.array(z.string()).min(1, '至少选择一个任务'),
@@ -95,6 +96,15 @@ export async function POST(request: NextRequest) {
 
     if (action === 'update') {
       const validated = batchUpdateSchema.parse(rest);
+
+      // 归属校验：data 为单对象应用到多个 todo，只需校验一次
+      if (!(await assertCategoriesBelongToUser(
+          validated.data.categoryId != null ? [validated.data.categoryId] : [],
+          userId))
+        || !(await assertLevelsExist(
+          validated.data.levelId != null ? [validated.data.levelId] : []))) {
+        return NextResponse.json({ success: false, error: '无效的分类或等级' }, { status: 400 });
+      }
 
       if (IS_EDGE) {
         const d1 = await getD1Client();

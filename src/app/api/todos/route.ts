@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 import { createTodoSchema } from '@/types/api';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { assertCategoriesBelongToUser, assertLevelsExist } from '@/lib/ownership';
 
 const TODO_JOIN_FIELDS = `
   t.id, t.title, t.description, t.status,
@@ -150,6 +151,12 @@ export async function POST(request: NextRequest) {
     const userId = authResult.userId;
     const body = await request.json();
     const validated = createTodoSchema.parse(body);
+
+    // 归属校验：分类必须属于当前用户；等级为系统级共享，仅校验存在性
+    if (!(await assertCategoriesBelongToUser([validated.categoryId], userId))
+      || !(await assertLevelsExist([validated.levelId]))) {
+      return NextResponse.json({ success: false, error: '无效的分类或等级' }, { status: 400 });
+    }
 
     const startDateObj = new Date(validated.startDate);
     const dueDateObj = new Date(validated.dueDate);

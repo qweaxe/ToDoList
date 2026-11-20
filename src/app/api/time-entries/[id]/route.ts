@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 import { updateTimeEntrySchema } from '@/types/api';
 import { getApiSession } from '@/lib/api-auth';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { assertCategoriesBelongToUser, assertTodosBelongToUser } from '@/lib/ownership';
 
 const TIME_ENTRY_JOIN_FIELDS = `
   t.id, t.title, t.description,
@@ -133,6 +134,16 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
     const validated = updateTimeEntrySchema.parse(body);
+
+    // 归属校验：仅校验本次请求中显式提供且非 null 的引用，防跨用户引用
+    if (!(await assertCategoriesBelongToUser(
+        validated.categoryId !== undefined && validated.categoryId !== null ? [validated.categoryId] : [],
+        userId))
+      || !(await assertTodosBelongToUser(
+        validated.todoId !== undefined && validated.todoId !== null ? [validated.todoId] : [],
+        userId))) {
+      return NextResponse.json({ success: false, error: '无效的分类或任务' }, { status: 400 });
+    }
 
     // 计算时长
     let duration: number | undefined;
