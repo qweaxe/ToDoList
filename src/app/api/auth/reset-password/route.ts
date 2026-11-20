@@ -5,6 +5,7 @@ import { verifyPassword, hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 const resetPasswordSchema = z.object({
   username: z.string().min(1),
@@ -18,6 +19,10 @@ const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 分钟
 // POST /api/auth/reset-password - 验证答案并重置密码
 export async function POST(request: NextRequest) {
   try {
+    // IP 级速率限制：10 次 / 15 分钟 / IP（堵单 IP 轮询海量用户名绕过账号级 5 次锁定的洞）
+    const limited = await enforceRateLimit('reset', request.headers, 10, 15 * 60 * 1000);
+    if (limited) return limited;
+
     const body = await request.json();
     const validated = resetPasswordSchema.parse(body);
 

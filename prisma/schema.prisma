@@ -241,3 +241,13 @@ model TimeEntry {
   @@index([todoId])
   @@map("time_entries")
 }
+
+// 认证端点速率限制（固定窗口计数，秒级时间戳避免超出 Int 4 字节范围）
+model RateLimit {
+  key       String   @id // 'login:1.2.3.4' / 'register:1.2.3.4' 等
+  count     Int
+  expiresAt Int      // 窗口结束时间戳（秒）
+
+  @@index([expiresAt])
+  @@map("rate_limits")
+}

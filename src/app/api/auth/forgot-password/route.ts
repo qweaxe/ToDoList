@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 const forgotPasswordSchema = z.object({
   username: z.string().min(1),
@@ -12,6 +13,10 @@ const forgotPasswordSchema = z.object({
 // POST /api/auth/forgot-password - 根据用户名获取安全问题
 export async function POST(request: NextRequest) {
   try {
+    // 速率限制：10 次 / 15 分钟 / IP（防刷接口枚举用户名）
+    const limited = await enforceRateLimit('forgot', request.headers, 10, 15 * 60 * 1000);
+    if (limited) return limited;
+
     const body = await request.json();
     const validated = forgotPasswordSchema.parse(body);
 

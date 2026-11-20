@@ -5,6 +5,7 @@ import { hashPassword } from '@/lib/password';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 const registerSchema = z.object({
   username: z
@@ -19,6 +20,10 @@ const registerSchema = z.object({
 // POST /api/auth/register - 用户注册
 export async function POST(request: NextRequest) {
   try {
+    // 速率限制：5 次 / 1 小时 / IP（防批量注册垃圾账号）
+    const limited = await enforceRateLimit('register', request.headers, 5, 60 * 60 * 1000);
+    if (limited) return limited;
+
     const body = await request.json();
     const validated = registerSchema.parse(body);
 

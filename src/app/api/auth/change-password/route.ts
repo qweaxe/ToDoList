@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { getApiSession } from '@/lib/api-auth';
 import { getDb } from '@/lib/db';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
@@ -15,6 +16,10 @@ const changePasswordSchema = z.object({
 // POST /api/auth/change-password - 修改密码
 export async function POST(request: NextRequest) {
   try {
+    // 速率限制：10 次 / 15 分钟 / IP
+    const limited = await enforceRateLimit('chpwd', request.headers, 10, 15 * 60 * 1000);
+    if (limited) return limited;
+
     // 验证用户已登录（支持 Bearer Token 和 Session）
     const authResult = await getApiSession(request);
     if (!authResult.success || !authResult.userId) {
