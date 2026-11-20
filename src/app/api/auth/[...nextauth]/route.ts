@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/password";
 import { getDb } from "@/lib/db";
 import { getD1Client, IS_EDGE } from "@/lib/d1";
+import { buildAuthCallbacks, enforceLoginRateLimit } from "@/lib/auth-callbacks";
 
 // 自定义登录错误类，用于向客户端传递错误信息
 class InvalidLoginError extends CredentialsSignin {
@@ -59,6 +60,9 @@ export const { handlers, auth } = NextAuth(async () => {
             throw new MissingCredentialsError();
           }
 
+          // 登录限流：10 次 / 15 分钟 / IP（限流先于密码验证执行）
+          await enforceLoginRateLimit();
+
           let user: { id: string; username: string; name: string | null; password: string } | null = null;
 
           if (IS_EDGE) {
@@ -95,22 +99,8 @@ export const { handlers, auth } = NextAuth(async () => {
         },
       }),
     ],
-    callbacks: {
-      async jwt({ token, user }: any) {
-        if (user) {
-          token.id = user.id;
-          token.username = user.username;
-        }
-        return token;
-      },
-      async session({ session, token }: any) {
-        if (token) {
-          session.user.id = token.id as string;
-          session.user.username = token.username as string;
-        }
-        return session;
-      },
-    },
+    // 与 src/auth.ts 共享同一份回调：jwt 埋入/比对 tokenVersion（改密吊销在生产签发路径生效）
+    callbacks: buildAuthCallbacks(),
   };
 });
 

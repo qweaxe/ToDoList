@@ -2,6 +2,7 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/password";
 import { getDb } from "@/lib/db";
+import { buildAuthCallbacks, enforceLoginRateLimit } from "@/lib/auth-callbacks";
 
 // 自定义登录错误类，用于向客户端传递错误信息
 class InvalidLoginError extends CredentialsSignin {
@@ -36,6 +37,9 @@ function getAuthConfig(secret: string | undefined) {
             throw new MissingCredentialsError();
           }
 
+          // 登录限流：10 次 / 15 分钟 / IP（限流先于密码验证执行）
+          await enforceLoginRateLimit();
+
           const db = await getDb();
           const user = await db.user.findUnique({
             where: { username: credentials.username as string },
@@ -62,33 +66,7 @@ function getAuthConfig(secret: string | undefined) {
         },
       }),
     ],
-    callbacks: {
-      async jwt({ token, user }: any) {
-        // 动态导入避免 auth ↔ api-auth 循环依赖
-        const { getUserTokenVersion } = await import("@/lib/api-auth");
-        if (user) {
-          // 首次登录：埋入库中 tokenVersion
-          token.id = user.id;
-          token.username = user.username;
-          token.tokenVersion = await getUserTokenVersion(user.id);
-        } else if (token.id) {
-          // 后续请求：比对库中版本，不一致则返回空 token 视为未认证（吊销旧 JWT）
-          // 旧 token 无 tokenVersion 字段按 0 处理，存量登录态保留
-          const current = await getUserTokenVersion(token.id as string);
-          if (current !== null && Number(token.tokenVersion ?? 0) !== current) {
-            return {};
-          }
-        }
-        return token;
-      },
-      async session({ session, token }: any) {
-        if (token) {
-          session.user.id = token.id as string;
-          session.user.username = token.username as string;
-        }
-        return session;
-      },
-    },
+    callbacks: buildAuthCallbacks(),
   };
 }
 
