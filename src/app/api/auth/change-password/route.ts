@@ -68,15 +68,19 @@ export async function POST(request: NextRequest) {
       const hashedPassword = await hashPassword(validated.newPassword);
       const now = new Date().toISOString();
 
-      // 更新密码
+      // 更新密码并推进 tokenVersion（吊销全部旧 JWT）
       await d1.run(
-        'UPDATE users SET password = ?, updatedAt = ? WHERE id = ?',
+        'UPDATE users SET password = ?, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
         hashedPassword, now, authResult.userId
       );
+
+      // 吊销全部 API Key
+      await d1.run('DELETE FROM api_keys WHERE userId = ?', authResult.userId);
 
       return NextResponse.json({
         success: true,
         code: 'PASSWORD_CHANGED',
+        revokedSessions: true,
       });
     }
 
@@ -119,15 +123,20 @@ export async function POST(request: NextRequest) {
     // 加密新密码
     const hashedPassword = await hashPassword(validated.newPassword);
 
-    // 更新密码
+    // 更新密码并推进 tokenVersion（吊销全部旧 JWT），吊销全部 API Key
     await db.user.update({
       where: { id: authResult.userId },
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        tokenVersion: { increment: 1 },
+      },
     });
+    await db.apiKey.deleteMany({ where: { userId: authResult.userId } });
 
     return NextResponse.json({
       success: true,
       code: 'PASSWORD_CHANGED',
+      revokedSessions: true,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

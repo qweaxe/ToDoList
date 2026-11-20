@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,12 +65,9 @@ export function ChangePassword() {
         const errorKey = ERROR_CODE_MAP[data.code] || 'passwordChangeFailed';
         toast.error(t(errorKey));
       } else {
-        toast.success(t('passwordChanged'));
-        setForm({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: '',
-        });
+        // 改密成功：所有设备登录态与全部 API Key 已被服务端吊销，本设备强制登出
+        toast.success(t('passwordChangedRevoked'));
+        await signOut({ callbackUrl: '/' });
       }
     } catch {
       toast.error(t('passwordChangeFailed'));
@@ -124,6 +122,8 @@ export function ChangePassword() {
               disabled={isLoading}
             />
           </div>
+
+          <p className="text-sm text-muted-foreground">{t('changePasswordRevokeHint')}</p>
 
           <Button type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -120,17 +120,21 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 验证成功，重置尝试次数并更新密码
+      // 验证成功，重置尝试次数并更新密码，推进 tokenVersion（吊销全部旧 JWT）
       const hashedPassword = await hashPassword(validated.newPassword);
 
       await d1.run(
-        'UPDATE users SET password = ?, securityAnswerAttempts = 0, securityAnswerLockedAt = NULL, updatedAt = ? WHERE id = ?',
+        'UPDATE users SET password = ?, securityAnswerAttempts = 0, securityAnswerLockedAt = NULL, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
         hashedPassword, new Date().toISOString(), user.id
       );
+
+      // 吊销全部 API Key
+      await d1.run('DELETE FROM api_keys WHERE userId = ?', user.id);
 
       return NextResponse.json({
         success: true,
         code: 'PASSWORD_RESET_SUCCESS',
+        revokedSessions: true,
       });
     }
 
@@ -237,7 +241,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证成功，重置尝试次数并更新密码
+    // 验证成功，重置尝试次数并更新密码，推进 tokenVersion（吊销全部旧 JWT）
     const hashedPassword = await hashPassword(validated.newPassword);
 
     await db.user.update({
@@ -246,12 +250,17 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         securityAnswerAttempts: 0,
         securityAnswerLockedAt: null,
+        tokenVersion: { increment: 1 },
       },
     });
+
+    // 吊销全部 API Key
+    await db.apiKey.deleteMany({ where: { userId: user.id } });
 
     return NextResponse.json({
       success: true,
       code: 'PASSWORD_RESET_SUCCESS',
+      revokedSessions: true,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

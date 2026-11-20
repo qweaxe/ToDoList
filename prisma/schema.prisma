@@ -21,6 +21,7 @@ model User {
   securityAnswer          String?   // 安全问题答案（PBKDF2 加密存储）
   securityAnswerAttempts  Int       @default(0) // 安全问题答案尝试次数
   securityAnswerLockedAt  DateTime? // 安全问题答案锁定时间
+  tokenVersion            Int       @default(0) // 令牌版本号，改密/重置密码时 +1 以吊销全部旧 JWT
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 

@@ -64,9 +64,20 @@ function getAuthConfig(secret: string | undefined) {
     ],
     callbacks: {
       async jwt({ token, user }: any) {
+        // 动态导入避免 auth ↔ api-auth 循环依赖
+        const { getUserTokenVersion } = await import("@/lib/api-auth");
         if (user) {
+          // 首次登录：埋入库中 tokenVersion
           token.id = user.id;
           token.username = user.username;
+          token.tokenVersion = await getUserTokenVersion(user.id);
+        } else if (token.id) {
+          // 后续请求：比对库中版本，不一致则返回空 token 视为未认证（吊销旧 JWT）
+          // 旧 token 无 tokenVersion 字段按 0 处理，存量登录态保留
+          const current = await getUserTokenVersion(token.id as string);
+          if (current !== null && Number(token.tokenVersion ?? 0) !== current) {
+            return {};
+          }
         }
         return token;
       },

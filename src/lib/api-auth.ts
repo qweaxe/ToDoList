@@ -134,6 +134,33 @@ export async function verifyApiToken(token: string): Promise<ApiAuthResult> {
 }
 
 /**
+ * 获取用户当前 tokenVersion
+ * 用于 JWT 版本比对（改密/重置密码后 +1 以吊销全部旧 JWT）
+ * 查询失败返回 null，调用方跳过比对（可用性优先，不因 D1 抖动误杀）
+ */
+export async function getUserTokenVersion(userId: string): Promise<number | null> {
+  try {
+    if (IS_EDGE) {
+      const d1 = await getD1Client();
+      const row = await d1.first<{ tokenVersion: number }>(
+        'SELECT tokenVersion FROM users WHERE id = ?',
+        userId
+      );
+      return row ? Number(row.tokenVersion) : null;
+    }
+
+    const db = await getDb();
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { tokenVersion: true },
+    });
+    return user ? user.tokenVersion : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 双重认证：优先检查 Bearer Token，无 Token 时检查 Session
  * 用于需要同时支持 API 访问和 Web 访问的接口
  */

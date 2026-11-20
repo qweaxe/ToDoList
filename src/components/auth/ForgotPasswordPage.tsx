@@ -297,6 +297,7 @@ export function ForgotPasswordPage() {
                   </div>
                 </div>
                 <p className="text-muted-foreground">{t('resetSuccessDesc')}</p>
+                <p className="text-sm text-muted-foreground">{t('resetRevokedHint')}</p>
                 <Button className="w-full" onClick={handleBackToLogin}>
                   {t('backToLogin')}
                 </Button>
