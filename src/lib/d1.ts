@@ -23,13 +23,12 @@ export class D1Client {
     return result ?? null;
   }
 
-  async run(sql: string, ...params: unknown[]): Promise<void> {
+  async run(sql: string, ...params: unknown[]): Promise<{ meta?: { changes?: number } }> {
     const stmt = this.db.prepare(sql);
     if (params.length > 0) {
-      await stmt.bind(...params).run();
-    } else {
-      await stmt.run();
+      return await stmt.bind(...params).run();
     }
+    return await stmt.run();
   }
 }
 

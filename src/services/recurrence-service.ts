@@ -147,24 +147,27 @@ async function syncRecurringTasksD1(
           }
 
           // 创建新任务实例
-          try {
-            const id = crypto.randomUUID();
-            const occISO = new Date(`${dateStr}T00:00:00.000Z`).toISOString();
-            const now = new Date().toISOString();
-            await d1.run(
-              `INSERT INTO todos (id, title, description, status, startDate, dueDate,
-               categoryId, levelId, priority, isMilestone, isCycleTask,
-               recurrenceRuleId, parentRuleId, userId, createdAt, updatedAt)
-               VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
-              id, templateTodo.title, templateTodo.description ?? null,
-              occISO, occISO,
-              templateTodo.categoryId ?? null, templateTodo.levelId ?? null,
-              templateTodo.priority, templateTodo.isMilestone ? 1 : 0,
-              rule.id, rule.id, userId, now, now
-            );
+          // INSERT OR IGNORE：依赖唯一索引 idx_todos_rule_date_title(parentRuleId, date(dueDate), title)，
+          // 并发场景下唯一冲突被静默跳过（幂等）；唯一索引对 parentRuleId 为 NULL 的手动任务不生效
+          const id = crypto.randomUUID();
+          const occISO = new Date(`${dateStr}T00:00:00.000Z`).toISOString();
+          const now = new Date().toISOString();
+          const insertRes = await d1.run(
+            `INSERT OR IGNORE INTO todos (id, title, description, status, startDate, dueDate,
+             categoryId, levelId, priority, isMilestone, isCycleTask,
+             recurrenceRuleId, parentRuleId, userId, createdAt, updatedAt)
+             VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
+            id, templateTodo.title, templateTodo.description ?? null,
+            occISO, occISO,
+            templateTodo.categoryId ?? null, templateTodo.levelId ?? null,
+            templateTodo.priority, templateTodo.isMilestone ? 1 : 0,
+            rule.id, rule.id, userId, now, now
+          );
+          // 统计口径：meta.changes=0 表示被 OR IGNORE 静默忽略（并发唯一冲突），计 skipped
+          if (insertRes?.meta?.changes === 0) {
+            result.skipped++;
+          } else {
             result.created++;
-          } catch (error) {
-            console.error(`Failed to create recurring task instance:`, error);
           }
         }
       }
@@ -244,11 +247,15 @@ export async function syncRecurringTasks(
         for (const occurrenceDate of occurrenceDates) {
           const dateStr = occurrenceDateString(occurrenceDate, timeZone);
 
+          // 语义统一：周期实例 dueDate 恒为 <occurrenceDate>T00:00:00.000Z（与 D1 路径一致），
+          // 归零后日历日查重与唯一索引 idx_todos_rule_date_title 语义等价
+          const occISO = new Date(`${dateStr}T00:00:00.000Z`);
+
           // 检查是否已存在该日期的任务实例
           const existingTodo = await db.todo.findFirst({
             where: {
               parentRuleId: rule.id,
-              dueDate: occurrenceDate,
+              dueDate: occISO,
               title: templateTodo.title,
             },
           });
@@ -265,8 +272,8 @@ export async function syncRecurringTasks(
                 title: templateTodo.title,
                 description: templateTodo.description,
                 status: 'pending',
-                startDate: occurrenceDate,
-                dueDate: occurrenceDate,
+                startDate: occISO,
+                dueDate: occISO,
                 categoryId: templateTodo.categoryId,
                 levelId: templateTodo.levelId,
                 priority: templateTodo.priority,
@@ -279,7 +286,14 @@ export async function syncRecurringTasks(
             });
             result.created++;
           } catch (error) {
-            console.error(`Failed to create recurring task instance:`, error);
+            // 并发插入撞唯一索引（idx_todos_rule_date_title）时静默跳过（幂等）；
+            // 其他错误（字段超长等）记录日志后上抛，不吞
+            if (String(error).includes('UNIQUE')) {
+              result.skipped++;
+              continue;
+            }
+            console.error('Failed to create recurring task instance:', error);
+            throw error;
           }
         }
       }
@@ -290,28 +304,6 @@ export async function syncRecurringTasks(
     console.error('Sync recurring tasks error:', error);
     return result;
   }
-}
-
-/**
- * 同步未来7天的周期任务
- */
-export async function syncUpcomingWeek(userId: string, timeZone?: string | null): Promise<{ created: number; skipped: number }> {
-  const now = new Date();
-  const weekLater = new Date(now);
-  weekLater.setDate(weekLater.getDate() + 7);
-
-  return syncRecurringTasks(now, weekLater, userId, timeZone);
-}
-
-/**
- * 同步未来一个月的周期任务
- */
-export async function syncUpcomingMonth(userId: string, timeZone?: string | null): Promise<{ created: number; skipped: number }> {
-  const now = new Date();
-  const monthLater = new Date(now);
-  monthLater.setMonth(monthLater.getMonth() + 1);
-
-  return syncRecurringTasks(now, monthLater, userId, timeZone);
 }
 
 /**

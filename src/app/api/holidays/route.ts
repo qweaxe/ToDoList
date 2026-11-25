@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getYearHolidays, checkAndPreloadNextYear, refreshYearHolidays } from '@/lib/holiday-service';
 import { getD1Client, IS_EDGE } from '@/lib/d1';
 import { getStaticHolidaysForYear } from '@/lib/static-holidays';
+import { getApiSession } from '@/lib/api-auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // GET /api/holidays - 获取年度节假日数据
 export async function GET(request: NextRequest) {
@@ -11,6 +13,26 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
     const action = searchParams.get('action');
+
+    // preload / refresh 为写操作管理动作，需认证 + 限流；
+    // 默认 GET 为公开只读数据，维持无鉴权不限流
+    if (action === 'preload' || action === 'refresh') {
+      const authResult = await getApiSession(request);
+      if (!authResult.success || !authResult.userId) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
+
+      const limited = await enforceRateLimit(
+        action === 'refresh' ? 'holidays-refresh' : 'holidays-preload',
+        request.headers,
+        action === 'refresh' ? 5 : 10,
+        action === 'refresh' ? 60 * 60 * 1000 : 15 * 60 * 1000
+      );
+      if (limited) return limited;
+    }
 
     // 检查并预加载下一年的数据
     if (action === 'preload') {

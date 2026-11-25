@@ -123,6 +123,13 @@ CREATE TABLE IF NOT EXISTS api_keys (
     FOREIGN KEY (userId) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
+-- 周期任务幂等索引：(parentRuleId, 日历日 dueDate, title) 唯一
+-- parentRuleId 为 NULL（手动任务）不参与唯一约束，不受影响
+-- 存量环境迁移（D1 控制台执行）：
+-- 前置条件：先执行去重（scripts/dedup-recurrence-instances.ts 输出的 SQL），否则建索引失败
+CREATE UNIQUE INDEX IF NOT EXISTS idx_todos_rule_date_title
+    ON todos(parentRuleId, date(dueDate), title);
+
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_todos_userId ON todos(userId);
 CREATE INDEX IF NOT EXISTS idx_todos_startDate ON todos(startDate);

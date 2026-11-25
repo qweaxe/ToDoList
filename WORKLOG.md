@@ -3269,3 +3269,26 @@ API (SQL SELECT 缺失该字段) ❌ BUG
 - `src/components/task/TaskForm.tsx` - interval 输入框修复 + 问号 Tooltip
 - `messages/zh.json` - 新增 task.recurringHint
 - `messages/en.json` - 新增 task.recurringHint
+
+---
+
+## 2026-11-25: 周期任务幂等修复 — 唯一索引 + INSERT OR IGNORE + 存量去重脚本
+
+### 改动内容
+- 修复周期任务并发重复生成问题（PiP 悬浮窗 + 主窗口同时触发 sync 导致生产 D1 出现重复实例）
+- 新增唯一索引 idx_todos_rule_date_title（parentRuleId, date(dueDate), title），d1-schema.sql 与 prisma/schema.prisma 双侧声明
+- D1 路径 INSERT 改为 INSERT OR IGNORE，依赖唯一索引实现幂等；meta.changes=0 计入 skipped
+- Prisma 路径周期实例 dueDate 恒为 <occurrenceDate>T00:00:00.000Z，与 D1 路径语义统一；UNIQUE 冲突静默跳过计 skipped，其他错误上抛不再吞
+- 删除无调用方的 syncUpcomingWeek/syncUpcomingMonth 死代码
+- d1.ts run() 返回 { meta: { changes } } 以感知 INSERT OR IGNORE 实际插入行为
+- holidays API preload/refresh 管理操作添加认证（getApiSession）+ 限流（enforceRateLimit），默认 GET 查询保持公开只读
+- 新增一次性存量去重脚本 scripts/dedup-recurrence-instances.ts（dry-run/--apply 双模式，输出生产 D1 控制台可执行 SQL）
+- 部署顺序：生产 D1 先执行去重 SQL，再建唯一索引；本地开发库可用脚本 --apply
+
+### 修改的文件
+- `d1-schema.sql` - 新增唯一索引声明
+- `prisma/schema.prisma` - Prisma 侧索引声明对齐
+- `src/services/recurrence-service.ts` - 幂等插入 + 语义统一 + 删除死代码
+- `src/lib/d1.ts` - run() 返回 changes 元数据
+- `src/app/api/holidays/route.ts` - 管理操作认证 + 限流
+- `scripts/dedup-recurrence-instances.ts` - 新增存量去重脚本

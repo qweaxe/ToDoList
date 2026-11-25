@@ -122,6 +122,9 @@ model Todo {
   @@index([status])
   @@index([categoryId])
   @@index([levelId])
+  // 周期任务幂等索引：与 D1 侧 date(dueDate) 表达式索引语义一致
+  //（周期实例 dueDate 恒为 T00:00:00.000Z，普通复合索引等价于日历日索引）
+  @@index([parentRuleId, dueDate, title], map: "idx_todos_rule_date_title")
   @@map("todos")
 }
 
